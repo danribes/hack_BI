@@ -27,6 +27,72 @@ description: "Implementation tasks for Healthcare AI Clinical Data Analyzer"
 
 ---
 
+## 📋 Implementation Workflow (Follow for EVERY Task)
+
+**Before starting ANY task, follow this workflow:**
+
+### 1. Check Current Progress
+- Check `/web/.specify/memory/tasks.md` file to find the last task implemented
+- Identify which task you should work on next
+
+### 2. Implementation
+- Write the code for the implementation of the task
+- Follow the file path specified in the task description
+- **Use Tailwind CSS** for all CSS-related code (no custom CSS classes unless absolutely necessary)
+
+### 3. Testing
+- Write comprehensive test code for the implemented functionality
+- Tests should cover:
+  - Unit tests for individual functions/components
+  - Integration tests where applicable
+  - Edge cases and error handling
+
+### 4. Test Execution
+- Run the tests
+- Analyze any errors that occur
+- Fix all errors until tests pass
+
+### 5. Documentation (REQUIRED - Create 3 Log Files)
+
+All log files must be named with capital **T** + three-digit task number (e.g., **T001**, **T024**, **T156**)
+
+**a) Implementation Task Log**
+- **Location**: `/web/log_files/TXXX_TaskName_Log.md`
+- **Example**: `/web/log_files/T024_PatientFHIRFetcher_Log.md`
+- **Content**: Implementation details, decisions made, code structure
+
+**b) Test Log**
+- **Location**: `/web/log_tests/TXXX_TaskName_TestLog.md`
+- **Example**: `/web/log_tests/T024_PatientFHIRFetcher_TestLog.md`
+- **Content**: Test results, coverage, issues encountered and resolved
+
+**c) Learn/Guide File (Didactic Log)**
+- **Location**: `/web/log_learn/TXXX_TaskName_Guide.md`
+- **Example**: `/web/log_learn/T024_PatientFHIRFetcher_Guide.md`
+- **Content**: Explanation of what was developed, why this approach was taken, and how it works (educational format)
+
+### 6. Important Reminders
+
+⚠️ **Docker Environment**: This setup is containerized in Docker. There is NO need to install PostgreSQL or Redis locally - they run in containers via docker-compose.yml
+
+⚠️ **Tailwind CSS**: Use Tailwind utility classes for all styling. Do not create custom CSS files unless absolutely necessary.
+
+⚠️ **Update tasks.md**: After completing implementation, tests, and all log files:
+- Update the `/web/.specify/memory/tasks.md` file with implementation details
+- Cross off the completed task by changing `- [ ]` to `- [x]`
+
+### 7. Task Completion Checklist
+
+Before moving to the next task, verify:
+- [x] Code implemented in correct file path
+- [x] Tests written and passing
+- [x] Implementation log created (TXXX_TaskName_Log.md)
+- [x] Test log created (TXXX_TaskName_TestLog.md)
+- [x] Learn/guide file created (TXXX_TaskName_Guide.md)
+- [x] tasks.md updated and task marked as complete
+
+---
+
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Project initialization and basic structure
