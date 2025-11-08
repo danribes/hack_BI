@@ -36,6 +36,101 @@
 
 ---
 
+## 📋 IMPORTANT: Implementation Workflow (Follow for EVERY Task)
+
+Before starting any task, read this workflow carefully. This applies to **every single task** in this hackathon plan.
+
+### Step-by-Step Workflow for Each Task
+
+#### 1. Check Last Completed Task
+```bash
+# Check which task was last implemented
+cat /web/.specify/memory/tasks.md
+# Find the last task marked with [x]
+```
+
+#### 2. Write the Implementation Code
+- Follow the task instructions below
+- Write clean, well-structured code
+- **Use Tailwind CSS for ALL styling** (no custom CSS files unless absolutely necessary)
+
+#### 3. Write Test Code
+- Create tests for the implemented functionality
+- Use appropriate testing framework (Jest for backend, Vitest for frontend)
+- Aim for key functionality coverage
+
+#### 4. Run Tests and Fix Errors
+```bash
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+```
+- Analyze any errors
+- Fix issues until all tests pass
+- Re-run tests to verify
+
+#### 5. Create Log Files (REQUIRED - 3 Files per Task)
+
+**⚠️ CRITICAL**: All log files MUST be named with capital **T** + three-digit task number (e.g., **T001**, **T024**, **T156**)
+
+**a) Implementation Task Log**
+- **Location**: `/web/log_files/TXXX_TaskName_Log.md`
+- **Example**: `/web/log_files/T001_MonorepoSetup_Log.md`
+- **Content**: What was implemented, decisions made, challenges faced
+
+**b) Test Log**
+- **Location**: `/web/log_tests/TXXX_TaskName_TestLog.md`
+- **Example**: `/web/log_tests/T001_MonorepoSetup_TestLog.md`
+- **Content**: Test cases written, test results, coverage details
+
+**c) Learn/Guide File (Didactic Log)**
+- **Location**: `/web/log_learn/TXXX_TaskName_Guide.md`
+- **Example**: `/web/log_learn/T001_MonorepoSetup_Guide.md`
+- **Content**: Educational explanation of what was developed, why it was done this way, how it works, best practices
+
+#### 6. Update tasks.md and Mark Complete
+```bash
+# Edit the tasks.md file
+vim /web/.specify/memory/tasks.md
+
+# Change from:
+- [ ] H001 Create monorepo project structure
+
+# To:
+- [x] H001 Create monorepo project structure
+  - Implementation: Created /backend, /frontend, /infrastructure directories
+  - Tests: Verified directory structure exists
+  - Logs: T001_MonorepoSetup_Log.md, T001_MonorepoSetup_TestLog.md, T001_MonorepoSetup_Guide.md
+```
+
+### 🐳 Important Reminders
+
+**Docker Environment**:
+- ⚠️ This setup is **containerized in Docker**
+- **DO NOT** install PostgreSQL locally
+- **DO NOT** install Redis locally
+- Everything runs in containers via `docker-compose up`
+
+**Tailwind CSS**:
+- ⚠️ Use **Tailwind utility classes** for all styling
+- Example: `className="bg-blue-600 text-white px-4 py-2 rounded-lg"`
+- Avoid writing custom CSS files unless absolutely necessary
+
+### Quick Reference: Task Completion Checklist
+
+For every task, verify:
+- [ ] Code written and working
+- [ ] Tests written and passing
+- [ ] Implementation log created (`/web/log_files/TXXX_TaskName_Log.md`)
+- [ ] Test log created (`/web/log_tests/TXXX_TaskName_TestLog.md`)
+- [ ] Learn/Guide log created (`/web/log_learn/TXXX_TaskName_Guide.md`)
+- [ ] tasks.md updated with implementation details
+- [ ] Task marked as complete in tasks.md with `[x]`
+
+---
+
 ## 🎯 16 Essential Tasks (Hackathon Edition)
 
 ### Phase H1: Project Setup (5 tasks - 3 hours)
@@ -138,6 +233,20 @@
 ---
 
 ## 📝 Task Details (Step-by-Step Implementation)
+
+> **⚠️ IMPORTANT REMINDER**: For EVERY task below, you MUST follow the complete workflow:
+> 1. Check `/web/.specify/memory/tasks.md` for last completed task
+> 2. Write implementation code
+> 3. Write test code
+> 4. Run tests and fix errors
+> 5. **Create 3 log files**: Implementation Log, Test Log, Learn/Guide (in `/web/log_files/`, `/web/log_tests/`, `/web/log_learn/`)
+> 6. Update `tasks.md` and mark task complete with `[x]`
+>
+> **Remember**: Use Docker (no local PostgreSQL/Redis) • Use Tailwind CSS for all styling • Log files MUST start with capital T + 3-digit number (e.g., T001)
+>
+> See the **"Implementation Workflow"** section above for full details.
+
+---
 
 ### H001: Create Monorepo Project Structure
 
@@ -1662,6 +1771,14 @@ docker-compose up --build
 ## ✅ Pre-Demo Checklist
 
 **Day Before Hackathon**:
+- [ ] **Verify all 16 tasks completed** in `/web/.specify/memory/tasks.md` (all marked with `[x]`)
+- [ ] **Verify all log files created** (48 files total: 16 tasks × 3 logs each):
+  ```bash
+  # Should have 16 files in each directory
+  ls /web/log_files/T0*.md | wc -l   # Should show 16
+  ls /web/log_tests/T0*.md | wc -l   # Should show 16
+  ls /web/log_learn/T0*.md | wc -l   # Should show 16
+  ```
 - [ ] Test full demo end-to-end (5 times minimum)
 - [ ] Verify AI API key works (check quota/balance)
 - [ ] Take screenshots (backup if WiFi fails)
