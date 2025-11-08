@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { testConnection, closePool, getPoolStats, query } from './config/database';
 
 // Load environment variables
 dotenv.config();
@@ -41,10 +42,67 @@ app.get('/api', (_req: Request, res: Response) => {
     version: '1.0.0',
     endpoints: {
       health: '/health',
+      dbHealth: '/api/db/health',
       patients: '/api/patients (coming soon)',
       analysis: '/api/analyze (coming soon)'
     }
   });
+});
+
+// Database health check endpoint
+app.get('/api/db/health', async (_req: Request, res: Response) => {
+  try {
+    const isConnected = await testConnection();
+    const stats = getPoolStats();
+
+    if (isConnected) {
+      res.json({
+        status: 'ok',
+        message: 'Database connection successful',
+        database: {
+          host: process.env.DB_HOST,
+          port: process.env.DB_PORT,
+          name: process.env.DB_NAME,
+          user: process.env.DB_USER
+        },
+        pool: stats,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'error',
+        message: 'Database connection failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      message: 'Database health check failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Database query test endpoint (for development/testing)
+app.get('/api/db/test', async (_req: Request, res: Response) => {
+  try {
+    const result = await query('SELECT COUNT(*) as patient_count FROM patients');
+    res.json({
+      status: 'ok',
+      message: 'Database query successful',
+      data: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database query failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // 404 handler
@@ -67,26 +125,35 @@ app.use((err: Error, _req: Request, res: Response, _next: any) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log('='.repeat(60));
   console.log('🏥 Healthcare AI Clinical Data Analyzer - Backend');
   console.log('='.repeat(60));
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✅ Health check: http://localhost:${PORT}/health`);
+  console.log(`🗄️  DB health: http://localhost:${PORT}/api/db/health`);
   console.log(`📖 API info: http://localhost:${PORT}/api`);
+  console.log('='.repeat(60));
+
+  // Test database connection on startup
+  console.log('Testing database connection...');
+  await testConnection();
+
   console.log('='.repeat(60));
   console.log('Ready to accept requests...\n');
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('\n🛑 SIGTERM signal received: closing HTTP server');
+  await closePool();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\n🛑 SIGINT signal received: closing HTTP server');
+  await closePool();
   process.exit(0);
 });
 
