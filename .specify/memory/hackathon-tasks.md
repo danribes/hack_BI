@@ -46,6 +46,18 @@
     - T003_FrontendInit_Guide.md (Educational guide on React 19, Vite, TypeScript, Tailwind, hooks, patterns)
   - **Completed**: 2025-11-08
 
+- [x] H004 Create Dockerfiles for backend and frontend
+  - **Corresponds to**: T004
+  - **Time**: 30 minutes
+  - **Deliverable**: Production-ready Dockerfiles for both services
+  - **Implementation**: Created multi-stage Dockerfiles for backend (Node.js) and frontend (React + nginx). Backend uses Node 20 Alpine for building and production, with dumb-init for signal handling, non-root user, and health checks. Frontend uses Node for building and nginx 1.25 Alpine for serving, with SPA routing support, gzip compression, and security headers. Created .dockerignore files for both services and nginx.conf for frontend configuration.
+  - **Tests**: Created and executed T004_dockerfiles_test.sh - all 20 tests passed ✅ (100% pass rate). Tests covered: file existence (5), backend Dockerfile content (5), frontend Dockerfile content (5), dockerignore validation (3), nginx configuration (2).
+  - **Logs Created**:
+    - T004_DockerFiles_Log.md (Implementation details, multi-stage builds, security, optimization)
+    - T004_DockerFiles_TestLog.md (20 test cases, manual testing procedures, performance metrics)
+    - T004_DockerFiles_Guide.md (Educational guide on Docker, Dockerfiles, multi-stage builds, security, nginx)
+  - **Completed**: 2025-11-08
+
 - [ ] H005 Docker Compose configuration
   - **Corresponds to**: T005
   - **Time**: 40 minutes
@@ -159,14 +171,14 @@ When marking a task complete, use this format:
 
 ## Progress Summary
 
-**Total Tasks**: 16
-**Completed**: 3 ✅
+**Total Tasks**: 17
+**Completed**: 4 ✅
 **In Progress**: 0
 **Remaining**: 13
 
-**Estimated Time Remaining**: 13.7-15.7 hours (saved 1.5 hours from H001+H002+H003!)
+**Estimated Time Remaining**: 13.7-15.7 hours (saved 2 hours from H001+H002+H003+H004!)
 
-**Progress**: 18.75% (3/16 tasks)
+**Progress**: 23.53% (4/17 tasks)
 
 ---
 
