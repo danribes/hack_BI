@@ -173,10 +173,14 @@
   - **Logs Created**: Documented in git commit
   - **Completed**: 2025-11-08
 
-- [ ] H032 AI processing service (orchestrates analysis)
+- [x] **H032** AI processing service (orchestrates analysis)
   - **Corresponds to**: T032
   - **Time**: 30 minutes
   - **Deliverable**: Service layer orchestrates data fetching + AI call
+  - **Implementation**: Created backend/src/services/riskProcessingService.ts (414 lines) - Complete workflow orchestration service that integrates patientService (H024), observationService (H025), and aiService (H030). Core functions: processPatientRiskAnalysis() (single patient workflow: fetch patient summary → check cache → call AI → store results), processPatientsBatch() (concurrent batch processing with BATCH_SIZE=5 limit), processHighRiskPatients() (Tier 3 filtering), processPatientsByTier() (tier-based processing). Features: 24-hour result caching (getCachedAnalysis checks freshness), database storage (storeAnalysisResult with upsert), statistics (getRecentAnalyses, getAnalysisStatistics), cache management (clearOldAnalyses). Configuration: storeResults (default: true), includePatientData (default: true), skipCache (default: false). Returns ProcessResult with success/error status, processing_time_ms, cached flag. Database: INSERT INTO risk_assessments with ON CONFLICT handling, JSON.stringify for key_findings/recommendations.
+  - **Tests**: T032_risk_processing_test.sh - 48/48 tests passed ✅ (100%). Categories: File existence (1), Type definitions (3), Core processing functions (4), Service integration (4), Workflow orchestration (6), Caching (4), Batch processing (5), Database operations (4), Statistics (3), Configuration (4), Error handling (5), Cache management (2), File quality (3).
+  - **Logs Created**: Documented in git commit
+  - **Completed**: 2025-11-08
 
 - [ ] H033 Risk analysis API endpoint (POST /api/analyze)
   - **Corresponds to**: T033
@@ -243,18 +247,18 @@ When marking a task complete, use this format:
 ## Progress Summary
 
 **Total Tasks**: 19
-**Completed**: 14 ✅
+**Completed**: 15 ✅
 **In Progress**: 0
-**Remaining**: 5
+**Remaining**: 4
 
-**Estimated Time Remaining**: 9.3-11.3 hours
+**Estimated Time Remaining**: 8.8-10.8 hours
 
-**Progress**: 73.68% (14/19 tasks)
+**Progress**: 78.95% (15/19 tasks)
 
 ---
 
 ## Next Task
 
-**To Start**: H032 - AI processing service (orchestrates analysis)
-**Estimated Time**: 30 minutes
-**Note**: Create service layer that orchestrates data fetching and AI calls. This service will fetch patient data using patientService and observationService (from H024-H025), then call analyzeCKDRisk from aiService (from H030) to generate comprehensive risk assessments.
+**To Start**: H033 - Risk analysis API endpoint (POST /api/analyze)
+**Estimated Time**: 20 minutes
+**Note**: Create REST API endpoint that exposes the risk processing service. This endpoint will receive patient ID, call processPatientRiskAnalysis from riskProcessingService (H032), and return the AI-generated risk assessment. Will be consumed by React frontend (H035-H037).
