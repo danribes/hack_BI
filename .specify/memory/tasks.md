@@ -125,9 +125,9 @@ When marking a task complete, use this format:
 
 ### Log File Naming:
 - **Format**: Capital T + 3-digit number (e.g., T001, T024, T037)
-- **Implementation Log**: `/web/log_files/TXXX_TaskName_Log.md`
-- **Test Log**: `/web/log_tests/TXXX_TaskName_TestLog.md`
-- **Learn/Guide Log**: `/web/log_learn/TXXX_TaskName_Guide.md`
+- **Implementation Log**: `log_files/TXXX_TaskName_Log.md`
+- **Test Log**: `log_tests/TXXX_TaskName_TestLog.md`
+- **Learn/Guide Log**: `log_learn/TXXX_TaskName_Guide.md`
 
 ### Tech Stack Reminders:
 - 🐳 **Docker**: Everything runs in containers (no local PostgreSQL/Redis install)

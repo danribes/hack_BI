@@ -43,7 +43,7 @@
 ### Step-by-Step Workflow for Each Task
 
 #### 1. Check the Implementation Plan to Find the Last Task Implemented
-- Review the implementation plan or check `/web/.specify/memory/tasks.md`
+- Review the implementation plan or check `.specify/memory/tasks.md`
 - Find the last task marked with `[x]`
 - Proceed with the next uncompleted task
 
@@ -100,7 +100,7 @@ cd frontend && npm test
 
 ```bash
 # Edit the tasks.md file
-vim /web/.specify/memory/tasks.md
+vim .specify/memory/tasks.md
 
 # Change from:
 - [ ] H001 Create monorepo project structure
@@ -242,7 +242,7 @@ For every task, verify:
 ## 📝 Task Details (Step-by-Step Implementation)
 
 > **⚠️ IMPORTANT REMINDER**: Let's go for the next task. For EVERY task below, you MUST follow the complete workflow:
-> 1. **Check the implementation plan** to find the last task implemented
+> 1. **Check the implementation plan** to find the last task implemented (check `.specify/memory/tasks.md`)
 > 2. **Write the code** for the implementation of the task
 > 3. **Write the test code** for the implemented code
 > 4. **Run the tests**, analyse the errors and fix them
@@ -250,7 +250,7 @@ For every task, verify:
 >    - Implementation task log: `log_files/TXXX_TaskName_Log.md`
 >    - Test log: `log_tests/TXXX_TaskName_TestLog.md`
 >    - Log learn file: `log_learn/TXXX_TaskName_Guide.md`
-> 6. **Update the tasks.md file** with implementation details, crossing the task you just completed once you're done with tests, log file, and learn file
+> 6. **Update the tasks.md file** (`.specify/memory/tasks.md`) with implementation details, crossing the task you just completed once you're done with tests, log file, and learn file
 >
 > **Please, don't forget**: This setup is containerized in Docker (no need to install database or Redis) • Use Tailwind for all CSS related code
 >
