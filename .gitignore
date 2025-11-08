@@ -38,3 +38,8 @@ aws-credentials.json
 # Database
 *.db
 *.sqlite
+
+# Docker
+*.pid
+.docker-data/
+docker-compose.override.yml
