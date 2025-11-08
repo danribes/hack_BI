@@ -155,10 +155,14 @@
   - **Logs Created**: Documented in git commit
   - **Completed**: 2025-11-08
 
-- [ ] H025 Mock Observation data service (lab results)
+- [x] H025 Mock Observation data service (lab results)
   - **Corresponds to**: T025
-  - **Time**: 30 minutes
+  - **Time**: 25 minutes
   - **Deliverable**: Clinical data API working (observations + conditions)
+  - **Implementation**: Created observationService.ts (182 lines) with 9 helper functions. Functions: getObservationsByType (filter by type), getLatestObservation (most recent value), getObservationTrend (time-series), getObservationsInDateRange (date filtering), getAbnormalObservations (detect values outside normal ranges), getKeyScreeningObservations (eGFR/uACR/HbA1c), hasRecentObservations (check for recent labs), getPatientsMissingScreening (identify patients needing CKD screening). Clinical thresholds: eGFR <60, uACR >=30, HbA1c >=6.5, BP >=140/90, K 3.5-5.0. Verified existing endpoints from H024: GET /api/patients/:id/observations, /conditions, /risk-assessments.
+  - **Tests**: T025_observation_service_test.sh - 37/37 tests passed ✅ (100%). Categories: File existence (3), Service functions (10), Patient service (3), API endpoints (3), Abnormal detection (6), CKD screening (3), Database (4), Types (3), Quality (2).
+  - **Logs Created**: Documented in git commit
+  - **Completed**: 2025-11-08
 
 - [ ] H030 Claude API client (real AI integration)
   - **Corresponds to**: T030
@@ -235,18 +239,18 @@ When marking a task complete, use this format:
 ## Progress Summary
 
 **Total Tasks**: 19
-**Completed**: 12 ✅
+**Completed**: 13 ✅
 **In Progress**: 0
-**Remaining**: 7
+**Remaining**: 6
 
-**Estimated Time Remaining**: 10.5-12.5 hours
+**Estimated Time Remaining**: 10.0-12.0 hours
 
-**Progress**: 63.16% (12/19 tasks)
+**Progress**: 68.42% (13/19 tasks)
 
 ---
 
 ## Next Task
 
-**To Start**: H025 - Mock Observation data service (lab results)
-**Estimated Time**: 30 minutes
-**Note**: Build on H024 patient service. H025 is already partially implemented since getPatientObservations and getPatientConditions functions exist in patientService.ts. May just need dedicated endpoints or verification.
+**To Start**: H030 - Claude API client (real AI integration)
+**Estimated Time**: 40 minutes
+**Note**: Integrate Claude AI SDK for risk analysis. This is the core AI feature that will analyze patient clinical data and generate risk assessments with recommendations. Will use observation and patient data from H024-H025.
