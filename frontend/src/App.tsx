@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import PatientList from './components/PatientList'
+import HighRiskMonitoringDashboard from './components/HighRiskMonitoringDashboard'
 
 interface HealthCheckResponse {
   status: string;
@@ -10,11 +11,14 @@ interface HealthCheckResponse {
   environment: string;
 }
 
+type ViewMode = 'patients' | 'monitoring';
+
 function App() {
   const [backendHealth, setBackendHealth] = useState<HealthCheckResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStatus, setShowStatus] = useState(true);
+  const [activeView, setActiveView] = useState<ViewMode>('patients');
 
   useEffect(() => {
     const checkBackendHealth = async () => {
@@ -114,11 +118,46 @@ function App() {
             )}
           </div>
 
-          {/* Patient List */}
+          {/* Navigation Tabs */}
           {backendHealth && !error && (
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <PatientList />
-            </div>
+            <>
+              <div className="mb-6 bg-white rounded-lg shadow-lg">
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveView('patients')}
+                    className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                      activeView === 'patients'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    👥 Patient List
+                  </button>
+                  <button
+                    onClick={() => setActiveView('monitoring')}
+                    className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                      activeView === 'monitoring'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    🔍 High-Risk Monitoring
+                  </button>
+                </div>
+              </div>
+
+              {/* Patient List View */}
+              {activeView === 'patients' && (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <PatientList />
+                </div>
+              )}
+
+              {/* High-Risk Monitoring View */}
+              {activeView === 'monitoring' && (
+                <HighRiskMonitoringDashboard />
+              )}
+            </>
           )}
 
           {/* Error State - Show Instructions */}
