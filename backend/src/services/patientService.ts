@@ -60,6 +60,17 @@ function getLatestObservationValue(observations: Observation[], type: string): n
 }
 
 /**
+ * Get latest observation text value by type
+ */
+function getLatestObservationText(observations: Observation[], type: string): string | undefined {
+  const filtered = observations
+    .filter(obs => obs.observation_type === type && obs.value_text !== null)
+    .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime());
+
+  return filtered.length > 0 ? (filtered[0].value_text ?? undefined) : undefined;
+}
+
+/**
  * Get latest blood pressure reading
  */
 function getLatestBloodPressure(observations: Observation[]): LatestObservations['blood_pressure'] | undefined {
@@ -81,12 +92,27 @@ function getLatestBloodPressure(observations: Observation[]): LatestObservations
  * Extract latest observations for key CKD parameters
  */
 function extractLatestObservations(observations: Observation[]): LatestObservations {
+  const eGFRTrend = getLatestObservationText(observations, 'eGFR_trend') as 'up' | 'down' | 'stable' | undefined;
+  const proteinuriaCategory = getLatestObservationText(observations, 'proteinuria_category') as 'A1' | 'A2' | 'A3' | undefined;
+
   return {
     eGFR: getLatestObservationValue(observations, 'eGFR'),
+    eGFR_trend: eGFRTrend,
+    eGFR_change: getLatestObservationValue(observations, 'eGFR_change_percent'),
+    serum_creatinine: getLatestObservationValue(observations, 'serum_creatinine'),
     uACR: getLatestObservationValue(observations, 'uACR'),
+    proteinuria_category: proteinuriaCategory,
+    BUN: getLatestObservationValue(observations, 'BUN'),
     HbA1c: getLatestObservationValue(observations, 'HbA1c'),
     blood_pressure: getLatestBloodPressure(observations),
-    BMI: getLatestObservationValue(observations, 'BMI')
+    BMI: getLatestObservationValue(observations, 'BMI'),
+    hemoglobin: getLatestObservationValue(observations, 'hemoglobin'),
+    potassium: getLatestObservationValue(observations, 'potassium'),
+    calcium: getLatestObservationValue(observations, 'calcium'),
+    phosphorus: getLatestObservationValue(observations, 'phosphorus'),
+    albumin: getLatestObservationValue(observations, 'albumin'),
+    LDL_cholesterol: getLatestObservationValue(observations, 'LDL_cholesterol'),
+    HDL_cholesterol: getLatestObservationValue(observations, 'HDL_cholesterol')
   };
 }
 
@@ -174,7 +200,16 @@ function calculateRiskTier(
  * Get all patients
  */
 export async function getAllPatients(): Promise<PatientWithAge[]> {
-  const result = await query('SELECT id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone, created_at, updated_at FROM patients ORDER BY last_name, first_name');
+  const result = await query(`
+    SELECT
+      id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+      weight, height, smoking_status, cvd_history, family_history_esrd,
+      on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+      diagnosis_date, last_visit_date, next_visit_date,
+      created_at, updated_at
+    FROM patients
+    ORDER BY last_name, first_name
+  `);
   return result.rows.map(enrichPatient);
 }
 
@@ -182,7 +217,16 @@ export async function getAllPatients(): Promise<PatientWithAge[]> {
  * Get patient by ID
  */
 export async function getPatientById(patientId: string): Promise<PatientWithAge | null> {
-  const result = await query('SELECT id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone, created_at, updated_at FROM patients WHERE id = $1', [patientId]);
+  const result = await query(`
+    SELECT
+      id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+      weight, height, smoking_status, cvd_history, family_history_esrd,
+      on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+      diagnosis_date, last_visit_date, next_visit_date,
+      created_at, updated_at
+    FROM patients
+    WHERE id = $1
+  `, [patientId]);
 
   if (result.rows.length === 0) {
     return null;
@@ -196,7 +240,14 @@ export async function getPatientById(patientId: string): Promise<PatientWithAge 
  */
 export async function getPatientByMRN(mrn: string): Promise<PatientWithAge | null> {
   const result = await query(
-    'SELECT id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone, created_at, updated_at FROM patients WHERE medical_record_number = $1',
+    `SELECT
+      id::text, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+      weight, height, smoking_status, cvd_history, family_history_esrd,
+      on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+      diagnosis_date, last_visit_date, next_visit_date,
+      created_at, updated_at
+    FROM patients
+    WHERE medical_record_number = $1`,
     [mrn]
   );
 
@@ -320,7 +371,21 @@ export async function getPatientList(params?: PatientQueryParams): Promise<Patie
       latest_uACR: summary.latest_observations.uACR,
       has_diabetes: summary.has_diabetes,
       has_hypertension: summary.has_hypertension,
-      ckd_stage: summary.ckd_stage
+      ckd_stage: summary.ckd_stage,
+      // Enhanced fields
+      latest_observations: summary.latest_observations,
+      weight: summary.weight,
+      height: summary.height,
+      smoking_status: summary.smoking_status,
+      cvd_history: summary.cvd_history,
+      family_history_esrd: summary.family_history_esrd,
+      on_ras_inhibitor: summary.on_ras_inhibitor,
+      on_sglt2i: summary.on_sglt2i,
+      nephrotoxic_meds: summary.nephrotoxic_meds,
+      nephrologist_referral: summary.nephrologist_referral,
+      diagnosis_date: summary.diagnosis_date,
+      last_visit_date: summary.last_visit_date,
+      next_visit_date: summary.next_visit_date
     }));
 
   // Apply filters if provided

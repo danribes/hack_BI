@@ -38,6 +38,12 @@ const transformPatientData = (patient: Patient): EnhancedPatientData => {
   const eGFR = parseFloat(patient.latest_eGFR as any);
   const uACR = parseFloat(patient.latest_uACR as any);
   const ckdStage = parseCKDStage(patient.ckd_stage);
+  const obs = patient.latest_observations;
+
+  // Calculate BMI if height and weight are available
+  const bmi = patient.weight && patient.height
+    ? patient.weight / ((patient.height / 100) ** 2)
+    : obs?.BMI;
 
   return {
     id: patient.id,
@@ -47,17 +53,43 @@ const transformPatientData = (patient: Patient): EnhancedPatientData => {
     gender: patient.gender === 'male' ? 'Male' : 'Female',
     riskLevel: mapRiskTierToLevel(patient.risk_tier),
     ckdStage: ckdStage,
-    eGFR: eGFR,
-    eGFRTrend: undefined, // Will be populated when database has this data
-    eGFRChange: undefined,
-    serumCreatinine: 0, // Will be populated when database has this data
-    uACR: uACR,
-    proteinuriaCategory: uACR > 300 ? 'A3' : uACR > 30 ? 'A2' : 'A1',
-    bun: undefined,
-    systolicBP: 120, // Default - will be from database when available
-    diastolicBP: 80,  // Default - will be from database when available
+    eGFR: obs?.eGFR ?? eGFR,
+    eGFRTrend: obs?.eGFR_trend,
+    eGFRChange: obs?.eGFR_change,
+    serumCreatinine: obs?.serum_creatinine ?? 0,
+    uACR: obs?.uACR ?? uACR,
+    proteinuriaCategory: obs?.proteinuria_category,
+    bun: obs?.BUN,
+    systolicBP: obs?.blood_pressure?.systolic ?? 120,
+    diastolicBP: obs?.blood_pressure?.diastolic ?? 80,
+    hba1c: obs?.HbA1c,
+    ldl: obs?.LDL_cholesterol,
+    hdl: obs?.HDL_cholesterol,
+    weight: patient.weight,
+    height: patient.height,
+    bmi: bmi,
+    hemoglobin: obs?.hemoglobin,
+    potassium: obs?.potassium,
+    calcium: obs?.calcium,
+    phosphorus: obs?.phosphorus,
+    albumin: obs?.albumin,
     comorbidities: extractComorbidities(patient),
-    nephrologistReferral: false,
+    smokingStatus: patient.smoking_status as 'Never' | 'Former' | 'Current' | undefined,
+    cvdHistory: patient.cvd_history,
+    familyHistoryESRD: patient.family_history_esrd,
+    onRASInhibitor: patient.on_ras_inhibitor,
+    onSGLT2i: patient.on_sglt2i,
+    nephrotoxicMeds: patient.nephrotoxic_meds,
+    nephrologistReferral: patient.nephrologist_referral ?? false,
+    diagnosisDuration: patient.diagnosis_date
+      ? `${Math.floor((new Date().getTime() - new Date(patient.diagnosis_date).getTime()) / (1000 * 60 * 60 * 24 * 365.25))} years`
+      : undefined,
+    lastVisit: patient.last_visit_date
+      ? new Date(patient.last_visit_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : undefined,
+    nextVisit: patient.next_visit_date
+      ? new Date(patient.next_visit_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : undefined,
   };
 };
 

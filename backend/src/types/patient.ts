@@ -18,6 +18,19 @@ export interface Patient {
   gender: 'male' | 'female' | 'other' | 'unknown';
   email?: string;
   phone?: string;
+  // Enhanced fields
+  weight?: number;
+  height?: number;
+  smoking_status?: string;
+  cvd_history?: boolean;
+  family_history_esrd?: boolean;
+  on_ras_inhibitor?: boolean;
+  on_sglt2i?: boolean;
+  nephrotoxic_meds?: boolean;
+  nephrologist_referral?: boolean;
+  diagnosis_date?: string;
+  last_visit_date?: string;
+  next_visit_date?: string;
   created_at: string;
   updated_at: string;
 }
@@ -123,7 +136,12 @@ export interface PatientSummary extends PatientWithAge {
  */
 export interface LatestObservations {
   eGFR?: number;
+  eGFR_trend?: 'up' | 'down' | 'stable';
+  eGFR_change?: number;
+  serum_creatinine?: number;
   uACR?: number;
+  proteinuria_category?: 'A1' | 'A2' | 'A3';
+  BUN?: number;
   HbA1c?: number;
   blood_pressure?: {
     systolic: number;
@@ -131,6 +149,13 @@ export interface LatestObservations {
     reading: string; // e.g., "120/80"
   };
   BMI?: number;
+  hemoglobin?: number;
+  potassium?: number;
+  calcium?: number;
+  phosphorus?: number;
+  albumin?: number;
+  LDL_cholesterol?: number;
+  HDL_cholesterol?: number;
 }
 
 /**
@@ -185,6 +210,20 @@ export interface PatientListItem {
   has_diabetes: boolean;
   has_hypertension: boolean;
   ckd_stage?: CKDStage;
+  // Enhanced fields for comprehensive display
+  latest_observations?: LatestObservations;
+  weight?: number;
+  height?: number;
+  smoking_status?: string;
+  cvd_history?: boolean;
+  family_history_esrd?: boolean;
+  on_ras_inhibitor?: boolean;
+  on_sglt2i?: boolean;
+  nephrotoxic_meds?: boolean;
+  nephrologist_referral?: boolean;
+  diagnosis_date?: string;
+  last_visit_date?: string;
+  next_visit_date?: string;
 }
 
 /**
