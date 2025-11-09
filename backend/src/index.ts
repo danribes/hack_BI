@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { testConnection, closePool, getPoolStats, query } from './config/database';
 import patientRoutes from './api/routes/patients';
 import analyzeRoutes from './api/routes/analyze';
+import monitoringRoutes from './api/routes/monitoring';
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +67,12 @@ app.get('/api', (_req: Request, res: Response) => {
         statistics: 'GET /api/analyze/statistics',
         clearCache: 'DELETE /api/analyze/cache',
         health: 'GET /api/analyze/health'
+      },
+      monitoring: {
+        scan: 'GET /api/monitoring/scan',
+        stats: 'GET /api/monitoring/stats',
+        critical: 'GET /api/monitoring/critical',
+        byPriority: 'GET /api/monitoring/priority/:priority'
       }
     }
   });
@@ -130,6 +137,7 @@ app.get('/api/db/test', async (_req: Request, res: Response) => {
 // API Routes
 app.use('/api/patients', patientRoutes);
 app.use('/api/analyze', analyzeRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -161,6 +169,7 @@ app.listen(PORT, async () => {
   console.log(`🗄️  DB health: http://localhost:${PORT}/api/db/health`);
   console.log(`👥 Patients API: http://localhost:${PORT}/api/patients`);
   console.log(`🤖 AI Analysis: http://localhost:${PORT}/api/analyze`);
+  console.log(`🔍 Risk Monitoring: http://localhost:${PORT}/api/monitoring`);
   console.log(`📖 API info: http://localhost:${PORT}/api`);
   console.log('='.repeat(60));
 

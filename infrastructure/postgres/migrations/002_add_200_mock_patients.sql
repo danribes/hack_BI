@@ -247,21 +247,21 @@ BEGIN
     IF v_has_diabetes THEN
       INSERT INTO conditions (patient_id, condition_code, condition_name, clinical_status, onset_date, recorded_date, severity)
       VALUES (v_patient_id, 'E11.9', 'Type 2 Diabetes Mellitus', 'active',
-        (CURRENT_DATE - (floor(random() * 3650) + 365))::date, CURRENT_TIMESTAMP,
+        (CURRENT_DATE - (floor(random() * 3650)::integer + 365)), CURRENT_TIMESTAMP,
         CASE WHEN random() < 0.3 THEN 'severe' WHEN random() < 0.6 THEN 'moderate' ELSE 'mild' END);
     END IF;
 
     IF v_has_hypertension THEN
       INSERT INTO conditions (patient_id, condition_code, condition_name, clinical_status, onset_date, recorded_date, severity)
       VALUES (v_patient_id, 'I10', 'Essential Hypertension', 'active',
-        (CURRENT_DATE - (floor(random() * 3650) + 365))::date, CURRENT_TIMESTAMP,
+        (CURRENT_DATE - (floor(random() * 3650)::integer + 365)), CURRENT_TIMESTAMP,
         CASE WHEN random() < 0.2 THEN 'severe' WHEN random() < 0.5 THEN 'moderate' ELSE 'mild' END);
     END IF;
 
     IF v_has_cvd THEN
       INSERT INTO conditions (patient_id, condition_code, condition_name, clinical_status, onset_date, recorded_date, severity)
       VALUES (v_patient_id, 'I25.10', 'Coronary Artery Disease', 'active',
-        (CURRENT_DATE - (floor(random() * 2920) + 730))::date, CURRENT_TIMESTAMP, 'moderate');
+        (CURRENT_DATE - (floor(random() * 2920)::integer + 730)), CURRENT_TIMESTAMP, 'moderate');
     END IF;
 
     IF v_ckd_stage >= 2 THEN
