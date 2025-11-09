@@ -41,7 +41,7 @@ function PatientList() {
     try {
       setAnalyzingPatientId(patientId);
 
-      const response = await fetch(`${apiUrl}/api/patients/${patientId}/analyze`, {
+      const response = await fetch(`${apiUrl}/api/analyze/${patientId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +52,12 @@ function PatientList() {
         throw new Error(`Analysis failed: ${response.status}`);
       }
 
-      const data: RiskAnalysisResponse = await response.json();
+      const result = await response.json();
+
+      // Check if analysis was successful
+      if (!result.success || !result.analysis) {
+        throw new Error(result.error || 'Analysis failed');
+      }
 
       // Find patient name
       const patient = patients.find(p => p.id === patientId);
@@ -60,7 +65,32 @@ function PatientList() {
         setCurrentPatientName(patient.full_name);
       }
 
-      setCurrentAssessment(data.data);
+      // Transform the backend response to match our RiskAssessment type
+      const analysis = result.analysis;
+      const assessment: RiskAssessment = {
+        risk_score: analysis.risk_score,
+        risk_level: analysis.risk_level,
+        risk_tier: analysis.risk_tier,
+        key_findings: analysis.key_findings ? [
+          ...analysis.key_findings.abnormal_labs || [],
+          ...analysis.key_findings.risk_factors || [],
+        ] : [],
+        ckd_analysis: {
+          stage: analysis.ckd_analysis?.current_stage || 'Unknown',
+          kidney_function: analysis.ckd_analysis?.kidney_function || 'Unknown',
+          albuminuria_level: analysis.ckd_analysis?.kidney_damage || 'Unknown',
+          progression_risk: analysis.ckd_analysis?.progression_risk || 'Unknown',
+        },
+        recommendations: {
+          immediate_actions: analysis.recommendations?.immediate_actions || [],
+          follow_up: analysis.recommendations?.follow_up || [],
+          lifestyle_modifications: analysis.recommendations?.lifestyle_modifications || [],
+          monitoring: analysis.recommendations?.screening_tests || [],
+        },
+        assessed_at: analysis.analyzed_at || new Date().toISOString(),
+      };
+
+      setCurrentAssessment(assessment);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to analyze patient risk');
     } finally {
