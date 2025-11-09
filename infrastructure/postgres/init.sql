@@ -79,45 +79,109 @@ CREATE INDEX idx_risk_assessments_patient_id ON risk_assessments(patient_id);
 -- Mock Patient Data - 5 CKD Patients
 -- ============================================
 
--- Patient 1: High Risk - Advanced CKD with Diabetes
-INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone)
-VALUES
-    ('11111111-1111-1111-1111-111111111111', 'MRN001', 'John', 'Anderson', '1958-03-15', 'male', 'john.anderson@email.com', '+1-555-0101');
+-- Patient 1: High Risk - Advanced CKD with Diabetes (Stage 4)
+INSERT INTO patients (
+    id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+    weight, height, smoking_status, cvd_history, family_history_esrd,
+    on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+    diagnosis_date, last_visit_date, next_visit_date
+)
+VALUES (
+    '11111111-1111-1111-1111-111111111111', 'MRN001', 'John', 'Anderson', '1958-03-15', 'male',
+    'john.anderson@email.com', '+1-555-0101',
+    92.5, 172, 'Former', true, false,
+    true, false, true, false,
+    '2022-05-20', '2025-10-15', '2025-11-28'
+);
 
--- Patient 2: Medium Risk - Hypertension with declining kidney function
-INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone)
-VALUES
-    ('22222222-2222-2222-2222-222222222222', 'MRN002', 'Maria', 'Rodriguez', '1965-07-22', 'female', 'maria.rodriguez@email.com', '+1-555-0102');
+-- Patient 2: Medium Risk - Hypertension with declining kidney function (Stage 3a)
+INSERT INTO patients (
+    id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+    weight, height, smoking_status, cvd_history, family_history_esrd,
+    on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+    diagnosis_date, last_visit_date, next_visit_date
+)
+VALUES (
+    '22222222-2222-2222-2222-222222222222', 'MRN002', 'Maria', 'Rodriguez', '1965-07-22', 'female',
+    'maria.rodriguez@email.com', '+1-555-0102',
+    82.0, 162, 'Never', false, false,
+    true, false, false, false,
+    '2023-08-10', '2025-10-28', '2026-04-28'
+);
 
--- Patient 3: Low Risk - Normal kidney function
-INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone)
-VALUES
-    ('33333333-3333-3333-3333-333333333333', 'MRN003', 'David', 'Chen', '1980-11-08', 'male', 'david.chen@email.com', '+1-555-0103');
+-- Patient 3: Low Risk - Normal kidney function (No CKD)
+INSERT INTO patients (
+    id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+    weight, height, smoking_status, cvd_history, family_history_esrd,
+    on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+    diagnosis_date, last_visit_date, next_visit_date
+)
+VALUES (
+    '33333333-3333-3333-3333-333333333333', 'MRN003', 'David', 'Chen', '1980-11-08', 'male',
+    'david.chen@email.com', '+1-555-0103',
+    75.0, 178, 'Never', false, false,
+    false, false, false, false,
+    NULL, '2025-11-03', '2026-05-03'
+);
 
--- Patient 4: High Risk - Multiple comorbidities
-INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone)
-VALUES
-    ('44444444-4444-4444-4444-444444444444', 'MRN004', 'Sarah', 'Johnson', '1952-05-30', 'female', 'sarah.johnson@email.com', '+1-555-0104');
+-- Patient 4: High Risk - Multiple comorbidities (Stage 3b)
+INSERT INTO patients (
+    id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+    weight, height, smoking_status, cvd_history, family_history_esrd,
+    on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+    diagnosis_date, last_visit_date, next_visit_date
+)
+VALUES (
+    '44444444-4444-4444-4444-444444444444', 'MRN004', 'Sarah', 'Johnson', '1952-05-30', 'female',
+    'sarah.johnson@email.com', '+1-555-0104',
+    78.5, 160, 'Current', true, true,
+    true, true, false, true,
+    '2021-03-15', '2025-10-30', '2025-12-15'
+);
 
--- Patient 5: Medium Risk - Early CKD indicators
-INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone)
-VALUES
-    ('55555555-5555-5555-5555-555555555555', 'MRN005', 'Michael', 'Thompson', '1970-09-12', 'male', 'michael.thompson@email.com', '+1-555-0105');
+-- Patient 5: Medium Risk - Early CKD indicators (Stage 2)
+INSERT INTO patients (
+    id, medical_record_number, first_name, last_name, date_of_birth, gender, email, phone,
+    weight, height, smoking_status, cvd_history, family_history_esrd,
+    on_ras_inhibitor, on_sglt2i, nephrotoxic_meds, nephrologist_referral,
+    diagnosis_date, last_visit_date, next_visit_date
+)
+VALUES (
+    '55555555-5555-5555-5555-555555555555', 'MRN005', 'Michael', 'Thompson', '1970-09-12', 'male',
+    'michael.thompson@email.com', '+1-555-0105',
+    95.0, 180, 'Former', false, false,
+    true, false, false, false,
+    '2024-01-20', '2025-10-25', '2026-01-25'
+);
 
 -- ============================================
 -- Clinical Observations - Lab Results
 -- ============================================
 
--- Patient 1 (John Anderson) - High Risk: Advanced CKD (Stage 3b-4)
-INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)
+-- Patient 1 (John Anderson) - High Risk: Advanced CKD (Stage 4)
+INSERT INTO observations (patient_id, observation_type, value_numeric, value_text, unit, observation_date, notes)
 VALUES
-    ('11111111-1111-1111-1111-111111111111', 'eGFR', 28.5, 'mL/min/1.73m²', '2025-11-01 09:30:00', 'Stage 4 CKD'),
-    ('11111111-1111-1111-1111-111111111111', 'serum_creatinine', 2.4, 'mg/dL', '2025-11-01 09:30:00', 'Elevated'),
-    ('11111111-1111-1111-1111-111111111111', 'uACR', 450, 'mg/g', '2025-11-01 09:30:00', 'Severely increased albuminuria'),
-    ('11111111-1111-1111-1111-111111111111', 'blood_pressure_systolic', 158, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
-    ('11111111-1111-1111-1111-111111111111', 'blood_pressure_diastolic', 92, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
-    ('11111111-1111-1111-1111-111111111111', 'HbA1c', 8.2, '%', '2025-11-01 09:30:00', 'Poorly controlled diabetes'),
-    ('11111111-1111-1111-1111-111111111111', 'potassium', 5.3, 'mEq/L', '2025-11-01 09:30:00', 'Slightly elevated');
+    -- Kidney Function
+    ('11111111-1111-1111-1111-111111111111', 'eGFR', 28.5, NULL, 'mL/min/1.73m²', '2025-11-01 09:30:00', 'Stage 4 CKD'),
+    ('11111111-1111-1111-1111-111111111111', 'eGFR_trend', NULL, 'down', NULL, '2025-11-01 09:30:00', 'Declining kidney function'),
+    ('11111111-1111-1111-1111-111111111111', 'eGFR_change_percent', -8.5, NULL, '%', '2025-11-01 09:30:00', '8.5% decline from last measurement'),
+    ('11111111-1111-1111-1111-111111111111', 'serum_creatinine', 2.4, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated'),
+    ('11111111-1111-1111-1111-111111111111', 'BUN', 45, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated'),
+    ('11111111-1111-1111-1111-111111111111', 'uACR', 450, NULL, 'mg/g', '2025-11-01 09:30:00', 'Severely increased albuminuria'),
+    ('11111111-1111-1111-1111-111111111111', 'proteinuria_category', NULL, 'A3', NULL, '2025-11-01 09:30:00', 'Severely increased albuminuria (>300 mg/g)'),
+    -- Cardiovascular & Blood Pressure
+    ('11111111-1111-1111-1111-111111111111', 'blood_pressure_systolic', 152, NULL, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
+    ('11111111-1111-1111-1111-111111111111', 'blood_pressure_diastolic', 94, NULL, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
+    -- Metabolic
+    ('11111111-1111-1111-1111-111111111111', 'HbA1c', 7.8, NULL, '%', '2025-11-01 09:30:00', 'Suboptimal diabetes control'),
+    ('11111111-1111-1111-1111-111111111111', 'LDL_cholesterol', 142, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Above target'),
+    ('11111111-1111-1111-1111-111111111111', 'HDL_cholesterol', 38, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Low'),
+    -- Hematology & Minerals
+    ('11111111-1111-1111-1111-111111111111', 'hemoglobin', 10.2, NULL, 'g/dL', '2025-11-01 09:30:00', 'Anemia - CKD related'),
+    ('11111111-1111-1111-1111-111111111111', 'potassium', 5.8, NULL, 'mEq/L', '2025-11-01 09:30:00', 'Hyperkalemia'),
+    ('11111111-1111-1111-1111-111111111111', 'calcium', 8.9, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Low normal'),
+    ('11111111-1111-1111-1111-111111111111', 'phosphorus', 5.2, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated - CKD'),
+    ('11111111-1111-1111-1111-111111111111', 'albumin', 3.2, NULL, 'g/dL', '2025-11-01 09:30:00', 'Low normal');
 
 -- Patient 2 (Maria Rodriguez) - Medium Risk: Stage 2-3a CKD with HTN
 INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)

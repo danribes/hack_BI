@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Patient, PatientListResponse } from '../types';
+import EnhancedCKDPatientCard, { EnhancedPatientData } from './EnhancedCKDPatientCard';
 
 interface ScanResult {
   patientId: string;
@@ -10,6 +11,55 @@ interface ScanResult {
   needsMonitoring: boolean;
   keyFindings: string[];
 }
+
+// Helper function to map risk_tier to risk level
+const mapRiskTierToLevel = (tier: number): 'Low' | 'Moderate' | 'High' | 'Critical' => {
+  if (tier === 1) return 'Low';
+  if (tier === 2) return 'Moderate';
+  return 'High';
+};
+
+// Helper function to determine CKD stage from stage string
+const parseCKDStage = (stage: string): number => {
+  const stageNum = parseInt(stage);
+  return isNaN(stageNum) ? 0 : stageNum;
+};
+
+// Helper function to extract comorbidities
+const extractComorbidities = (patient: Patient): string[] => {
+  const comorbidities: string[] = [];
+  if (patient.has_diabetes) comorbidities.push('Diabetes');
+  if (patient.has_hypertension) comorbidities.push('Hypertension');
+  return comorbidities;
+};
+
+// Transform Patient to EnhancedPatientData
+const transformPatientData = (patient: Patient): EnhancedPatientData => {
+  const eGFR = parseFloat(patient.latest_eGFR as any);
+  const uACR = parseFloat(patient.latest_uACR as any);
+  const ckdStage = parseCKDStage(patient.ckd_stage);
+
+  return {
+    id: patient.id,
+    name: patient.full_name,
+    mrn: patient.medical_record_number,
+    age: patient.age,
+    gender: patient.gender === 'male' ? 'Male' : 'Female',
+    riskLevel: mapRiskTierToLevel(patient.risk_tier),
+    ckdStage: ckdStage,
+    eGFR: eGFR,
+    eGFRTrend: undefined, // Will be populated when database has this data
+    eGFRChange: undefined,
+    serumCreatinine: 0, // Will be populated when database has this data
+    uACR: uACR,
+    proteinuriaCategory: uACR > 300 ? 'A3' : uACR > 30 ? 'A2' : 'A1',
+    bun: undefined,
+    systolicBP: 120, // Default - will be from database when available
+    diastolicBP: 80,  // Default - will be from database when available
+    comorbidities: extractComorbidities(patient),
+    nephrologistReferral: false,
+  };
+};
 
 function PatientList() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -288,58 +338,14 @@ function PatientList() {
         )}
       </div>
 
-      {/* Patient Cards - Simple Display */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Patient List - Enhanced Cards */}
+      <div className="space-y-4">
         {patients.map((patient) => (
-          <div key={patient.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-l-4 border-indigo-500">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">{patient.full_name}</h3>
-                <p className="text-sm text-gray-600">MRN: {patient.medical_record_number}</p>
-              </div>
-              <div className={`px-3 py-1 rounded-full text-sm font-semibold border-2 ${
-                patient.risk_tier === 1
-                  ? 'bg-green-100 border-green-500 text-green-800'
-                  : patient.risk_tier === 2
-                  ? 'bg-yellow-100 border-yellow-500 text-yellow-800'
-                  : 'bg-red-100 border-red-500 text-red-800'
-              }`}>
-                {patient.risk_tier === 1 ? 'Low Risk' : patient.risk_tier === 2 ? 'Moderate Risk' : 'High Risk'}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-gray-600">Age / Gender</p>
-                <p className="font-semibold text-gray-900">{patient.age} / {patient.gender}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">CKD Stage</p>
-                <p className="font-semibold text-gray-900">Stage {patient.ckd_stage}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">eGFR</p>
-                <p className="font-semibold text-gray-900">{patient.latest_eGFR} mL/min</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">uACR</p>
-                <p className="font-semibold text-gray-900">{patient.latest_uACR} mg/g</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              {patient.has_diabetes && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
-                  Diabetes
-                </span>
-              )}
-              {patient.has_hypertension && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
-                  Hypertension
-                </span>
-              )}
-            </div>
-          </div>
+          <EnhancedCKDPatientCard
+            key={patient.id}
+            patient={transformPatientData(patient)}
+            defaultExpanded={false}
+          />
         ))}
       </div>
     </>

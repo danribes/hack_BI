@@ -22,7 +22,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-DATABASE_URL="$1"
+DATABASE_URL="postgresql://ckd_analyzer_0vwg_user:qyoisq3O7IptyEsJaXMFFQW7mXwYqk3p@dpg-d4855n3ipnbc73d945e0-a/ckd_analyzer_0vwg"
 
 echo "📊 Initializing database schema and mock data..."
 echo ""
