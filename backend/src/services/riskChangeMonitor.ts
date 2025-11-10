@@ -13,6 +13,7 @@ import { detectCKDDiagnosisOnset, processNewCKDDiagnosis } from './ckdDiagnosisD
 export interface RiskChangeResult {
   priority_changed: boolean;
   state_escalated: boolean;
+  state_improved: boolean;
   requires_notification: boolean;
   old_priority: string | null;
   new_priority: string;
@@ -332,7 +333,7 @@ Remaining Alerts: ${assessment.alert_count}
    * Handle request to send a notification
    */
   private async handleSendNotification(payload: any): Promise<void> {
-    const { notification_id, priority, patient_id } = payload;
+    const { notification_id, priority } = payload;
 
     console.log(`[RiskChangeMonitor] Send notification request: ${notification_id} (Priority: ${priority})`);
 

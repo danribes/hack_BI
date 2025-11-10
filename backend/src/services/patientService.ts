@@ -44,7 +44,9 @@ function enrichPatient(patient: Patient): PatientWithAge {
   return {
     ...patient,
     age: calculateAge(patient.date_of_birth),
-    full_name: `${patient.first_name} ${patient.last_name}`
+    full_name: `${patient.first_name} ${patient.last_name}`,
+    has_diabetes: false, // Default value - will be properly computed in getPatientSummary
+    has_hypertension: false // Default value - will be properly computed in getPatientSummary
   };
 }
 

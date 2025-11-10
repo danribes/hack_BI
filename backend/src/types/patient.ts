@@ -42,6 +42,8 @@ export interface Patient {
 export interface PatientWithAge extends Patient {
   age: number;
   full_name: string;
+  has_diabetes: boolean;
+  has_hypertension: boolean;
 }
 
 /**
@@ -224,6 +226,10 @@ export interface PatientListItem {
   diagnosis_date?: string;
   last_visit_date?: string;
   next_visit_date?: string;
+  // Risk monitoring fields
+  current_risk_priority?: string;
+  current_risk_score?: number;
+  monitoring_status?: string;
 }
 
 /**
