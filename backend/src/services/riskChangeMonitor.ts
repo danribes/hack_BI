@@ -6,13 +6,15 @@
  */
 
 import { Pool } from 'pg';
-import { getPatientById } from './patientService';
+import { getPatientSummary } from './patientService';
 import { assessPatientRisk } from './riskMonitoringService';
 import { detectCKDDiagnosisOnset, processNewCKDDiagnosis } from './ckdDiagnosisDetection';
+import { PatientListItem } from '../types/patient';
 
 export interface RiskChangeResult {
   priority_changed: boolean;
   state_escalated: boolean;
+  state_improved: boolean;
   requires_notification: boolean;
   old_priority: string | null;
   new_priority: string;
@@ -110,12 +112,40 @@ export class RiskChangeMonitor {
 
     try {
       // Fetch updated patient data
-      const patient = await getPatientById(patient_id);
+      const patientSummary = await getPatientSummary(patient_id);
 
-      if (!patient) {
+      if (!patientSummary) {
         console.error(`[RiskChangeMonitor] Patient not found: ${patient_id}`);
         return;
       }
+
+      // Convert PatientSummary to PatientListItem for compatibility
+      const patient: PatientListItem = {
+        id: patientSummary.id,
+        medical_record_number: patientSummary.medical_record_number,
+        full_name: patientSummary.full_name,
+        age: patientSummary.age,
+        gender: patientSummary.gender,
+        risk_tier: patientSummary.risk_tier,
+        latest_eGFR: patientSummary.latest_observations.eGFR,
+        latest_uACR: patientSummary.latest_observations.uACR,
+        has_diabetes: patientSummary.has_diabetes,
+        has_hypertension: patientSummary.has_hypertension,
+        ckd_stage: patientSummary.ckd_stage,
+        latest_observations: patientSummary.latest_observations,
+        weight: patientSummary.weight,
+        height: patientSummary.height,
+        smoking_status: patientSummary.smoking_status,
+        cvd_history: patientSummary.cvd_history,
+        family_history_esrd: patientSummary.family_history_esrd,
+        on_ras_inhibitor: patientSummary.on_ras_inhibitor,
+        on_sglt2i: patientSummary.on_sglt2i,
+        nephrotoxic_meds: patientSummary.nephrotoxic_meds,
+        nephrologist_referral: patientSummary.nephrologist_referral,
+        diagnosis_date: patientSummary.diagnosis_date,
+        last_visit_date: patientSummary.last_visit_date,
+        next_visit_date: patientSummary.next_visit_date
+      };
 
       // Run risk assessment
       const assessment = assessPatientRisk(patient);
@@ -332,7 +362,7 @@ Remaining Alerts: ${assessment.alert_count}
    * Handle request to send a notification
    */
   private async handleSendNotification(payload: any): Promise<void> {
-    const { notification_id, priority, patient_id } = payload;
+    const { notification_id, priority } = payload;
 
     console.log(`[RiskChangeMonitor] Send notification request: ${notification_id} (Priority: ${priority})`);
 

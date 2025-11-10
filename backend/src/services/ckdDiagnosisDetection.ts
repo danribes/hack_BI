@@ -247,7 +247,7 @@ Current Clinical Status:
 ${currentEGFR < 60 ? '✓ eGFR < 60 mL/min/1.73m² (persistent kidney function decline)' : ''}
 ${currentEGFR >= 60 && uACR > 30 ? '✓ eGFR 60-89 with significant proteinuria (uACR >30)' : ''}
 
-Previous Status: ${patient.current_risk_priority || 'At Risk'}
+Previous Status: ${patient.risk_tier ? `Tier ${patient.risk_tier}` : 'At Risk'}
 
 Comorbidities:
 ${patient.has_diabetes ? '  • Diabetes Mellitus' : ''}
