@@ -153,7 +153,7 @@ export function assessPatientRisk(patient: PatientListItem): HighRiskPatientAsse
     alerts.push({
       severity: 'CRITICAL',
       code: 'NEPHROTIC_DECLINE',
-      message: `Nephrotic-range proteinuria (uACR ${uACR.toFixed(0)} mg/g) with declining eGFR`,
+      message: `Nephrotic-range proteinuria (uACR ${typeof uACR === 'number' ? uACR.toFixed(0) : uACR} mg/g) with declining eGFR`,
       action: 'Urgent nephrology referral - consider kidney biopsy, exclude glomerulonephritis'
     });
     severity_score += 10;
@@ -168,7 +168,7 @@ export function assessPatientRisk(patient: PatientListItem): HighRiskPatientAsse
     alerts.push({
       severity: 'HIGH',
       code: 'HEAVY_PROTEINURIA',
-      message: `Heavy proteinuria (A3, uACR ${uACR.toFixed(0)} mg/g)`,
+      message: `Heavy proteinuria (A3, uACR ${typeof uACR === 'number' ? uACR.toFixed(0) : uACR} mg/g)`,
       action: 'Optimize RAS inhibition (ACE-I/ARB), add SGLT2i if diabetic'
     });
     severity_score += 5;
