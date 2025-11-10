@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, Users, TrendingUp, Activity, AlertTriangle, CheckCircle, Pill } from 'lucide-react';
+import { AlertCircle, Users, TrendingUp, AlertTriangle, CheckCircle, Pill } from 'lucide-react';
 
 interface uACRAnalysis {
   current_uacr: number;
@@ -122,17 +122,6 @@ const UACRMonitoringDashboard = () => {
       case 'HIGH': return 'bg-orange-500';
       case 'MODERATE': return 'bg-yellow-500';
       default: return 'bg-green-500';
-    }
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
-      case 'HIGH':
-        return <AlertTriangle className="w-4 h-4 text-orange-600" />;
-      default:
-        return <Activity className="w-4 h-4 text-yellow-600" />;
     }
   };
 

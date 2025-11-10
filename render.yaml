@@ -57,8 +57,9 @@ services:
     name: ckd-analyzer-frontend
     env: static
     branch: main
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
     autoDeploy: true
     envVars:
