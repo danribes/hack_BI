@@ -418,7 +418,7 @@ export async function getPendingDoctorActions(
       p.first_name,
       p.last_name,
       p.medical_record_number,
-      p.age,
+      EXTRACT(YEAR FROM AGE(p.date_of_birth)) as age,
       p.gender
     FROM doctor_action_queue daq
     JOIN patients p ON daq.patient_id = p.id
