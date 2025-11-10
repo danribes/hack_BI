@@ -235,4 +235,192 @@ router.get('/init/status', async (_req: Request, res: Response): Promise<any> =>
   }
 });
 
+/**
+ * Load mock patient data
+ * GET /api/db/load-data
+ *
+ * This endpoint loads 205 mock patients into the database.
+ * Run this AFTER /api/db/init to populate the database with test data.
+ */
+router.get('/load-data', async (_req: Request, res: Response): Promise<any> => {
+  const pool = getPool();
+  const client = await pool.connect();
+
+  try {
+    console.log('[DB Load Data] Starting data load...');
+
+    // Check if tables exist
+    const checkResult = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'patients'
+      ) as table_exists
+    `);
+
+    if (!checkResult.rows[0].table_exists) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tables not initialized. Run /api/db/init first.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Check if already has data
+    const countResult = await client.query('SELECT COUNT(*) FROM patients');
+    const existingCount = parseInt(countResult.rows[0].count);
+
+    if (existingCount > 0) {
+      return res.json({
+        status: 'already_loaded',
+        message: `Database already contains ${existingCount} patients`,
+        patient_count: existingCount,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    await client.query('BEGIN');
+
+    console.log('[DB Load Data] Inserting 5 sample patients...');
+
+    // Insert 5 named sample patients
+    await client.query(`
+      INSERT INTO patients (id, medical_record_number, first_name, last_name, date_of_birth, gender, email, weight, height, smoking_status)
+      VALUES
+        ('11111111-1111-1111-1111-111111111111', 'MRN001', 'John', 'Anderson', '1958-03-15', 'male', 'john.anderson@email.com', 92.5, 172, 'Former'),
+        ('22222222-2222-2222-2222-222222222222', 'MRN002', 'Maria', 'Rodriguez', '1965-07-22', 'female', 'maria.rodriguez@email.com', 82.0, 162, 'Never'),
+        ('33333333-3333-3333-3333-333333333333', 'MRN003', 'David', 'Chen', '1980-11-08', 'male', 'david.chen@email.com', 75.0, 178, 'Never'),
+        ('44444444-4444-4444-4444-444444444444', 'MRN004', 'Sarah', 'Johnson', '1952-05-30', 'female', 'sarah.johnson@email.com', 78.5, 160, 'Current'),
+        ('55555555-5555-5555-5555-555555555555', 'MRN005', 'Michael', 'Thompson', '1970-09-12', 'male', 'michael.thompson@email.com', 95.0, 180, 'Former')
+    `);
+
+    // Insert initial observations
+    await client.query(`
+      INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes) VALUES
+        ('11111111-1111-1111-1111-111111111111', 'eGFR', 28.5, 'mL/min/1.73m²', CURRENT_TIMESTAMP, 'Stage 4 CKD'),
+        ('22222222-2222-2222-2222-222222222222', 'eGFR', 52.3, 'mL/min/1.73m²', CURRENT_TIMESTAMP, 'Mild decline'),
+        ('33333333-3333-3333-3333-333333333333', 'eGFR', 95.2, 'mL/min/1.73m²', CURRENT_TIMESTAMP, 'Normal'),
+        ('44444444-4444-4444-4444-444444444444', 'eGFR', 38.7, 'mL/min/1.73m²', CURRENT_TIMESTAMP, 'Stage 3b CKD'),
+        ('55555555-5555-5555-5555-555555555555', 'eGFR', 68.5, 'mL/min/1.73m²', CURRENT_TIMESTAMP, 'Mild decline')
+    `);
+
+    console.log('[DB Load Data] Generating 200 additional patients...');
+
+    // Generate 200 more patients
+    await client.query(`
+      DO $$
+      DECLARE
+        v_patient_id uuid;
+        v_egfr decimal;
+        v_first_names text[] := ARRAY['James', 'Mary', 'Robert', 'Patricia', 'Michael', 'Jennifer', 'William', 'Linda', 'David', 'Barbara'];
+        v_last_names text[] := ARRAY['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+      BEGIN
+        FOR i IN 1..200 LOOP
+          v_patient_id := gen_random_uuid();
+          v_egfr := 30 + (random() * 70);
+
+          INSERT INTO patients (
+            id,
+            medical_record_number,
+            first_name,
+            last_name,
+            date_of_birth,
+            gender,
+            email,
+            weight,
+            height,
+            smoking_status,
+            cvd_history,
+            family_history_esrd
+          ) VALUES (
+            v_patient_id,
+            'MRN' || lpad((i + 5)::text, 5, '0'),
+            v_first_names[1 + floor(random() * 10)::int],
+            v_last_names[1 + floor(random() * 10)::int],
+            (CURRENT_DATE - ((40 + floor(random() * 40)) * 365))::date,
+            CASE WHEN random() < 0.5 THEN 'male' ELSE 'female' END,
+            'patient' || (i + 5) || '@example.com',
+            70 + (random() * 40),
+            165 + floor(random() * 20)::integer,
+            CASE
+              WHEN random() < 0.33 THEN 'Never'
+              WHEN random() < 0.66 THEN 'Former'
+              ELSE 'Current'
+            END,
+            random() < 0.3,
+            random() < 0.2
+          );
+
+          INSERT INTO observations (
+            patient_id,
+            observation_type,
+            value_numeric,
+            unit,
+            observation_date,
+            notes
+          ) VALUES (
+            v_patient_id,
+            'eGFR',
+            v_egfr,
+            'mL/min/1.73m²',
+            CURRENT_TIMESTAMP - (random() * 30 || ' days')::interval,
+            CASE
+              WHEN v_egfr < 30 THEN 'Stage 4-5 CKD - Severe'
+              WHEN v_egfr < 45 THEN 'Stage 3b CKD - Moderate to severe'
+              WHEN v_egfr < 60 THEN 'Stage 3a CKD - Mild to moderate'
+              WHEN v_egfr < 90 THEN 'Stage 2 CKD - Mild'
+              ELSE 'Normal kidney function'
+            END
+          );
+
+          IF random() < 0.4 THEN
+            INSERT INTO conditions (
+              patient_id,
+              condition_code,
+              condition_name,
+              clinical_status,
+              onset_date
+            ) VALUES (
+              v_patient_id,
+              CASE WHEN random() < 0.5 THEN 'E11' ELSE 'I10' END,
+              CASE WHEN random() < 0.5 THEN 'Type 2 Diabetes Mellitus' ELSE 'Essential Hypertension' END,
+              'active',
+              (CURRENT_DATE - ((1 + floor(random() * 10)) * 365))::date
+            );
+          END IF;
+
+        END LOOP;
+      END $$;
+    `);
+
+    await client.query('COMMIT');
+
+    // Verify
+    const finalCount = await client.query('SELECT COUNT(*) FROM patients');
+    const patientCount = parseInt(finalCount.rows[0].count);
+
+    console.log(`[DB Load Data] ✓ Loaded ${patientCount} patients successfully`);
+
+    res.json({
+      status: 'success',
+      message: 'Mock patient data loaded successfully',
+      patient_count: patientCount,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[DB Load Data] Error:', error);
+
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to load patient data',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
