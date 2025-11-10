@@ -370,21 +370,21 @@ const EnhancedCKDPatientCard: React.FC<EnhancedCKDPatientCardProps> = ({
                 {patient.diagnosisDuration && (
                   <div className="bg-gray-50 p-2 rounded">
                     <p className="text-xs text-gray-600">Duration</p>
-                    <p className="text-sm font-bold">{patient.diagnosisDuration}</p>
+                    <p className="text-sm font-bold text-gray-900">{patient.diagnosisDuration}</p>
                   </div>
                 )}
 
                 {patient.lastVisit && (
                   <div className="bg-gray-50 p-2 rounded">
                     <p className="text-xs text-gray-600">Last Visit</p>
-                    <p className="text-sm font-bold">{patient.lastVisit}</p>
+                    <p className="text-sm font-bold text-gray-900">{patient.lastVisit}</p>
                   </div>
                 )}
 
                 {patient.nextVisit && (
                   <div className="bg-blue-50 p-2 rounded">
                     <p className="text-xs text-gray-600">Next Visit</p>
-                    <p className="text-sm font-bold">{patient.nextVisit}</p>
+                    <p className="text-sm font-bold text-gray-900">{patient.nextVisit}</p>
                   </div>
                 )}
               </div>
