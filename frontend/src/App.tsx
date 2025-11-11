@@ -5,6 +5,7 @@ import HighRiskMonitoringDashboard from './components/HighRiskMonitoringDashboar
 import NotificationsDashboard from './components/NotificationsDashboard'
 import CKDDiagnosisActionQueue from './components/CKDDiagnosisActionQueue'
 import UACRMonitoringDashboard from './components/UACRMonitoringDashboard'
+import ProgressionTimeline from './components/ProgressionTimeline'
 
 interface HealthCheckResponse {
   status: string;
@@ -14,7 +15,7 @@ interface HealthCheckResponse {
   environment: string;
 }
 
-type ViewMode = 'patients' | 'monitoring' | 'notifications' | 'ckd-diagnosis' | 'uacr-monitoring';
+type ViewMode = 'patients' | 'monitoring' | 'notifications' | 'ckd-diagnosis' | 'uacr-monitoring' | 'progression';
 
 function App() {
   const [backendHealth, setBackendHealth] = useState<HealthCheckResponse | null>(null);
@@ -176,6 +177,16 @@ function App() {
                   >
                     📊 uACR Monitoring
                   </button>
+                  <button
+                    onClick={() => setActiveView('progression')}
+                    className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                      activeView === 'progression'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    📈 Progression Timeline
+                  </button>
                 </div>
               </div>
 
@@ -208,6 +219,11 @@ function App() {
               {/* uACR Monitoring View */}
               {activeView === 'uacr-monitoring' && (
                 <UACRMonitoringDashboard />
+              )}
+
+              {/* Progression Timeline View */}
+              {activeView === 'progression' && (
+                <ProgressionTimeline />
               )}
             </>
           )}
