@@ -136,53 +136,73 @@ function PatientList() {
       // Get all patient IDs
       const patientIds = patients.map(p => p.id);
 
-      console.log('Scanning database with patient IDs:', patientIds);
+      console.log(`Scanning ${patientIds.length} patients...`);
       console.log('API URL:', apiUrl);
 
-      const response = await fetch(`${apiUrl}/api/analyze/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientIds,
-          storeResults: true,
-          includePatientData: true,
-          skipCache: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Error response:', errorData);
-        const errorMsg = errorData?.error || `Database scan failed: ${response.status}`;
-        throw new Error(errorMsg);
+      // Split into batches of 50 (backend limit)
+      const BATCH_SIZE = 50;
+      const batches: string[][] = [];
+      for (let i = 0; i < patientIds.length; i += BATCH_SIZE) {
+        batches.push(patientIds.slice(i, i + BATCH_SIZE));
       }
 
-      const batchResult = await response.json();
+      console.log(`Processing ${batches.length} batches of up to ${BATCH_SIZE} patients each`);
 
-      // Transform results
-      const results: ScanResult[] = batchResult.results
-        .filter((r: any) => r.success && r.analysis)
-        .map((r: any) => {
-          const patient = patients.find(p => p.id === r.patient_id);
-          const analysis = r.analysis;
+      // Process all batches sequentially
+      const allResults: ScanResult[] = [];
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        console.log(`Processing batch ${i + 1}/${batches.length} (${batch.length} patients)...`);
 
-          return {
-            patientId: r.patient_id,
-            patientName: patient?.full_name || 'Unknown',
-            riskLevel: analysis.risk_level,
-            riskScore: analysis.risk_score,
-            riskTier: analysis.risk_tier,
-            needsMonitoring: analysis.risk_tier >= 2, // Tier 2 and 3 need monitoring
-            keyFindings: [
-              ...(analysis.key_findings?.abnormal_labs || []),
-              ...(analysis.key_findings?.risk_factors || []),
-            ].slice(0, 3), // Top 3 findings
-          };
+        const response = await fetch(`${apiUrl}/api/analyze/batch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            patientIds: batch,
+            storeResults: true,
+            includePatientData: true,
+            skipCache: false,
+          }),
         });
 
-      setScanResults(results);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error('Error response:', errorData);
+          const errorMsg = errorData?.error || `Batch ${i + 1} failed: ${response.status}`;
+          throw new Error(errorMsg);
+        }
+
+        const batchResult = await response.json();
+
+        // Transform results for this batch
+        const batchResults: ScanResult[] = batchResult.results
+          .filter((r: any) => r.success && r.analysis)
+          .map((r: any) => {
+            const patient = patients.find(p => p.id === r.patient_id);
+            const analysis = r.analysis;
+
+            return {
+              patientId: r.patient_id,
+              patientName: patient?.full_name || 'Unknown',
+              riskLevel: analysis.risk_level,
+              riskScore: analysis.risk_score,
+              riskTier: analysis.risk_tier,
+              needsMonitoring: analysis.risk_tier >= 2, // Tier 2 and 3 need monitoring
+              keyFindings: [
+                ...(analysis.key_findings?.abnormal_labs || []),
+                ...(analysis.key_findings?.risk_factors || []),
+              ].slice(0, 3), // Top 3 findings
+            };
+          });
+
+        allResults.push(...batchResults);
+        console.log(`Batch ${i + 1} complete. Total results so far: ${allResults.length}`);
+      }
+
+      console.log(`Scan complete! Analyzed ${allResults.length} patients.`);
+      setScanResults(allResults);
       setShowResults(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to scan database');
