@@ -231,10 +231,21 @@ function App() {
 
   const getRiskCategoryBadgeColor = (category?: string): string => {
     if (!category) return 'bg-gray-100 text-gray-700';
-    if (category.includes('Very High')) return 'bg-red-600 text-white';
-    if (category.includes('High')) return 'bg-orange-500 text-white';
-    if (category.includes('Moderate')) return 'bg-yellow-500 text-white';
-    return 'bg-green-500 text-white';
+
+    // CKD Patients - Traditional risk colors (Green → Yellow → Orange → Red)
+    if (category.includes('CKD')) {
+      if (category.includes('Very High')) return 'bg-red-600 text-white';
+      if (category.includes('High')) return 'bg-orange-500 text-white';
+      if (category.includes('Moderate')) return 'bg-yellow-500 text-white';
+      return 'bg-green-500 text-white'; // CKD Low Risk
+    }
+
+    // Non-CKD Patients - Blue/Purple color scheme for distinction
+    if (category === 'Low Risk') return 'bg-blue-500 text-white';
+    if (category === 'Moderate Risk') return 'bg-purple-500 text-white';
+    if (category === 'High Risk') return 'bg-pink-500 text-white';
+
+    return 'bg-gray-100 text-gray-700';
   };
 
   // Filter patients based on search query
@@ -1033,10 +1044,19 @@ function App() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                           <h3 className="text-xl font-semibold text-gray-900">
                             {patient.first_name} {patient.last_name}
                           </h3>
+                          {patient.kdigo_classification && (
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                              patient.kdigo_classification.has_ckd
+                                ? 'bg-red-100 text-red-800 border border-red-300'
+                                : 'bg-blue-100 text-blue-800 border border-blue-300'
+                            }`}>
+                              {patient.kdigo_classification.has_ckd ? 'CKD' : 'No CKD'}
+                            </span>
+                          )}
                           {patient.risk_category && (
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRiskCategoryBadgeColor(patient.risk_category)}`}>
                               {patient.risk_category}
