@@ -1003,6 +1003,162 @@ router.post('/populate-realistic-cohort', async (req: Request, res: Response): P
 
     console.log(`✓ Successfully created ${patientsCreated} patients with realistic distribution`);
 
+    // ============================================
+    // Generate Risk Factors for All Patients
+    // ============================================
+
+    console.log('Generating comprehensive risk factors...');
+
+    const allPatientsResult = await pool.query('SELECT id, date_of_birth FROM patients');
+
+    for (const patient of allPatientsResult.rows) {
+      const age = Math.floor((today.getTime() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+      // Determine ethnicity (realistic US distribution)
+      const ethnicityRand = Math.random();
+      let ethnicity: string;
+      if (ethnicityRand < 0.13) {
+        ethnicity = 'African American';
+      } else if (ethnicityRand < 0.31) {
+        ethnicity = 'Hispanic/Latino';
+      } else if (ethnicityRand < 0.37) {
+        ethnicity = 'Asian';
+      } else if (ethnicityRand < 0.39) {
+        ethnicity = 'Native American';
+      } else {
+        ethnicity = 'Caucasian';
+      }
+
+      // Update patient ethnicity
+      await pool.query(`
+        UPDATE patients SET ethnicity = $1 WHERE id = $2
+      `, [ethnicity, patient.id]);
+
+      // Get patient's latest labs
+      const labsResult = await pool.query(`
+        SELECT
+          MAX(CASE WHEN observation_type = 'eGFR' THEN value_numeric END) as egfr,
+          MAX(CASE WHEN observation_type = 'uACR' THEN value_numeric END) as uacr,
+          MAX(CASE WHEN observation_type = 'BMI' THEN value_numeric END) as bmi,
+          MAX(CASE WHEN observation_type = 'HbA1c' THEN value_numeric END) as hba1c
+        FROM observations
+        WHERE patient_id = $1
+      `, [patient.id]);
+
+      const labs = labsResult.rows[0];
+
+      // Determine comorbidities based on age and labs
+      const hasDiabetes = labs.hba1c && labs.hba1c > 6.5 || Math.random() < (age > 65 ? 0.3 : 0.15);
+      const hasHypertension = age > 60 ? Math.random() < 0.5 : Math.random() < 0.25;
+      const hasCVD = age > 65 ? Math.random() < 0.25 : Math.random() < 0.1;
+      const hasObesity = labs.bmi && labs.bmi > 30;
+      const hasAKIHistory = Math.random() < 0.08; // 8% have AKI history
+      const hasAutoimmune = Math.random() < 0.03; // 3% have autoimmune disease
+      const hasKidneyStones = Math.random() < 0.12; // 12% have kidney stones
+      const hasGout = Math.random() < 0.08; // 8% have gout
+
+      // Smoking status
+      const smokingRand = Math.random();
+      let smoking: string;
+      let packYears = 0;
+      if (smokingRand < 0.55) {
+        smoking = 'Never';
+      } else if (smokingRand < 0.70) {
+        smoking = 'Former';
+        packYears = 5 + Math.random() * 30; // 5-35 pack-years
+      } else {
+        smoking = 'Current';
+        packYears = 10 + Math.random() * 40; // 10-50 pack-years
+      }
+
+      // Physical activity
+      const activityRand = Math.random();
+      let activityLevel: string;
+      if (activityRand < 0.30) {
+        activityLevel = 'Sedentary';
+      } else if (activityRand < 0.55) {
+        activityLevel = 'Light';
+      } else if (activityRand < 0.80) {
+        activityLevel = 'Moderate';
+      } else {
+        activityLevel = 'Active';
+      }
+
+      // Medications
+      const chronicNSAID = Math.random() < 0.15; // 15% use chronic NSAIDs
+      const ppiUse = Math.random() < 0.20; // 20% use PPIs
+
+      // Insert comprehensive risk factors
+      await pool.query(`
+        INSERT INTO patient_risk_factors (
+          patient_id, current_egfr, current_uacr, hba1c,
+          has_diabetes, diabetes_type, diabetes_controlled,
+          has_hypertension, hypertension_controlled,
+          has_cvd, has_obesity, current_bmi,
+          history_of_aki, aki_episodes_count,
+          has_autoimmune_disease, has_kidney_stones, has_gout,
+          family_history_ckd, family_history_esrd,
+          smoking_status, pack_years,
+          physical_activity_level,
+          chronic_nsaid_use, ppi_use,
+          on_ras_inhibitor,
+          last_assessment_date
+        ) VALUES (
+          $1, $2, $3, $4,
+          $5, $6, $7,
+          $8, $9,
+          $10, $11, $12,
+          $13, $14,
+          $15, $16, $17,
+          $18, $19,
+          $20, $21,
+          $22,
+          $23, $24,
+          $25,
+          $26
+        )
+      `, [
+        patient.id, labs.egfr, labs.uacr, labs.hba1c,
+        hasDiabetes, hasDiabetes ? (Math.random() < 0.9 ? 'Type 2' : 'Type 1') : null, hasDiabetes ? Math.random() < 0.7 : null,
+        hasHypertension, hasHypertension ? Math.random() < 0.6 : null,
+        hasCVD, hasObesity, labs.bmi,
+        hasAKIHistory, hasAKIHistory ? (Math.floor(Math.random() * 3) + 1) : 0,
+        hasAutoimmune, hasKidneyStones, hasGout,
+        Math.random() < 0.15, Math.random() < 0.10,
+        smoking, packYears,
+        activityLevel,
+        chronicNSAID, ppiUse,
+        labs.egfr < 60 || labs.uacr > 30, // On RAS inhibitor if indicated
+        today
+      ]);
+    }
+
+    console.log('✓ Risk factors generated for all patients');
+
+    // Calculate risk scores for all patients
+    console.log('Calculating risk scores...');
+
+    await pool.query(`
+      SELECT calculate_ckd_risk_score(patient_id)
+      FROM patient_risk_factors
+    `);
+
+    // Update risk tiers
+    await pool.query(`
+      UPDATE patient_risk_factors
+      SET
+        risk_tier = get_risk_tier(risk_score),
+        next_assessment_due = CASE
+          WHEN risk_score >= 75 THEN CURRENT_DATE + INTERVAL '1 month'
+          WHEN risk_score >= 50 THEN CURRENT_DATE + INTERVAL '3 months'
+          WHEN risk_score >= 25 THEN CURRENT_DATE + INTERVAL '6 months'
+          ELSE CURRENT_DATE + INTERVAL '12 months'
+        END
+      WHERE risk_score IS NOT NULL
+    `);
+
+    console.log('✓ Risk scores calculated for all patients');
+
     res.json({
       status: 'success',
       message: 'Realistic patient cohort generated successfully',

@@ -4,6 +4,7 @@ import { testConnection } from './config/database';
 import patientsRouter from './api/routes/patients';
 import initRouter from './api/routes/init';
 import jardianceRouter from './api/routes/jardiance';
+import riskRouter from './api/routes/risk';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/patients', patientsRouter);
 app.use('/api/init', initRouter);
 app.use('/api/jardiance', jardianceRouter);
+app.use('/api/risk', riskRouter);
 
 // 404 handler
 app.use((_req, res) => {
