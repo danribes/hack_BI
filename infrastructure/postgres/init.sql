@@ -36,6 +36,12 @@ CREATE TABLE IF NOT EXISTS patients (
     diagnosis_date DATE,
     last_visit_date DATE,
     next_visit_date DATE,
+    -- Home monitoring fields
+    home_monitoring_device VARCHAR(100),
+    home_monitoring_active BOOLEAN DEFAULT false,
+    -- CKD treatment tracking
+    ckd_treatment_active BOOLEAN DEFAULT false,
+    ckd_treatment_type VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

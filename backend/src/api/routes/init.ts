@@ -98,6 +98,55 @@ router.post('/populate', async (_req: Request, res: Response): Promise<any> => {
  * Check database status
  */
 /**
+ * POST /api/init/migrate
+ * Run database migrations to add missing columns
+ */
+router.post('/migrate', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+
+    console.log('Running database migrations...');
+
+    // Add monitoring and treatment columns if they don't exist
+    await pool.query(`
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS home_monitoring_device VARCHAR(100);
+    `);
+    await pool.query(`
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS home_monitoring_active BOOLEAN DEFAULT false;
+    `);
+    await pool.query(`
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS ckd_treatment_active BOOLEAN DEFAULT false;
+    `);
+    await pool.query(`
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS ckd_treatment_type VARCHAR(100);
+    `);
+
+    // Update existing NULL values to defaults
+    await pool.query(`
+      UPDATE patients SET home_monitoring_active = false WHERE home_monitoring_active IS NULL;
+    `);
+    await pool.query(`
+      UPDATE patients SET ckd_treatment_active = false WHERE ckd_treatment_active IS NULL;
+    `);
+
+    console.log('✓ Database migrations completed successfully');
+
+    res.json({
+      status: 'success',
+      message: 'Database migrations completed successfully'
+    });
+
+  } catch (error) {
+    console.error('[Init API] Error running migrations:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to run database migrations',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /api/init/assign-monitoring-treatment
  * Assign monitoring and treatment based on risk classification
  */
