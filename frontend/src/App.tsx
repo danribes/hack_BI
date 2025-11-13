@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PatientFilters from './components/PatientFilters';
 
 interface KDIGOClassification {
   gfr_category: string;
@@ -101,11 +102,36 @@ function App() {
   const [populating, setPopulating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Filter states
+  const [activeFilters, setActiveFilters] = useState<{
+    patientType: 'all' | 'ckd' | 'non-ckd';
+    ckdSeverity: string | null;
+    ckdTreatment: string | null;
+    nonCkdRisk: string | null;
+    nonCkdMonitoring: string | null;
+  }>({
+    patientType: 'all',
+    ckdSeverity: null,
+    ckdTreatment: null,
+    nonCkdRisk: null,
+    nonCkdMonitoring: null
+  });
+
+  const [statistics, setStatistics] = useState<any>(null);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     fetchPatients();
+    fetchStatistics();
   }, []);
+
+  // Fetch patients when filters change
+  useEffect(() => {
+    if (activeFilters.patientType !== 'all' || activeFilters.ckdSeverity || activeFilters.nonCkdRisk) {
+      fetchFilteredPatients();
+    }
+  }, [activeFilters]);
 
   const fetchPatients = async () => {
     try {
@@ -126,6 +152,79 @@ function App() {
       console.error('Error fetching patients:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/patients/statistics`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch statistics: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setStatistics(data.statistics);
+
+    } catch (err) {
+      console.error('Error fetching statistics:', err);
+    }
+  };
+
+  const fetchFilteredPatients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Build query parameters based on active filters
+      const params = new URLSearchParams();
+
+      if (activeFilters.patientType === 'ckd') {
+        params.append('has_ckd', 'true');
+
+        if (activeFilters.ckdSeverity) {
+          params.append('severity', activeFilters.ckdSeverity);
+        }
+
+        if (activeFilters.ckdTreatment) {
+          params.append('is_treated', activeFilters.ckdTreatment === 'treated' ? 'true' : 'false');
+        }
+      } else if (activeFilters.patientType === 'non-ckd') {
+        params.append('has_ckd', 'false');
+
+        if (activeFilters.nonCkdRisk) {
+          params.append('risk_level', activeFilters.nonCkdRisk);
+        }
+
+        if (activeFilters.nonCkdMonitoring) {
+          params.append('is_monitored', activeFilters.nonCkdMonitoring === 'monitored' ? 'true' : 'false');
+        }
+      }
+
+      const url = `${API_URL}/api/patients/filter?${params.toString()}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch filtered patients: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setPatients(data.patients || []);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load filtered patients');
+      console.error('Error fetching filtered patients:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (newFilters: any) => {
+    setActiveFilters(newFilters);
+
+    // If resetting to all patients, fetch all
+    if (newFilters.patientType === 'all' && !newFilters.ckdSeverity && !newFilters.nonCkdRisk) {
+      fetchPatients();
     }
   };
 
@@ -960,6 +1059,17 @@ function App() {
             Patient Database
           </p>
         </header>
+
+        {/* Filter Component */}
+        {!loading && !error && patients.length > 0 && statistics && (
+          <div className="max-w-6xl mx-auto">
+            <PatientFilters
+              statistics={statistics}
+              activeFilters={activeFilters}
+              onFilterChange={handleFilterChange}
+            />
+          </div>
+        )}
 
         {/* Search Bar */}
         {!loading && !error && patients.length > 0 && (
