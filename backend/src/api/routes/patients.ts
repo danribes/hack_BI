@@ -356,4 +356,120 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
   }
 });
 
+/**
+ * GET /api/patients/statistics
+ * Get comprehensive patient statistics for filtering UI
+ * Returns hierarchical counts for CKD and non-CKD patients
+ */
+router.get('/statistics', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+
+    // Get CKD patient statistics (severity breakdown with treatment status)
+    const ckdStatsResult = await pool.query(`
+      SELECT
+        cpd.ckd_severity,
+        cpd.is_treated,
+        COUNT(*) as count
+      FROM ckd_patient_data cpd
+      INNER JOIN patients p ON cpd.patient_id = p.id
+      GROUP BY cpd.ckd_severity, cpd.is_treated
+      ORDER BY
+        CASE cpd.ckd_severity
+          WHEN 'mild' THEN 1
+          WHEN 'moderate' THEN 2
+          WHEN 'severe' THEN 3
+          WHEN 'kidney_failure' THEN 4
+        END,
+        cpd.is_treated DESC
+    `);
+
+    // Get non-CKD patient statistics (risk level breakdown with monitoring status)
+    const nonCkdStatsResult = await pool.query(`
+      SELECT
+        npd.risk_level,
+        npd.is_monitored,
+        COUNT(*) as count
+      FROM non_ckd_patient_data npd
+      INNER JOIN patients p ON npd.patient_id = p.id
+      GROUP BY npd.risk_level, npd.is_monitored
+      ORDER BY
+        CASE npd.risk_level
+          WHEN 'low' THEN 1
+          WHEN 'moderate' THEN 2
+          WHEN 'high' THEN 3
+        END,
+        npd.is_monitored DESC
+    `);
+
+    // Process CKD statistics into hierarchical structure
+    const ckdStats: any = {
+      total: 0,
+      mild: { total: 0, treated: 0, not_treated: 0 },
+      moderate: { total: 0, treated: 0, not_treated: 0 },
+      severe: { total: 0, treated: 0, not_treated: 0 },
+      kidney_failure: { total: 0, treated: 0, not_treated: 0 }
+    };
+
+    ckdStatsResult.rows.forEach((row: any) => {
+      const count = parseInt(row.count);
+      const severity = row.ckd_severity;
+      const isTreated = row.is_treated;
+
+      ckdStats.total += count;
+
+      if (ckdStats[severity]) {
+        ckdStats[severity].total += count;
+        if (isTreated) {
+          ckdStats[severity].treated += count;
+        } else {
+          ckdStats[severity].not_treated += count;
+        }
+      }
+    });
+
+    // Process non-CKD statistics into hierarchical structure
+    const nonCkdStats: any = {
+      total: 0,
+      low: { total: 0, monitored: 0, not_monitored: 0 },
+      moderate: { total: 0, monitored: 0, not_monitored: 0 },
+      high: { total: 0, monitored: 0, not_monitored: 0 }
+    };
+
+    nonCkdStatsResult.rows.forEach((row: any) => {
+      const count = parseInt(row.count);
+      const riskLevel = row.risk_level;
+      const isMonitored = row.is_monitored;
+
+      nonCkdStats.total += count;
+
+      if (nonCkdStats[riskLevel]) {
+        nonCkdStats[riskLevel].total += count;
+        if (isMonitored) {
+          nonCkdStats[riskLevel].monitored += count;
+        } else {
+          nonCkdStats[riskLevel].not_monitored += count;
+        }
+      }
+    });
+
+    res.json({
+      status: 'success',
+      statistics: {
+        total_patients: ckdStats.total + nonCkdStats.total,
+        ckd: ckdStats,
+        non_ckd: nonCkdStats
+      }
+    });
+
+  } catch (error) {
+    console.error('[Patients API] Error fetching statistics:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch patient statistics',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
