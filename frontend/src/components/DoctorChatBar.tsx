@@ -70,15 +70,17 @@ export const DoctorChatBar: React.FC<DoctorChatBarProps> = ({
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async (messageContent?: string) => {
+    const content = messageContent || inputValue;
+    if (!content.trim()) return;
 
     const userMessage: Message = {
       role: 'user',
-      content: inputValue,
+      content: content,
       timestamp: new Date(),
     };
 
+    // Always add the message to state
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -158,16 +160,11 @@ export const DoctorChatBar: React.FC<DoctorChatBarProps> = ({
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
 
-      // Add context to chat
-      const contextMessage: Message = {
-        role: 'user',
-        content: `Tell me about the alert: ${notification.subject}`,
-        timestamp: new Date(),
-      };
+      // Add context to chat and trigger AI response
+      const messageContent = `Tell me about the alert: ${notification.subject}`;
 
-      setMessages((prev) => [...prev, contextMessage]);
       setShowNotifications(false);
-      handleSendMessage();
+      handleSendMessage(messageContent);
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
