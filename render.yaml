@@ -23,14 +23,14 @@ databases:
     postgresMajorVersion: 16
 
 services:
-  # Backend API - Node.js/Express with Docker
+  # Backend API - Node.js/Express with Docker (includes MCP server)
   - type: web
     name: ckd-analyzer-backend
     env: docker
     region: oregon
     plan: free
     branch: main
-    rootDir: backend
+    rootDir: .
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     autoDeploy: true

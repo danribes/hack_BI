@@ -17,7 +17,7 @@ RUN npm ci --prefer-offline --no-audit
 COPY . .
 
 # Build TypeScript to JavaScript
-RUN npm run build
+RUN npm run build:backend
 
 # Stage 2: Production
 FROM node:20-alpine
