@@ -33,6 +33,20 @@ export function createAgentRouter(db: Pool): Router {
             error: 'Invalid role: must be either "user" or "assistant"',
           });
         }
+        // Sanitize content
+        if (typeof msg.content !== 'string') {
+          return res.status(400).json({
+            error: 'Invalid message content: must be a string',
+          });
+        }
+        // Limit message length to prevent abuse
+        if (msg.content.length > 10000) {
+          return res.status(400).json({
+            error: 'Message too long: maximum 10000 characters',
+          });
+        }
+        // Trim whitespace
+        msg.content = msg.content.trim();
       }
 
       // Build context if patient ID is provided
@@ -102,17 +116,30 @@ export function createAgentRouter(db: Pool): Router {
         });
       }
 
+      // Sanitize question
+      const sanitizedQuestion = question.trim();
+      if (sanitizedQuestion.length === 0) {
+        return res.status(400).json({
+          error: 'Question cannot be empty',
+        });
+      }
+      if (sanitizedQuestion.length > 10000) {
+        return res.status(400).json({
+          error: 'Question too long: maximum 10000 characters',
+        });
+      }
+
       const messages = [
         {
           role: 'user' as const,
-          content: question,
+          content: sanitizedQuestion,
         },
       ];
 
       const response = await agentService.chat(messages);
 
       res.json({
-        question,
+        question: sanitizedQuestion,
         response,
         timestamp: new Date().toISOString(),
       });
