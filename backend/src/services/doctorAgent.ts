@@ -289,7 +289,7 @@ When you see POPULATION DATA in your context:
 - Summarize the key findings and provide clinical insights
 
 If no population data is provided, explain that you can answer questions about individual patients, clinical guidelines,
-or treatment recommendations, and suggest the doctor rephrase their question if needed.
+or treatment recommendations, and suggest the doctor rephrase their question if needed.`;
 
     // Add patient-specific context if provided
     if (context?.patientId) {
