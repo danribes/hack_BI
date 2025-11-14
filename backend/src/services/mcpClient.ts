@@ -23,9 +23,9 @@ export class MCPClient {
 
     try {
       // Determine MCP server path
-      // In production (Render), MCP server will be in ../mcp-server/dist/index.js
-      // In development, same structure
-      const mcpServerPath = path.resolve(__dirname, '../../mcp-server/dist/index.js');
+      // __dirname = /app/backend/dist/services (in production)
+      // Go up 3 levels to /app, then to mcp-server/dist/index.js
+      const mcpServerPath = path.resolve(__dirname, '../../../mcp-server/dist/index.js');
 
       console.log(`[MCP Client] Connecting to MCP server at: ${mcpServerPath}`);
 
