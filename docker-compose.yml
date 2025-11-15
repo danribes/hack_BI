@@ -38,7 +38,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://healthcare_user:healthcare_pass@postgres:5432/healthcare_ai_db
+      # DATABASE_URL: postgresql://healthcare_user:healthcare_pass@postgres:5432/healthcare_ai_db
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: healthcare_ai_db
@@ -62,6 +62,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
     container_name: healthcare-frontend
     restart: unless-stopped
     depends_on:

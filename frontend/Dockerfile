@@ -16,6 +16,10 @@ RUN npm ci
 # Copy source code and configuration
 COPY . .
 
+# Accept build argument for API URL
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build the application
 # This creates optimized production build in dist/
 RUN npm run build
