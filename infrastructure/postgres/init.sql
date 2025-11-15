@@ -464,6 +464,119 @@ SELECT 'Total conditions: ' || COUNT(*) FROM conditions;
 
 -- Display patient summary
 SELECT * FROM patient_summary ORDER BY medical_record_number;
+
+-- ============================================
+-- Patient Tracking Tables (CKD and Non-CKD)
+-- ============================================
+-- Migration 002: Create separate tracking tables for CKD and non-CKD patients
+
+-- CKD Patient Data Table
+CREATE TABLE IF NOT EXISTS ckd_patient_data (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL UNIQUE REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- CKD Severity Classification
+    ckd_severity VARCHAR(20) NOT NULL, -- 'mild', 'moderate', 'severe', 'kidney_failure'
+    ckd_stage INTEGER NOT NULL, -- 1, 2, 3, 4, 5
+
+    -- KDIGO Classification
+    kdigo_gfr_category VARCHAR(5) NOT NULL, -- 'G1', 'G2', 'G3a', 'G3b', 'G4', 'G5'
+    kdigo_albuminuria_category VARCHAR(5) NOT NULL, -- 'A1', 'A2', 'A3'
+    kdigo_health_state VARCHAR(10) NOT NULL, -- 'G1-A1', 'G3a-A2', etc.
+
+    -- Monitoring
+    is_monitored BOOLEAN DEFAULT false,
+    monitoring_device VARCHAR(100), -- 'Minuteful Kidney Kit', etc.
+    monitoring_frequency VARCHAR(50), -- 'weekly', 'biweekly', 'monthly', 'quarterly'
+    last_monitoring_date DATE,
+
+    -- Treatment
+    is_treated BOOLEAN DEFAULT false,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CKD Treatments Table (Many-to-Many relationship)
+CREATE TABLE IF NOT EXISTS ckd_treatments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ckd_patient_data_id UUID NOT NULL REFERENCES ckd_patient_data(id) ON DELETE CASCADE,
+
+    treatment_name VARCHAR(100) NOT NULL,
+    treatment_class VARCHAR(50), -- 'SGLT2i', 'MRA', 'Investigational', etc.
+    dosage VARCHAR(50),
+    start_date DATE,
+    is_active BOOLEAN DEFAULT true,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Non-CKD Patient Data Table
+CREATE TABLE IF NOT EXISTS non_ckd_patient_data (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL UNIQUE REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Risk Classification
+    risk_level VARCHAR(20) NOT NULL, -- 'low', 'moderate', 'high'
+
+    -- KDIGO Health State
+    kdigo_health_state VARCHAR(10) NOT NULL, -- 'G1-A1', 'G2-A1', etc.
+
+    -- Monitoring
+    is_monitored BOOLEAN DEFAULT false,
+    monitoring_device VARCHAR(100),
+    monitoring_frequency VARCHAR(50), -- 'monthly', 'quarterly', 'biannually', 'annually'
+    last_monitoring_date DATE,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Non-CKD Risk Factors Table
+CREATE TABLE IF NOT EXISTS non_ckd_risk_factors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    non_ckd_patient_data_id UUID NOT NULL REFERENCES non_ckd_patient_data(id) ON DELETE CASCADE,
+
+    risk_factor_type VARCHAR(50) NOT NULL, -- 'diabetes', 'hypertension', 'obesity', 'smoking', 'family_history', etc.
+    risk_factor_value VARCHAR(100), -- Specific value or severity
+    severity VARCHAR(20), -- 'mild', 'moderate', 'severe'
+    is_controlled BOOLEAN DEFAULT false,
+    notes TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for Performance
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_patient_id ON ckd_patient_data(patient_id);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_severity ON ckd_patient_data(ckd_severity);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_stage ON ckd_patient_data(ckd_stage);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_monitored ON ckd_patient_data(is_monitored);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_treated ON ckd_patient_data(is_treated);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_monitoring_freq ON ckd_patient_data(monitoring_frequency);
+CREATE INDEX IF NOT EXISTS idx_ckd_patient_data_health_state ON ckd_patient_data(kdigo_health_state);
+
+CREATE INDEX IF NOT EXISTS idx_ckd_treatments_patient_data_id ON ckd_treatments(ckd_patient_data_id);
+CREATE INDEX IF NOT EXISTS idx_ckd_treatments_name ON ckd_treatments(treatment_name);
+CREATE INDEX IF NOT EXISTS idx_ckd_treatments_active ON ckd_treatments(is_active);
+
+CREATE INDEX IF NOT EXISTS idx_non_ckd_patient_data_patient_id ON non_ckd_patient_data(patient_id);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_patient_data_risk_level ON non_ckd_patient_data(risk_level);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_patient_data_monitored ON non_ckd_patient_data(is_monitored);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_patient_data_monitoring_freq ON non_ckd_patient_data(monitoring_frequency);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_patient_data_health_state ON non_ckd_patient_data(kdigo_health_state);
+
+CREATE INDEX IF NOT EXISTS idx_non_ckd_risk_factors_patient_data_id ON non_ckd_risk_factors(non_ckd_patient_data_id);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_risk_factors_type ON non_ckd_risk_factors(risk_factor_type);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_risk_factors_severity ON non_ckd_risk_factors(severity);
+
+CREATE INDEX IF NOT EXISTS idx_ckd_severity_monitored ON ckd_patient_data(ckd_severity, is_monitored);
+CREATE INDEX IF NOT EXISTS idx_ckd_stage_treated ON ckd_patient_data(ckd_stage, is_treated);
+CREATE INDEX IF NOT EXISTS idx_non_ckd_risk_monitored ON non_ckd_patient_data(risk_level, is_monitored);
+
 -- ================================================================
 -- Generate 1000 Mock Patient Records with Comprehensive Clinical Data
 -- ================================================================
@@ -499,6 +612,14 @@ DECLARE
   v_last_name text;
   v_risk_level integer;
   v_random decimal;
+  v_gfr_category text;
+  v_alb_category text;
+  v_health_state text;
+  v_ckd_severity text;
+  v_is_monitored boolean;
+  v_monitoring_device text;
+  v_monitoring_frequency text;
+  v_is_treated boolean;
 
   -- Name arrays for random generation
   first_names_male text[] := ARRAY['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles', 'Daniel', 'Matthew', 'Anthony', 'Donald', 'Mark', 'Paul', 'Steven', 'Andrew', 'Kenneth', 'Joshua', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason', 'Jeffrey', 'Ryan', 'Jacob', 'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott', 'Brandon', 'Benjamin', 'Samuel', 'Raymond', 'Gregory', 'Alexander', 'Frank', 'Patrick', 'Raymond', 'Jack', 'Dennis', 'Jerry'];
@@ -828,13 +949,94 @@ BEGIN
         END);
     END IF;
 
+    -- Calculate KDIGO classification
+    -- GFR category
+    v_gfr_category := CASE
+      WHEN v_egfr >= 90 THEN 'G1'
+      WHEN v_egfr >= 60 THEN 'G2'
+      WHEN v_egfr >= 45 THEN 'G3a'
+      WHEN v_egfr >= 30 THEN 'G3b'
+      WHEN v_egfr >= 15 THEN 'G4'
+      ELSE 'G5'
+    END;
+
+    -- Albuminuria category
+    v_alb_category := CASE
+      WHEN v_uacr < 30 THEN 'A1'
+      WHEN v_uacr < 300 THEN 'A2'
+      ELSE 'A3'
+    END;
+
+    v_health_state := v_gfr_category || '-' || v_alb_category;
+
+    -- Insert tracking data based on CKD status
+    IF v_ckd_stage >= 1 THEN
+      -- CKD patient tracking data
+      v_ckd_severity := CASE
+        WHEN v_ckd_stage >= 5 THEN 'kidney_failure'
+        WHEN v_ckd_stage = 4 THEN 'severe'
+        WHEN v_ckd_stage = 3 THEN 'moderate'
+        ELSE 'mild'
+      END;
+
+      -- 100% of CKD patients monitored with Minuteful Kidney
+      v_is_monitored := true;
+      v_monitoring_device := 'Minuteful Kidney';
+      v_monitoring_frequency := CASE
+        WHEN v_ckd_stage >= 4 THEN 'weekly'
+        WHEN v_ckd_stage = 3 THEN 'biweekly'
+        ELSE 'monthly'
+      END;
+
+      -- 80% of CKD patients receiving treatment
+      v_is_treated := random() < 0.80;
+
+      INSERT INTO ckd_patient_data (
+        patient_id, ckd_severity, ckd_stage,
+        kdigo_gfr_category, kdigo_albuminuria_category, kdigo_health_state,
+        is_monitored, monitoring_device, monitoring_frequency,
+        is_treated
+      ) VALUES (
+        v_patient_id, v_ckd_severity, v_ckd_stage,
+        v_gfr_category, v_alb_category, v_health_state,
+        v_is_monitored, v_monitoring_device, v_monitoring_frequency,
+        v_is_treated
+      );
+
+    ELSE
+      -- Non-CKD patient tracking data
+      -- 80% of non-CKD patients monitored with Minuteful Kidney
+      v_is_monitored := random() < 0.80;
+      v_monitoring_device := CASE WHEN v_is_monitored THEN 'Minuteful Kidney' ELSE NULL END;
+      v_monitoring_frequency := CASE
+        WHEN v_is_monitored AND v_risk_level = 3 THEN 'monthly'
+        WHEN v_is_monitored AND v_risk_level = 2 THEN 'quarterly'
+        WHEN v_is_monitored THEN 'biannually'
+        ELSE NULL
+      END;
+
+      INSERT INTO non_ckd_patient_data (
+        patient_id, risk_level, kdigo_health_state,
+        is_monitored, monitoring_device, monitoring_frequency
+      ) VALUES (
+        v_patient_id,
+        CASE v_risk_level
+          WHEN 1 THEN 'low'
+          WHEN 2 THEN 'moderate'
+          ELSE 'high'
+        END,
+        v_health_state,
+        v_is_monitored, v_monitoring_device, v_monitoring_frequency
+      );
+    END IF;
+
   END LOOP;
 
   RAISE NOTICE 'Successfully generated 1000 mock patients with comprehensive clinical data';
 END $$;
 
 -- Clean up function
-DROP FUNCTION IF EXISTS random_uuid();
+DROP FUNCTION IF NOT EXISTS random_uuid();
 
 -- ============================================
 -- Treatment and Adherence Tracking System
