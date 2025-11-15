@@ -328,6 +328,44 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
     const kdigoClassification = classifyKDIGO(egfr, uacr);
     const riskCategory = getRiskCategoryLabel(kdigoClassification);
 
+    // Derive comorbidity flags from conditions
+    const conditions = conditionsResult.rows;
+    const comorbidities = {
+      has_diabetes: conditions.some(c => c.condition_code?.startsWith('E1') && c.clinical_status === 'active'),
+      has_type1_diabetes: conditions.some(c => c.condition_code?.startsWith('E10') && c.clinical_status === 'active'),
+      has_type2_diabetes: conditions.some(c => c.condition_code?.startsWith('E11') && c.clinical_status === 'active'),
+      has_hypertension: conditions.some(c => (c.condition_code?.startsWith('I10') || c.condition_code?.startsWith('I11') || c.condition_code?.startsWith('I12') || c.condition_code?.startsWith('I13')) && c.clinical_status === 'active'),
+      has_essential_hypertension: conditions.some(c => c.condition_code === 'I10' && c.clinical_status === 'active'),
+      has_heart_failure: conditions.some(c => c.condition_code?.startsWith('I50') && c.clinical_status === 'active'),
+      has_cad: conditions.some(c => c.condition_code?.startsWith('I25') && c.clinical_status === 'active'),
+      has_mi: conditions.some(c => (c.condition_code?.startsWith('I21') || c.condition_code?.startsWith('I22')) && c.clinical_status === 'active'),
+      has_atrial_fibrillation: conditions.some(c => c.condition_code?.startsWith('I48') && c.clinical_status === 'active'),
+      has_stroke: conditions.some(c => (c.condition_code?.startsWith('I63') || c.condition_code?.startsWith('I64')) && c.clinical_status === 'active'),
+      has_peripheral_vascular_disease: conditions.some(c => c.condition_code?.startsWith('I73') && c.clinical_status === 'active'),
+      has_obesity: conditions.some(c => c.condition_code?.startsWith('E66') && c.clinical_status === 'active'),
+      has_hyperlipidemia: conditions.some(c => c.condition_code?.startsWith('E78') && c.clinical_status === 'active'),
+      has_gout: conditions.some(c => c.condition_code?.startsWith('M10') && c.clinical_status === 'active'),
+      has_lupus: conditions.some(c => c.condition_code?.startsWith('M32') && c.clinical_status === 'active'),
+      has_ra: conditions.some(c => (c.condition_code?.startsWith('M05') || c.condition_code?.startsWith('M06')) && c.clinical_status === 'active'),
+      has_polycystic_kidney_disease: conditions.some(c => c.condition_code?.startsWith('Q61') && c.clinical_status === 'active'),
+    };
+
+    // Extract vital signs from observations for backward compatibility
+    const observations = observationsResult.rows;
+    const systolicBP = observations.find(o => o.observation_type === 'blood_pressure_systolic');
+    const diastolicBP = observations.find(o => o.observation_type === 'blood_pressure_diastolic');
+    const heartRate = observations.find(o => o.observation_type === 'heart_rate');
+    const oxygenSat = observations.find(o => o.observation_type === 'oxygen_saturation');
+    const bmiObs = observations.find(o => o.observation_type === 'BMI');
+
+    const vitalSigns = {
+      systolic_bp: systolicBP?.value_numeric || null,
+      diastolic_bp: diastolicBP?.value_numeric || null,
+      heart_rate: heartRate?.value_numeric || null,
+      oxygen_saturation: oxygenSat?.value_numeric || null,
+      bmi: bmiObs?.value_numeric || null,
+    };
+
     res.json({
       status: 'success',
       patient: {
@@ -337,6 +375,10 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
         risk_assessment: riskResult.rows[0] || null,
         kdigo_classification: kdigoClassification,
         risk_category: riskCategory,
+        // Comorbidity flags derived from conditions
+        ...comorbidities,
+        // Vital signs from observations
+        ...vitalSigns,
         // Home monitoring
         home_monitoring_device: patient.home_monitoring_device || null,
         home_monitoring_active: patient.home_monitoring_active || false,
