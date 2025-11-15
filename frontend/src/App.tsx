@@ -1313,22 +1313,10 @@ function App() {
                   </div>
                 </div>
 
-                {/* Blood Pressure & Cardiovascular */}
+                {/* Lipid Panel & Cardiovascular Risk */}
                 <div className="mt-6">
-                  <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Blood Pressure & Cardiovascular</h4>
+                  <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Lipid Panel & Cardiovascular Risk</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {(() => {
-                      const systolic = getObservationValue(selectedPatient.observations, 'blood_pressure_systolic');
-                      const diastolic = getObservationValue(selectedPatient.observations, 'blood_pressure_diastolic');
-                      return (systolic || diastolic) && (
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <div className="text-xs text-gray-600 uppercase">Blood Pressure</div>
-                          <div className={`text-2xl font-bold mt-1 ${getLabValueColor('blood_pressure_systolic', systolic?.value_numeric || 0)}`}>
-                            {systolic?.value_numeric || '--'}/{diastolic?.value_numeric || '--'} <span className="text-sm font-normal text-gray-600">mmHg</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
                     {(() => {
                       const ldl = getObservationValue(selectedPatient.observations, 'LDL_cholesterol');
                       return ldl && (
@@ -1337,6 +1325,10 @@ function App() {
                           <div className="text-2xl font-bold text-gray-900 mt-1">
                             {ldl.value_numeric} <span className="text-sm font-normal text-gray-600">{ldl.unit}</span>
                           </div>
+                          {ldl.value_numeric && ldl.value_numeric >= 130 && (
+                            <div className="text-xs text-orange-600 mt-1 font-semibold">Above target</div>
+                          )}
+                          {ldl.notes && <div className="text-xs text-gray-600 mt-1">{ldl.notes}</div>}
                         </div>
                       );
                     })()}
@@ -1348,6 +1340,38 @@ function App() {
                           <div className="text-2xl font-bold text-gray-900 mt-1">
                             {hdl.value_numeric} <span className="text-sm font-normal text-gray-600">{hdl.unit}</span>
                           </div>
+                          {hdl.value_numeric && hdl.value_numeric < 40 && (
+                            <div className="text-xs text-red-600 mt-1 font-semibold">Low (increased risk)</div>
+                          )}
+                          {hdl.notes && <div className="text-xs text-gray-600 mt-1">{hdl.notes}</div>}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const totalChol = getObservationValue(selectedPatient.observations, 'total_cholesterol');
+                      return totalChol && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Total Cholesterol</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {totalChol.value_numeric} <span className="text-sm font-normal text-gray-600">{totalChol.unit}</span>
+                          </div>
+                          {totalChol.value_numeric && totalChol.value_numeric >= 200 && (
+                            <div className="text-xs text-orange-600 mt-1 font-semibold">Elevated</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const triglycerides = getObservationValue(selectedPatient.observations, 'triglycerides');
+                      return triglycerides && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Triglycerides</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {triglycerides.value_numeric} <span className="text-sm font-normal text-gray-600">{triglycerides.unit}</span>
+                          </div>
+                          {triglycerides.value_numeric && triglycerides.value_numeric >= 150 && (
+                            <div className="text-xs text-orange-600 mt-1 font-semibold">Elevated</div>
+                          )}
                         </div>
                       );
                     })()}
@@ -1370,12 +1394,24 @@ function App() {
                         </div>
                       );
                     })()}
+                    {(() => {
+                      const glucose = getObservationValue(selectedPatient.observations, 'glucose');
+                      return glucose && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Glucose</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {glucose.value_numeric} <span className="text-sm font-normal text-gray-600">{glucose.unit}</span>
+                          </div>
+                          {glucose.notes && <div className="text-xs text-gray-600 mt-1">{glucose.notes}</div>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                {/* Hematology & Minerals */}
+                {/* Hematology & Electrolytes */}
                 <div className="mt-6">
-                  <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Hematology & Minerals</h4>
+                  <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Hematology & Electrolytes</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {(() => {
                       const hemoglobin = getObservationValue(selectedPatient.observations, 'hemoglobin');
@@ -1390,6 +1426,41 @@ function App() {
                       );
                     })()}
                     {(() => {
+                      const wbc = getObservationValue(selectedPatient.observations, 'WBC');
+                      return wbc && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">WBC</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {wbc.value_numeric} <span className="text-sm font-normal text-gray-600">{wbc.unit}</span>
+                          </div>
+                          {wbc.notes && <div className="text-xs text-gray-600 mt-1">{wbc.notes}</div>}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const platelets = getObservationValue(selectedPatient.observations, 'platelets');
+                      return platelets && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Platelets</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {platelets.value_numeric} <span className="text-sm font-normal text-gray-600">{platelets.unit}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const sodium = getObservationValue(selectedPatient.observations, 'sodium');
+                      return sodium && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Sodium</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {sodium.value_numeric} <span className="text-sm font-normal text-gray-600">{sodium.unit}</span>
+                          </div>
+                          {sodium.notes && <div className="text-xs text-gray-600 mt-1">{sodium.notes}</div>}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
                       const potassium = getObservationValue(selectedPatient.observations, 'potassium');
                       return potassium && (
                         <div className="border border-gray-200 rounded-lg p-4">
@@ -1398,6 +1469,40 @@ function App() {
                             {potassium.value_numeric} <span className="text-sm font-normal text-gray-600">{potassium.unit}</span>
                           </div>
                           {potassium.notes && <div className="text-xs text-gray-600 mt-1">{potassium.notes}</div>}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const chloride = getObservationValue(selectedPatient.observations, 'chloride');
+                      return chloride && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Chloride</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {chloride.value_numeric} <span className="text-sm font-normal text-gray-600">{chloride.unit}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const bicarbonate = getObservationValue(selectedPatient.observations, 'bicarbonate');
+                      return bicarbonate && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Bicarbonate</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {bicarbonate.value_numeric} <span className="text-sm font-normal text-gray-600">{bicarbonate.unit}</span>
+                          </div>
+                          {bicarbonate.notes && <div className="text-xs text-gray-600 mt-1">{bicarbonate.notes}</div>}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const magnesium = getObservationValue(selectedPatient.observations, 'magnesium');
+                      return magnesium && (
+                        <div className="border border-gray-200 rounded-lg p-4">
+                          <div className="text-xs text-gray-600 uppercase">Magnesium</div>
+                          <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {magnesium.value_numeric} <span className="text-sm font-normal text-gray-600">{magnesium.unit}</span>
+                          </div>
                         </div>
                       );
                     })()}
