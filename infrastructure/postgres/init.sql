@@ -191,58 +191,185 @@ VALUES
     -- Cardiovascular & Blood Pressure
     ('11111111-1111-1111-1111-111111111111', 'blood_pressure_systolic', 152, NULL, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
     ('11111111-1111-1111-1111-111111111111', 'blood_pressure_diastolic', 94, NULL, 'mmHg', '2025-11-01 10:00:00', 'Hypertensive'),
-    -- Metabolic
-    ('11111111-1111-1111-1111-111111111111', 'HbA1c', 7.8, NULL, '%', '2025-11-01 09:30:00', 'Suboptimal diabetes control'),
+    ('11111111-1111-1111-1111-111111111111', 'heart_rate', 88, NULL, 'bpm', '2025-11-01 10:00:00', 'Elevated'),
+    ('11111111-1111-1111-1111-111111111111', 'oxygen_saturation', 94, NULL, '%', '2025-11-01 10:00:00', 'Low normal'),
+    -- Lipid Panel
+    ('11111111-1111-1111-1111-111111111111', 'total_cholesterol', 220, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated'),
     ('11111111-1111-1111-1111-111111111111', 'LDL_cholesterol', 142, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Above target'),
     ('11111111-1111-1111-1111-111111111111', 'HDL_cholesterol', 38, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Low'),
-    -- Hematology & Minerals
+    ('11111111-1111-1111-1111-111111111111', 'triglycerides', 200, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Borderline high'),
+    -- Metabolic
+    ('11111111-1111-1111-1111-111111111111', 'HbA1c', 7.8, NULL, '%', '2025-11-01 09:30:00', 'Suboptimal diabetes control'),
+    ('11111111-1111-1111-1111-111111111111', 'glucose', 165, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated fasting glucose'),
+    -- Hematology
     ('11111111-1111-1111-1111-111111111111', 'hemoglobin', 10.2, NULL, 'g/dL', '2025-11-01 09:30:00', 'Anemia - CKD related'),
+    ('11111111-1111-1111-1111-111111111111', 'WBC', 7.8, NULL, 'K/uL', '2025-11-01 09:30:00', 'Normal'),
+    ('11111111-1111-1111-1111-111111111111', 'platelets', 185, NULL, 'K/uL', '2025-11-01 09:30:00', 'Normal'),
+    -- Electrolytes & Minerals
+    ('11111111-1111-1111-1111-111111111111', 'sodium', 138, NULL, 'mEq/L', '2025-11-01 09:30:00', 'Normal'),
     ('11111111-1111-1111-1111-111111111111', 'potassium', 5.8, NULL, 'mEq/L', '2025-11-01 09:30:00', 'Hyperkalemia'),
+    ('11111111-1111-1111-1111-111111111111', 'chloride', 102, NULL, 'mEq/L', '2025-11-01 09:30:00', 'Normal'),
+    ('11111111-1111-1111-1111-111111111111', 'bicarbonate', 19, NULL, 'mEq/L', '2025-11-01 09:30:00', 'Low - metabolic acidosis'),
     ('11111111-1111-1111-1111-111111111111', 'calcium', 8.9, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Low normal'),
     ('11111111-1111-1111-1111-111111111111', 'phosphorus', 5.2, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Elevated - CKD'),
+    ('11111111-1111-1111-1111-111111111111', 'magnesium', 2.1, NULL, 'mg/dL', '2025-11-01 09:30:00', 'Normal'),
     ('11111111-1111-1111-1111-111111111111', 'albumin', 3.2, NULL, 'g/dL', '2025-11-01 09:30:00', 'Low normal');
 
 -- Patient 2 (Maria Rodriguez) - Medium Risk: Stage 2-3a CKD with HTN
-INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)
+INSERT INTO observations (patient_id, observation_type, value_numeric, value_text, unit, observation_date, notes)
 VALUES
-    ('22222222-2222-2222-2222-222222222222', 'eGFR', 52.3, 'mL/min/1.73m²', '2025-10-28 08:15:00', 'Mild-moderate decline'),
-    ('22222222-2222-2222-2222-222222222222', 'serum_creatinine', 1.3, 'mg/dL', '2025-10-28 08:15:00', 'Slightly elevated'),
-    ('22222222-2222-2222-2222-222222222222', 'uACR', 85, 'mg/g', '2025-10-28 08:15:00', 'Moderately increased albuminuria'),
-    ('22222222-2222-2222-2222-222222222222', 'blood_pressure_systolic', 148, 'mmHg', '2025-10-28 09:00:00', 'Stage 2 hypertension'),
-    ('22222222-2222-2222-2222-222222222222', 'blood_pressure_diastolic', 88, 'mmHg', '2025-10-28 09:00:00', 'Elevated'),
-    ('22222222-2222-2222-2222-222222222222', 'BMI', 32.4, 'kg/m²', '2025-10-28 09:00:00', 'Obese');
+    -- Kidney Function
+    ('22222222-2222-2222-2222-222222222222', 'eGFR', 52.3, NULL, 'mL/min/1.73m²', '2025-10-28 08:15:00', 'Stage 3a CKD'),
+    ('22222222-2222-2222-2222-222222222222', 'eGFR_trend', NULL, 'down', NULL, '2025-10-28 08:15:00', 'Slowly declining'),
+    ('22222222-2222-2222-2222-222222222222', 'eGFR_change_percent', -3.2, NULL, '%', '2025-10-28 08:15:00', '3.2% decline from last measurement'),
+    ('22222222-2222-2222-2222-222222222222', 'serum_creatinine', 1.3, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Slightly elevated'),
+    ('22222222-2222-2222-2222-222222222222', 'BUN', 28, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Upper normal'),
+    ('22222222-2222-2222-2222-222222222222', 'uACR', 85, NULL, 'mg/g', '2025-10-28 08:15:00', 'Moderately increased albuminuria'),
+    ('22222222-2222-2222-2222-222222222222', 'proteinuria_category', NULL, 'A2', NULL, '2025-10-28 08:15:00', 'Moderately increased albuminuria (30-300 mg/g)'),
+    -- Cardiovascular & Blood Pressure
+    ('22222222-2222-2222-2222-222222222222', 'blood_pressure_systolic', 148, NULL, 'mmHg', '2025-10-28 09:00:00', 'Stage 2 hypertension'),
+    ('22222222-2222-2222-2222-222222222222', 'blood_pressure_diastolic', 88, NULL, 'mmHg', '2025-10-28 09:00:00', 'Elevated'),
+    ('22222222-2222-2222-2222-222222222222', 'heart_rate', 76, NULL, 'bpm', '2025-10-28 09:00:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'oxygen_saturation', 97, NULL, '%', '2025-10-28 09:00:00', 'Normal'),
+    -- Lipid Panel
+    ('22222222-2222-2222-2222-222222222222', 'total_cholesterol', 195, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Borderline'),
+    ('22222222-2222-2222-2222-222222222222', 'LDL_cholesterol', 118, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Near optimal'),
+    ('22222222-2222-2222-2222-222222222222', 'HDL_cholesterol', 52, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'triglycerides', 125, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal'),
+    -- Metabolic
+    ('22222222-2222-2222-2222-222222222222', 'HbA1c', 5.6, NULL, '%', '2025-10-28 08:15:00', 'Normal - no diabetes'),
+    ('22222222-2222-2222-2222-222222222222', 'glucose', 102, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal fasting glucose'),
+    -- Hematology
+    ('22222222-2222-2222-2222-222222222222', 'hemoglobin', 12.8, NULL, 'g/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'WBC', 6.5, NULL, 'K/uL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'platelets', 225, NULL, 'K/uL', '2025-10-28 08:15:00', 'Normal'),
+    -- Electrolytes & Minerals
+    ('22222222-2222-2222-2222-222222222222', 'sodium', 140, NULL, 'mEq/L', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'potassium', 4.2, NULL, 'mEq/L', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'chloride', 104, NULL, 'mEq/L', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'bicarbonate', 24, NULL, 'mEq/L', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'calcium', 9.4, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'phosphorus', 3.6, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'magnesium', 2.0, NULL, 'mg/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'albumin', 4.1, NULL, 'g/dL', '2025-10-28 08:15:00', 'Normal'),
+    ('22222222-2222-2222-2222-222222222222', 'BMI', 32.4, NULL, 'kg/m²', '2025-10-28 09:00:00', 'Obese');
 
 -- Patient 3 (David Chen) - Low Risk: Normal kidney function
-INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)
+INSERT INTO observations (patient_id, observation_type, value_numeric, value_text, unit, observation_date, notes)
 VALUES
-    ('33333333-3333-3333-3333-333333333333', 'eGFR', 95.2, 'mL/min/1.73m²', '2025-11-03 10:45:00', 'Normal'),
-    ('33333333-3333-3333-3333-333333333333', 'serum_creatinine', 0.9, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
-    ('33333333-3333-3333-3333-333333333333', 'uACR', 12, 'mg/g', '2025-11-03 10:45:00', 'Normal'),
-    ('33333333-3333-3333-3333-333333333333', 'blood_pressure_systolic', 118, 'mmHg', '2025-11-03 11:00:00', 'Normal'),
-    ('33333333-3333-3333-3333-333333333333', 'blood_pressure_diastolic', 76, 'mmHg', '2025-11-03 11:00:00', 'Normal'),
-    ('33333333-3333-3333-3333-333333333333', 'BMI', 24.1, 'kg/m²', '2025-11-03 11:00:00', 'Normal weight');
+    -- Kidney Function
+    ('33333333-3333-3333-3333-333333333333', 'eGFR', 95.2, NULL, 'mL/min/1.73m²', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'eGFR_trend', NULL, 'stable', NULL, '2025-11-03 10:45:00', 'Stable kidney function'),
+    ('33333333-3333-3333-3333-333333333333', 'eGFR_change_percent', 1.2, NULL, '%', '2025-11-03 10:45:00', '1.2% increase from last measurement'),
+    ('33333333-3333-3333-3333-333333333333', 'serum_creatinine', 0.9, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'BUN', 16, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'uACR', 12, NULL, 'mg/g', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'proteinuria_category', NULL, 'A1', NULL, '2025-11-03 10:45:00', 'Normal albuminuria (<30 mg/g)'),
+    -- Cardiovascular & Blood Pressure
+    ('33333333-3333-3333-3333-333333333333', 'blood_pressure_systolic', 118, NULL, 'mmHg', '2025-11-03 11:00:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'blood_pressure_diastolic', 76, NULL, 'mmHg', '2025-11-03 11:00:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'heart_rate', 68, NULL, 'bpm', '2025-11-03 11:00:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'oxygen_saturation', 98, NULL, '%', '2025-11-03 11:00:00', 'Normal'),
+    -- Lipid Panel
+    ('33333333-3333-3333-3333-333333333333', 'total_cholesterol', 172, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Desirable'),
+    ('33333333-3333-3333-3333-333333333333', 'LDL_cholesterol', 98, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Near optimal'),
+    ('33333333-3333-3333-3333-333333333333', 'HDL_cholesterol', 58, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'triglycerides', 88, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    -- Metabolic
+    ('33333333-3333-3333-3333-333333333333', 'HbA1c', 5.2, NULL, '%', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'glucose', 92, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal fasting glucose'),
+    -- Hematology
+    ('33333333-3333-3333-3333-333333333333', 'hemoglobin', 14.8, NULL, 'g/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'WBC', 7.2, NULL, 'K/uL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'platelets', 245, NULL, 'K/uL', '2025-11-03 10:45:00', 'Normal'),
+    -- Electrolytes & Minerals
+    ('33333333-3333-3333-3333-333333333333', 'sodium', 139, NULL, 'mEq/L', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'potassium', 4.0, NULL, 'mEq/L', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'chloride', 103, NULL, 'mEq/L', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'bicarbonate', 25, NULL, 'mEq/L', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'calcium', 9.6, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'phosphorus', 3.2, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'magnesium', 2.2, NULL, 'mg/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'albumin', 4.5, NULL, 'g/dL', '2025-11-03 10:45:00', 'Normal'),
+    ('33333333-3333-3333-3333-333333333333', 'BMI', 24.1, NULL, 'kg/m²', '2025-11-03 11:00:00', 'Normal weight');
 
 -- Patient 4 (Sarah Johnson) - High Risk: Multiple comorbidities, Stage 3b CKD
-INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)
+INSERT INTO observations (patient_id, observation_type, value_numeric, value_text, unit, observation_date, notes)
 VALUES
-    ('44444444-4444-4444-4444-444444444444', 'eGFR', 38.7, 'mL/min/1.73m²', '2025-10-30 07:30:00', 'Stage 3b CKD'),
-    ('44444444-4444-4444-4444-444444444444', 'serum_creatinine', 1.8, 'mg/dL', '2025-10-30 07:30:00', 'Elevated'),
-    ('44444444-4444-4444-4444-444444444444', 'uACR', 320, 'mg/g', '2025-10-30 07:30:00', 'Severely increased albuminuria'),
-    ('44444444-4444-4444-4444-444444444444', 'blood_pressure_systolic', 165, 'mmHg', '2025-10-30 08:00:00', 'Stage 2 hypertension'),
-    ('44444444-4444-4444-4444-444444444444', 'blood_pressure_diastolic', 95, 'mmHg', '2025-10-30 08:00:00', 'Hypertensive'),
-    ('44444444-4444-4444-4444-444444444444', 'HbA1c', 7.8, '%', '2025-10-30 07:30:00', 'Suboptimal diabetes control'),
-    ('44444444-4444-4444-4444-444444444444', 'LDL_cholesterol', 145, 'mg/dL', '2025-10-30 07:30:00', 'Above target'),
-    ('44444444-4444-4444-4444-444444444444', 'BMI', 34.8, 'kg/m²', '2025-10-30 08:00:00', 'Obese class I');
+    -- Kidney Function
+    ('44444444-4444-4444-4444-444444444444', 'eGFR', 38.7, NULL, 'mL/min/1.73m²', '2025-10-30 07:30:00', 'Stage 3b CKD'),
+    ('44444444-4444-4444-4444-444444444444', 'eGFR_trend', NULL, 'down', NULL, '2025-10-30 07:30:00', 'Progressive decline'),
+    ('44444444-4444-4444-4444-444444444444', 'eGFR_change_percent', -6.8, NULL, '%', '2025-10-30 07:30:00', '6.8% decline from last measurement'),
+    ('44444444-4444-4444-4444-444444444444', 'serum_creatinine', 1.8, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'BUN', 38, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'uACR', 320, NULL, 'mg/g', '2025-10-30 07:30:00', 'Severely increased albuminuria'),
+    ('44444444-4444-4444-4444-444444444444', 'proteinuria_category', NULL, 'A3', NULL, '2025-10-30 07:30:00', 'Severely increased albuminuria (>300 mg/g)'),
+    -- Cardiovascular & Blood Pressure
+    ('44444444-4444-4444-4444-444444444444', 'blood_pressure_systolic', 165, NULL, 'mmHg', '2025-10-30 08:00:00', 'Stage 2 hypertension'),
+    ('44444444-4444-4444-4444-444444444444', 'blood_pressure_diastolic', 95, NULL, 'mmHg', '2025-10-30 08:00:00', 'Hypertensive'),
+    ('44444444-4444-4444-4444-444444444444', 'heart_rate', 92, NULL, 'bpm', '2025-10-30 08:00:00', 'Elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'oxygen_saturation', 93, NULL, '%', '2025-10-30 08:00:00', 'Low normal'),
+    -- Lipid Panel
+    ('44444444-4444-4444-4444-444444444444', 'total_cholesterol', 238, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'LDL_cholesterol', 145, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Above target'),
+    ('44444444-4444-4444-4444-444444444444', 'HDL_cholesterol', 42, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Low'),
+    ('44444444-4444-4444-4444-444444444444', 'triglycerides', 255, NULL, 'mg/dL', '2025-10-30 07:30:00', 'High'),
+    -- Metabolic
+    ('44444444-4444-4444-4444-444444444444', 'HbA1c', 7.8, NULL, '%', '2025-10-30 07:30:00', 'Suboptimal diabetes control'),
+    ('44444444-4444-4444-4444-444444444444', 'glucose', 178, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Elevated fasting glucose'),
+    -- Hematology
+    ('44444444-4444-4444-4444-444444444444', 'hemoglobin', 11.2, NULL, 'g/dL', '2025-10-30 07:30:00', 'Mild anemia'),
+    ('44444444-4444-4444-4444-444444444444', 'WBC', 8.5, NULL, 'K/uL', '2025-10-30 07:30:00', 'Normal'),
+    ('44444444-4444-4444-4444-444444444444', 'platelets', 198, NULL, 'K/uL', '2025-10-30 07:30:00', 'Normal'),
+    -- Electrolytes & Minerals
+    ('44444444-4444-4444-4444-444444444444', 'sodium', 137, NULL, 'mEq/L', '2025-10-30 07:30:00', 'Normal'),
+    ('44444444-4444-4444-4444-444444444444', 'potassium', 5.2, NULL, 'mEq/L', '2025-10-30 07:30:00', 'Borderline elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'chloride', 101, NULL, 'mEq/L', '2025-10-30 07:30:00', 'Normal'),
+    ('44444444-4444-4444-4444-444444444444', 'bicarbonate', 21, NULL, 'mEq/L', '2025-10-30 07:30:00', 'Low normal'),
+    ('44444444-4444-4444-4444-444444444444', 'calcium', 9.1, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Normal'),
+    ('44444444-4444-4444-4444-444444444444', 'phosphorus', 4.6, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Borderline elevated'),
+    ('44444444-4444-4444-4444-444444444444', 'magnesium', 1.9, NULL, 'mg/dL', '2025-10-30 07:30:00', 'Normal'),
+    ('44444444-4444-4444-4444-444444444444', 'albumin', 3.6, NULL, 'g/dL', '2025-10-30 07:30:00', 'Low normal'),
+    ('44444444-4444-4444-4444-444444444444', 'BMI', 34.8, NULL, 'kg/m²', '2025-10-30 08:00:00', 'Obese class I');
 
 -- Patient 5 (Michael Thompson) - Medium Risk: Early CKD Stage 2
-INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, notes)
+INSERT INTO observations (patient_id, observation_type, value_numeric, value_text, unit, observation_date, notes)
 VALUES
-    ('55555555-5555-5555-5555-555555555555', 'eGFR', 68.5, 'mL/min/1.73m²', '2025-11-02 09:00:00', 'Mild decline'),
-    ('55555555-5555-5555-5555-555555555555', 'serum_creatinine', 1.2, 'mg/dL', '2025-11-02 09:00:00', 'Upper normal'),
-    ('55555555-5555-5555-5555-555555555555', 'uACR', 42, 'mg/g', '2025-11-02 09:00:00', 'Mildly increased albuminuria'),
-    ('55555555-5555-5555-5555-555555555555', 'blood_pressure_systolic', 138, 'mmHg', '2025-11-02 09:30:00', 'Prehypertension'),
-    ('55555555-5555-5555-5555-555555555555', 'blood_pressure_diastolic', 84, 'mmHg', '2025-11-02 09:30:00', 'Borderline'),
-    ('55555555-5555-5555-5555-555555555555', 'BMI', 28.5, 'kg/m²', '2025-11-02 09:30:00', 'Overweight');
+    -- Kidney Function
+    ('55555555-5555-5555-5555-555555555555', 'eGFR', 68.5, NULL, 'mL/min/1.73m²', '2025-11-02 09:00:00', 'Stage 2 CKD'),
+    ('55555555-5555-5555-5555-555555555555', 'eGFR_trend', NULL, 'down', NULL, '2025-11-02 09:00:00', 'Mild decline'),
+    ('55555555-5555-5555-5555-555555555555', 'eGFR_change_percent', -4.5, NULL, '%', '2025-11-02 09:00:00', '4.5% decline from last measurement'),
+    ('55555555-5555-5555-5555-555555555555', 'serum_creatinine', 1.2, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Upper normal'),
+    ('55555555-5555-5555-5555-555555555555', 'BUN', 22, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'uACR', 42, NULL, 'mg/g', '2025-11-02 09:00:00', 'Mildly increased albuminuria'),
+    ('55555555-5555-5555-5555-555555555555', 'proteinuria_category', NULL, 'A2', NULL, '2025-11-02 09:00:00', 'Moderately increased albuminuria (30-300 mg/g)'),
+    -- Cardiovascular & Blood Pressure
+    ('55555555-5555-5555-5555-555555555555', 'blood_pressure_systolic', 138, NULL, 'mmHg', '2025-11-02 09:30:00', 'Prehypertension'),
+    ('55555555-5555-5555-5555-555555555555', 'blood_pressure_diastolic', 84, NULL, 'mmHg', '2025-11-02 09:30:00', 'Borderline'),
+    ('55555555-5555-5555-5555-555555555555', 'heart_rate', 72, NULL, 'bpm', '2025-11-02 09:30:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'oxygen_saturation', 96, NULL, '%', '2025-11-02 09:30:00', 'Normal'),
+    -- Lipid Panel
+    ('55555555-5555-5555-5555-555555555555', 'total_cholesterol', 205, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Borderline high'),
+    ('55555555-5555-5555-5555-555555555555', 'LDL_cholesterol', 128, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Near optimal'),
+    ('55555555-5555-5555-5555-555555555555', 'HDL_cholesterol', 48, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Borderline low'),
+    ('55555555-5555-5555-5555-555555555555', 'triglycerides', 145, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Normal'),
+    -- Metabolic
+    ('55555555-5555-5555-5555-555555555555', 'HbA1c', 5.8, NULL, '%', '2025-11-02 09:00:00', 'Prediabetic range'),
+    ('55555555-5555-5555-5555-555555555555', 'glucose', 115, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Impaired fasting glucose'),
+    -- Hematology
+    ('55555555-5555-5555-5555-555555555555', 'hemoglobin', 13.5, NULL, 'g/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'WBC', 7.0, NULL, 'K/uL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'platelets', 210, NULL, 'K/uL', '2025-11-02 09:00:00', 'Normal'),
+    -- Electrolytes & Minerals
+    ('55555555-5555-5555-5555-555555555555', 'sodium', 141, NULL, 'mEq/L', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'potassium', 4.5, NULL, 'mEq/L', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'chloride', 105, NULL, 'mEq/L', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'bicarbonate', 23, NULL, 'mEq/L', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'calcium', 9.5, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'phosphorus', 3.8, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'magnesium', 2.0, NULL, 'mg/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'albumin', 4.2, NULL, 'g/dL', '2025-11-02 09:00:00', 'Normal'),
+    ('55555555-5555-5555-5555-555555555555', 'BMI', 28.5, NULL, 'kg/m²', '2025-11-02 09:30:00', 'Overweight');
 
 -- ============================================
 -- Clinical Conditions - Diagnoses
