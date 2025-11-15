@@ -465,7 +465,7 @@ SELECT 'Total conditions: ' || COUNT(*) FROM conditions;
 -- Display patient summary
 SELECT * FROM patient_summary ORDER BY medical_record_number;
 -- ================================================================
--- Generate 200 Mock Patient Records with Comprehensive Clinical Data
+-- Generate 1000 Mock Patient Records with Comprehensive Clinical Data
 -- ================================================================
 -- This script generates diverse patient demographics, observations,
 -- and conditions representing various CKD stages and risk levels
@@ -477,7 +477,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Insert 200 mock patients with diverse demographics
+-- Insert 1000 mock patients with diverse demographics
 DO $$
 DECLARE
   v_patient_id uuid;
@@ -506,8 +506,8 @@ DECLARE
   last_names text[] := ARRAY['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts'];
 
 BEGIN
-  -- Generate 200 patients
-  FOR i IN 1..200 LOOP
+  -- Generate 1000 patients
+  FOR i IN 1..1000 LOOP
     v_patient_id := random_uuid();
 
     -- Random demographics
@@ -830,8 +830,785 @@ BEGIN
 
   END LOOP;
 
-  RAISE NOTICE 'Successfully generated 200 mock patients with comprehensive clinical data';
+  RAISE NOTICE 'Successfully generated 1000 mock patients with comprehensive clinical data';
 END $$;
 
 -- Clean up function
 DROP FUNCTION IF EXISTS random_uuid();
+
+-- ============================================
+-- Treatment and Adherence Tracking System
+-- ============================================
+-- Migration 007: Adds comprehensive treatment and adherence tracking
+-- for realistic disease progression simulation
+
+-- ============================================
+-- 1. Cycle Metadata - System-wide Cycle Tracking
+-- ============================================
+CREATE TABLE IF NOT EXISTS cycle_metadata (
+    id SERIAL PRIMARY KEY,
+    current_cycle INTEGER NOT NULL DEFAULT 0,
+    total_cycles INTEGER NOT NULL DEFAULT 24,
+    cycle_duration_months INTEGER NOT NULL DEFAULT 1,
+    simulation_start_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    last_advance_date TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Ensure only one row exists
+    CONSTRAINT single_row CHECK (id = 1)
+);
+
+-- Initialize with cycle 0
+INSERT INTO cycle_metadata (id, current_cycle, total_cycles, cycle_duration_months, simulation_start_date)
+VALUES (1, 0, 24, 1, NOW())
+ON CONFLICT (id) DO NOTHING;
+
+CREATE INDEX idx_cycle_metadata_current ON cycle_metadata(current_cycle);
+
+COMMENT ON TABLE cycle_metadata IS 'System-wide cycle tracking for cohort-based progression simulation';
+COMMENT ON COLUMN cycle_metadata.current_cycle IS 'Current cycle number (0-24). Incremented by "Next Cycle" button';
+COMMENT ON COLUMN cycle_metadata.last_advance_date IS 'Timestamp of last cycle advancement';
+
+-- ============================================
+-- 2. Patient Treatments
+-- ============================================
+CREATE TABLE IF NOT EXISTS patient_treatments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Treatment details
+    medication_name VARCHAR(100) NOT NULL,
+    medication_class VARCHAR(50) NOT NULL, -- 'RAS_INHIBITOR', 'SGLT2I', 'GLP1_RA', etc.
+
+    -- Timing
+    started_cycle INTEGER NOT NULL, -- Cycle when treatment started
+    started_date TIMESTAMP NOT NULL,
+    stopped_cycle INTEGER, -- null if ongoing
+    stopped_date TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'active', -- 'active', 'stopped', 'paused'
+
+    -- Adherence tracking
+    baseline_adherence DECIMAL(3, 2) NOT NULL DEFAULT 0.80, -- Initial adherence (0.00-1.00)
+    current_adherence DECIMAL(3, 2) NOT NULL DEFAULT 0.80, -- Current adherence score
+
+    -- Expected vs actual effect tracking
+    expected_egfr_benefit DECIMAL(5, 2), -- Expected eGFR improvement (mL/min)
+    expected_uacr_reduction DECIMAL(4, 2), -- Expected uACR reduction (percentage, 0.30 = 30% reduction)
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_adherence_range CHECK (baseline_adherence BETWEEN 0 AND 1 AND current_adherence BETWEEN 0 AND 1),
+    CONSTRAINT check_status CHECK (status IN ('active', 'stopped', 'paused'))
+);
+
+CREATE INDEX idx_treatments_patient ON patient_treatments(patient_id);
+CREATE INDEX idx_treatments_status ON patient_treatments(status);
+CREATE INDEX idx_treatments_class ON patient_treatments(medication_class);
+CREATE INDEX idx_treatments_cycle ON patient_treatments(started_cycle);
+
+COMMENT ON TABLE patient_treatments IS 'Tracks medication treatments and adherence for CKD patients';
+COMMENT ON COLUMN patient_treatments.baseline_adherence IS 'Initial adherence score when treatment started (0.00-1.00)';
+COMMENT ON COLUMN patient_treatments.current_adherence IS 'Current adherence score calculated from lab trends (0.00-1.00)';
+
+-- ============================================
+-- 3. Adherence History
+-- ============================================
+CREATE TABLE IF NOT EXISTS adherence_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    treatment_id UUID NOT NULL REFERENCES patient_treatments(id) ON DELETE CASCADE,
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Cycle tracking
+    cycle_number INTEGER NOT NULL,
+    measured_at TIMESTAMP NOT NULL,
+
+    -- Adherence calculation
+    adherence_score DECIMAL(3, 2) NOT NULL, -- 0.00-1.00
+    calculation_method VARCHAR(50) NOT NULL, -- 'lab_trend', 'manual', 'pill_count', 'self_report'
+
+    -- Supporting data for lab-based calculation
+    egfr_value DECIMAL(5, 2),
+    uacr_value DECIMAL(8, 2),
+    egfr_change_from_baseline DECIMAL(6, 2),
+    uacr_change_from_baseline DECIMAL(8, 2),
+
+    -- Expected vs actual
+    expected_egfr DECIMAL(5, 2), -- What we expected with 100% adherence
+    actual_egfr DECIMAL(5, 2), -- What we observed
+    adherence_indicator VARCHAR(20), -- 'excellent', 'good', 'fair', 'poor', 'very_poor'
+
+    -- Notes
+    notes TEXT,
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT check_adherence_score CHECK (adherence_score BETWEEN 0 AND 1),
+    CONSTRAINT unique_adherence_record UNIQUE (treatment_id, cycle_number)
+);
+
+CREATE INDEX idx_adherence_treatment ON adherence_history(treatment_id);
+CREATE INDEX idx_adherence_patient ON adherence_history(patient_id);
+CREATE INDEX idx_adherence_cycle ON adherence_history(cycle_number);
+CREATE INDEX idx_adherence_score ON adherence_history(adherence_score);
+
+COMMENT ON TABLE adherence_history IS 'Tracks adherence scores over time for treated patients';
+COMMENT ON COLUMN adherence_history.adherence_score IS 'Calculated adherence (1.0 = perfect, 0.0 = none)';
+
+-- ============================================
+-- 4. Treatment Recommendations Tracking
+-- ============================================
+CREATE TABLE IF NOT EXISTS treatment_recommendations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Recommendation details
+    recommended_medication_class VARCHAR(50) NOT NULL,
+    recommended_medication VARCHAR(100),
+    recommendation_reason TEXT NOT NULL,
+
+    -- Clinical context
+    recommended_at_cycle INTEGER NOT NULL,
+    recommended_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    health_state_at_recommendation VARCHAR(10),
+    egfr_at_recommendation DECIMAL(5, 2),
+    uacr_at_recommendation DECIMAL(8, 2),
+
+    -- Status tracking
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending', 'accepted', 'declined', 'implemented'
+    implemented_at TIMESTAMP,
+    implemented_cycle INTEGER,
+    treatment_id UUID REFERENCES patient_treatments(id), -- Links to actual treatment if implemented
+
+    -- Decision tracking
+    decision_made_by VARCHAR(100),
+    decision_notes TEXT,
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT check_rec_status CHECK (status IN ('pending', 'accepted', 'declined', 'implemented'))
+);
+
+CREATE INDEX idx_treatment_recs_patient ON treatment_recommendations(patient_id);
+CREATE INDEX idx_treatment_recs_status ON treatment_recommendations(status);
+CREATE INDEX idx_treatment_recs_cycle ON treatment_recommendations(recommended_at_cycle);
+CREATE INDEX idx_treatment_recs_class ON treatment_recommendations(recommended_medication_class);
+
+COMMENT ON TABLE treatment_recommendations IS 'Tracks AI-generated treatment recommendations and their implementation status';
+
+-- ============================================
+-- 5. Lab Values History (Enhanced)
+-- ============================================
+-- Add treatment-related columns to health_state_history
+ALTER TABLE health_state_history
+ADD COLUMN IF NOT EXISTS is_treated BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS active_treatments TEXT[], -- Array of active medication classes
+ADD COLUMN IF NOT EXISTS average_adherence DECIMAL(3, 2), -- Average adherence across all active treatments
+ADD COLUMN IF NOT EXISTS treatment_effect_egfr DECIMAL(5, 2), -- Estimated treatment benefit on eGFR
+ADD COLUMN IF NOT EXISTS treatment_effect_uacr DECIMAL(6, 2); -- Estimated treatment benefit on uACR
+
+COMMENT ON COLUMN health_state_history.is_treated IS 'Whether patient has active treatments during this cycle';
+COMMENT ON COLUMN health_state_history.average_adherence IS 'Average adherence score (0-1) for this cycle';
+
+-- Add progression metadata to patient_progression_state
+ALTER TABLE patient_progression_state
+ADD COLUMN IF NOT EXISTS natural_trajectory VARCHAR(20), -- 'worsening' (always, unless treated)
+ADD COLUMN IF NOT EXISTS last_updated_cycle INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS base_decline_locked BOOLEAN DEFAULT true; -- Ensures consistent decline rate
+
+COMMENT ON COLUMN patient_progression_state.natural_trajectory IS 'Natural disease trajectory (always worsening without treatment)';
+COMMENT ON COLUMN patient_progression_state.base_decline_locked IS 'If true, decline rate stays constant (realistic CKD progression)';
+
+-- ============================================
+-- 6. Helper Functions
+-- ============================================
+
+-- Function to get current system cycle
+CREATE OR REPLACE FUNCTION get_current_cycle()
+RETURNS INTEGER AS $$
+DECLARE
+    current_cycle_num INTEGER;
+BEGIN
+    SELECT current_cycle INTO current_cycle_num FROM cycle_metadata WHERE id = 1;
+    RETURN current_cycle_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to advance system cycle
+CREATE OR REPLACE FUNCTION advance_system_cycle()
+RETURNS INTEGER AS $$
+DECLARE
+    new_cycle INTEGER;
+BEGIN
+    UPDATE cycle_metadata
+    SET
+        current_cycle = current_cycle + 1,
+        last_advance_date = NOW(),
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING current_cycle INTO new_cycle;
+
+    RETURN new_cycle;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get patient's active treatments
+CREATE OR REPLACE FUNCTION get_active_treatments(p_patient_id UUID)
+RETURNS TABLE (
+    medication_name VARCHAR,
+    medication_class VARCHAR,
+    adherence DECIMAL,
+    started_cycle INTEGER
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        pt.medication_name,
+        pt.medication_class,
+        pt.current_adherence,
+        pt.started_cycle
+    FROM patient_treatments pt
+    WHERE pt.patient_id = p_patient_id
+    AND pt.status = 'active';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to calculate adherence from lab trends
+CREATE OR REPLACE FUNCTION calculate_adherence_from_labs(
+    p_treatment_id UUID,
+    p_current_egfr DECIMAL,
+    p_current_uacr DECIMAL,
+    p_baseline_egfr DECIMAL,
+    p_baseline_uacr DECIMAL,
+    p_expected_egfr_benefit DECIMAL,
+    p_expected_uacr_reduction DECIMAL
+)
+RETURNS DECIMAL AS $$
+DECLARE
+    actual_egfr_change DECIMAL;
+    actual_uacr_change DECIMAL;
+    adherence_from_egfr DECIMAL;
+    adherence_from_uacr DECIMAL;
+    final_adherence DECIMAL;
+BEGIN
+    -- Calculate actual changes
+    actual_egfr_change := p_current_egfr - p_baseline_egfr;
+    actual_uacr_change := (p_current_uacr - p_baseline_uacr) / NULLIF(p_baseline_uacr, 0);
+
+    -- Estimate adherence from eGFR (higher is better adherence)
+    IF p_expected_egfr_benefit IS NOT NULL THEN
+        adherence_from_egfr := GREATEST(0, LEAST(1, actual_egfr_change / NULLIF(p_expected_egfr_benefit, 0)));
+    ELSE
+        adherence_from_egfr := NULL;
+    END IF;
+
+    -- Estimate adherence from uACR (more reduction = better adherence)
+    IF p_expected_uacr_reduction IS NOT NULL THEN
+        adherence_from_uacr := GREATEST(0, LEAST(1, -actual_uacr_change / NULLIF(p_expected_uacr_reduction, 0)));
+    ELSE
+        adherence_from_uacr := NULL;
+    END IF;
+
+    -- Average both if available, otherwise use whichever is available
+    IF adherence_from_egfr IS NOT NULL AND adherence_from_uacr IS NOT NULL THEN
+        final_adherence := (adherence_from_egfr + adherence_from_uacr) / 2.0;
+    ELSIF adherence_from_egfr IS NOT NULL THEN
+        final_adherence := adherence_from_egfr;
+    ELSIF adherence_from_uacr IS NOT NULL THEN
+        final_adherence := adherence_from_uacr;
+    ELSE
+        final_adherence := 0.5; -- Default to moderate adherence if can't calculate
+    END IF;
+
+    -- Ensure in valid range
+    final_adherence := GREATEST(0, LEAST(1, final_adherence));
+
+    RETURN final_adherence;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- 7. Indexes for Performance
+-- ============================================
+
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_health_state_patient_cycle
+ON health_state_history(patient_id, cycle_number);
+
+CREATE INDEX IF NOT EXISTS idx_treatments_patient_status
+ON patient_treatments(patient_id, status);
+
+-- ============================================
+-- Migration 007 Complete
+-- ============================================
+
+SELECT 'Treatment and Adherence Tracking System created successfully!' AS status;
+
+-- ============================================
+-- Migration 008: Jardiance Adherence Tracking System
+-- Implements complete medication adherence monitoring
+-- Based on Minuteful Kidney Variable Dictionary
+-- ============================================
+
+-- ============================================
+-- 1. Add Comorbidity Flags to Patients Table
+-- ============================================
+
+ALTER TABLE patients
+ADD COLUMN IF NOT EXISTS has_diabetes BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS has_hypertension BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS has_heart_failure BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS has_cad BOOLEAN DEFAULT false;
+
+-- Create indexes for quick filtering
+CREATE INDEX IF NOT EXISTS idx_patients_has_diabetes ON patients(has_diabetes);
+CREATE INDEX IF NOT EXISTS idx_patients_has_hypertension ON patients(has_hypertension);
+
+COMMENT ON COLUMN patients.has_diabetes IS 'Computed flag: Patient has Type 1 or Type 2 Diabetes';
+COMMENT ON COLUMN patients.has_hypertension IS 'Computed flag: Patient has Essential Hypertension';
+COMMENT ON COLUMN patients.has_heart_failure IS 'Computed flag: Patient has Heart Failure';
+COMMENT ON COLUMN patients.has_cad IS 'Computed flag: Patient has Coronary Artery Disease';
+
+-- ============================================
+-- 2. Jardiance Prescriptions Table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS jardiance_prescriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+
+    -- Prescription details
+    prescribed BOOLEAN DEFAULT true,
+    currently_taking BOOLEAN DEFAULT true,
+    medication VARCHAR(100) NOT NULL, -- "Jardiance (empagliflozin) 10mg" or "25mg"
+    dosage VARCHAR(20) NOT NULL, -- "10mg", "25mg"
+
+    -- Dates
+    start_date DATE NOT NULL,
+    end_date DATE, -- NULL if currently active
+
+    -- Prescriber information
+    prescriber_name VARCHAR(100),
+    prescriber_npi VARCHAR(20),
+
+    -- Indication
+    indication VARCHAR(100), -- "CKD with diabetes", "CKD without diabetes", "Heart failure"
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_dates CHECK (end_date IS NULL OR end_date >= start_date),
+    CONSTRAINT check_dosage CHECK (dosage IN ('10mg', '25mg'))
+);
+
+CREATE INDEX idx_jardiance_prescriptions_patient_id ON jardiance_prescriptions(patient_id);
+CREATE INDEX idx_jardiance_prescriptions_active ON jardiance_prescriptions(currently_taking) WHERE currently_taking = true;
+CREATE INDEX idx_jardiance_prescriptions_dates ON jardiance_prescriptions(start_date, end_date);
+
+COMMENT ON TABLE jardiance_prescriptions IS 'Tracks all Jardiance prescriptions for patients';
+COMMENT ON COLUMN jardiance_prescriptions.currently_taking IS 'TRUE if patient is actively taking this prescription';
+COMMENT ON COLUMN jardiance_prescriptions.end_date IS 'NULL for active prescriptions, set date when discontinued';
+
+-- ============================================
+-- 3. Jardiance Refills Table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS jardiance_refills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prescription_id UUID NOT NULL REFERENCES jardiance_prescriptions(id) ON DELETE CASCADE,
+
+    -- Refill details
+    refill_date DATE NOT NULL,
+    days_supply INTEGER NOT NULL, -- Usually 30 or 90 days
+    quantity INTEGER NOT NULL, -- Number of tablets
+
+    -- Expected vs actual
+    expected_refill_date DATE, -- When we expected them to refill
+    gap_days INTEGER, -- Calculated: actual refill date - expected refill date (positive = late)
+
+    -- Pharmacy information
+    pharmacy_name VARCHAR(100),
+    pharmacy_npi VARCHAR(20),
+
+    -- Cost information (optional)
+    copay_amount DECIMAL(10, 2),
+    cost_barrier_reported BOOLEAN DEFAULT false,
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_days_supply CHECK (days_supply BETWEEN 7 AND 365),
+    CONSTRAINT check_quantity CHECK (quantity > 0)
+);
+
+CREATE INDEX idx_jardiance_refills_prescription_id ON jardiance_refills(prescription_id);
+CREATE INDEX idx_jardiance_refills_date ON jardiance_refills(refill_date);
+CREATE INDEX idx_jardiance_refills_gap ON jardiance_refills(gap_days) WHERE gap_days > 7;
+
+COMMENT ON TABLE jardiance_refills IS 'Tracks every refill event for Jardiance prescriptions';
+COMMENT ON COLUMN jardiance_refills.gap_days IS 'Days between expected and actual refill. Positive = late, Negative = early';
+COMMENT ON COLUMN jardiance_refills.expected_refill_date IS 'Calculated as previous_refill_date + days_supply';
+
+-- ============================================
+-- 4. Jardiance Adherence Metrics Table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS jardiance_adherence (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prescription_id UUID NOT NULL REFERENCES jardiance_prescriptions(id) ON DELETE CASCADE,
+
+    -- Assessment period
+    assessment_date DATE NOT NULL,
+    period_start_date DATE NOT NULL,
+    period_end_date DATE NOT NULL,
+    period_days INTEGER NOT NULL, -- Usually 30, 90, or 180 days
+
+    -- Primary adherence metrics
+    mpr DECIMAL(5, 2) NOT NULL, -- Medication Possession Ratio (0.00 to 100.00)
+    pdc DECIMAL(5, 2) NOT NULL, -- Proportion of Days Covered (0.00 to 100.00)
+
+    -- Adherence category
+    category VARCHAR(20) NOT NULL, -- 'High' (≥80%), 'Medium' (60-79%), 'Low' (<60%)
+
+    -- Supporting data
+    total_refills INTEGER NOT NULL,
+    total_days_supply INTEGER NOT NULL,
+    total_quantity INTEGER NOT NULL,
+
+    -- Gap analysis
+    total_gap_days INTEGER DEFAULT 0,
+    max_gap_days INTEGER DEFAULT 0,
+    gap_count INTEGER DEFAULT 0, -- Number of gaps > 7 days
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_mpr_range CHECK (mpr BETWEEN 0 AND 100),
+    CONSTRAINT check_pdc_range CHECK (pdc BETWEEN 0 AND 100),
+    CONSTRAINT check_category CHECK (category IN ('High', 'Medium', 'Low')),
+    CONSTRAINT check_period_dates CHECK (period_end_date >= period_start_date),
+    CONSTRAINT check_period_days CHECK (period_days = (period_end_date - period_start_date + 1))
+);
+
+CREATE INDEX idx_jardiance_adherence_prescription_id ON jardiance_adherence(prescription_id);
+CREATE INDEX idx_jardiance_adherence_date ON jardiance_adherence(assessment_date);
+CREATE INDEX idx_jardiance_adherence_category ON jardiance_adherence(category);
+CREATE INDEX idx_jardiance_adherence_mpr ON jardiance_adherence(mpr);
+
+COMMENT ON TABLE jardiance_adherence IS 'Computed adherence metrics over specific time periods';
+COMMENT ON COLUMN jardiance_adherence.mpr IS 'MPR = (Total days supply / Days in period) × 100';
+COMMENT ON COLUMN jardiance_adherence.pdc IS 'PDC = (Days with medication available / Days in period) × 100';
+COMMENT ON COLUMN jardiance_adherence.category IS 'High: MPR≥80%, Medium: 60-79%, Low: <60%';
+
+-- ============================================
+-- 5. Adherence Barriers Table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS adherence_barriers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prescription_id UUID NOT NULL REFERENCES jardiance_prescriptions(id) ON DELETE CASCADE,
+
+    -- Barrier details
+    barrier_type VARCHAR(50) NOT NULL,
+    barrier_description TEXT,
+
+    -- Status
+    identified_date DATE NOT NULL,
+    resolved BOOLEAN DEFAULT false,
+    resolution_date DATE,
+    resolution_notes TEXT,
+
+    -- Severity
+    severity VARCHAR(20), -- 'Low', 'Medium', 'High', 'Critical'
+
+    -- Intervention tracking
+    intervention_required BOOLEAN DEFAULT false,
+    intervention_type VARCHAR(100),
+    intervention_date DATE,
+
+    -- Metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT check_barrier_type CHECK (barrier_type IN (
+        'Cost concerns',
+        'Forgetfulness',
+        'Side effects',
+        'Access/Transportation',
+        'Complex regimen',
+        'Lack of symptoms',
+        'Health literacy',
+        'Depression/Mental health',
+        'Pharmacy issues',
+        'Insurance issues',
+        'Other'
+    )),
+    CONSTRAINT check_resolution_dates CHECK (
+        resolution_date IS NULL OR resolution_date >= identified_date
+    ),
+    CONSTRAINT check_severity CHECK (severity IN ('Low', 'Medium', 'High', 'Critical'))
+);
+
+CREATE INDEX idx_adherence_barriers_prescription_id ON adherence_barriers(prescription_id);
+CREATE INDEX idx_adherence_barriers_type ON adherence_barriers(barrier_type);
+CREATE INDEX idx_adherence_barriers_resolved ON adherence_barriers(resolved) WHERE resolved = false;
+CREATE INDEX idx_adherence_barriers_severity ON adherence_barriers(severity);
+
+COMMENT ON TABLE adherence_barriers IS 'Tracks identified barriers to medication adherence and their resolution';
+COMMENT ON COLUMN adherence_barriers.barrier_type IS 'Standardized barrier categories from Variable Dictionary';
+COMMENT ON COLUMN adherence_barriers.resolved IS 'TRUE when barrier has been addressed';
+
+-- ============================================
+-- 6. Helper Functions
+-- ============================================
+
+-- Function to calculate MPR for a prescription over a period
+CREATE OR REPLACE FUNCTION calculate_jardiance_mpr(
+    p_prescription_id UUID,
+    p_start_date DATE,
+    p_end_date DATE
+) RETURNS DECIMAL(5, 2) AS $$
+DECLARE
+    v_total_days_supply INTEGER;
+    v_period_days INTEGER;
+    v_mpr DECIMAL(5, 2);
+BEGIN
+    -- Calculate total days supply from refills in period
+    SELECT COALESCE(SUM(days_supply), 0)
+    INTO v_total_days_supply
+    FROM jardiance_refills
+    WHERE prescription_id = p_prescription_id
+      AND refill_date BETWEEN p_start_date AND p_end_date;
+
+    -- Calculate period length
+    v_period_days := p_end_date - p_start_date + 1;
+
+    -- Calculate MPR
+    IF v_period_days > 0 THEN
+        v_mpr := LEAST((v_total_days_supply::DECIMAL / v_period_days) * 100, 100.00);
+    ELSE
+        v_mpr := 0;
+    END IF;
+
+    RETURN v_mpr;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION calculate_jardiance_mpr IS 'Calculates Medication Possession Ratio for a prescription over a date range';
+
+-- Function to determine adherence category from MPR
+CREATE OR REPLACE FUNCTION get_adherence_category(p_mpr DECIMAL)
+RETURNS VARCHAR(20) AS $$
+BEGIN
+    IF p_mpr >= 80 THEN
+        RETURN 'High';
+    ELSIF p_mpr >= 60 THEN
+        RETURN 'Medium';
+    ELSE
+        RETURN 'Low';
+    END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+COMMENT ON FUNCTION get_adherence_category IS 'Converts MPR percentage to adherence category (High/Medium/Low)';
+
+-- Function to get latest adherence for a prescription
+CREATE OR REPLACE FUNCTION get_latest_adherence(p_prescription_id UUID)
+RETURNS TABLE (
+    mpr DECIMAL(5, 2),
+    pdc DECIMAL(5, 2),
+    category VARCHAR(20),
+    assessment_date DATE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ja.mpr,
+        ja.pdc,
+        ja.category,
+        ja.assessment_date
+    FROM jardiance_adherence ja
+    WHERE ja.prescription_id = p_prescription_id
+    ORDER BY ja.assessment_date DESC
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_latest_adherence IS 'Returns most recent adherence metrics for a prescription';
+
+-- Function to get active barriers for a prescription
+CREATE OR REPLACE FUNCTION get_active_barriers(p_prescription_id UUID)
+RETURNS TABLE (
+    barrier_type VARCHAR(50),
+    identified_date DATE,
+    severity VARCHAR(20)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ab.barrier_type,
+        ab.identified_date,
+        ab.severity
+    FROM adherence_barriers ab
+    WHERE ab.prescription_id = p_prescription_id
+      AND ab.resolved = false
+    ORDER BY
+        CASE ab.severity
+            WHEN 'Critical' THEN 1
+            WHEN 'High' THEN 2
+            WHEN 'Medium' THEN 3
+            WHEN 'Low' THEN 4
+            ELSE 5
+        END,
+        ab.identified_date;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION get_active_barriers IS 'Returns all unresolved barriers for a prescription, ordered by severity';
+
+-- ============================================
+-- 7. Trigger to Update Comorbidity Flags
+-- ============================================
+
+CREATE OR REPLACE FUNCTION update_comorbidity_flags()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update patient comorbidity flags based on conditions table
+    UPDATE patients p
+    SET
+        has_diabetes = EXISTS (
+            SELECT 1 FROM conditions c
+            WHERE c.patient_id = NEW.patient_id
+              AND c.clinical_status = 'active'
+              AND (c.condition_code LIKE 'E11%' OR c.condition_code LIKE 'E10%')
+        ),
+        has_hypertension = EXISTS (
+            SELECT 1 FROM conditions c
+            WHERE c.patient_id = NEW.patient_id
+              AND c.clinical_status = 'active'
+              AND c.condition_code = 'I10'
+        ),
+        has_heart_failure = EXISTS (
+            SELECT 1 FROM conditions c
+            WHERE c.patient_id = NEW.patient_id
+              AND c.clinical_status = 'active'
+              AND c.condition_code LIKE 'I50%'
+        ),
+        has_cad = EXISTS (
+            SELECT 1 FROM conditions c
+            WHERE c.patient_id = NEW.patient_id
+              AND c.clinical_status = 'active'
+              AND c.condition_code LIKE 'I25%'
+        )
+    WHERE p.id = NEW.patient_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger on conditions table
+DROP TRIGGER IF EXISTS trg_update_comorbidity_flags ON conditions;
+CREATE TRIGGER trg_update_comorbidity_flags
+    AFTER INSERT OR UPDATE ON conditions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_comorbidity_flags();
+
+COMMENT ON FUNCTION update_comorbidity_flags IS 'Automatically updates patient comorbidity flags when conditions are added/modified';
+
+-- ============================================
+-- 8. View: Complete Patient Adherence Summary
+-- ============================================
+
+CREATE OR REPLACE VIEW patient_jardiance_summary AS
+SELECT
+    p.id as patient_id,
+    p.medical_record_number as mrn,
+    p.first_name || ' ' || p.last_name as patient_name,
+    p.has_diabetes,
+    p.has_hypertension,
+    p.on_ras_inhibitor,
+
+    -- Prescription info
+    jp.id as prescription_id,
+    jp.currently_taking,
+    jp.medication,
+    jp.dosage,
+    jp.start_date as prescription_start_date,
+    jp.end_date as prescription_end_date,
+
+    -- Latest adherence
+    la.mpr as latest_mpr,
+    la.pdc as latest_pdc,
+    la.category as adherence_category,
+    la.assessment_date as last_assessment_date,
+
+    -- Refill info
+    (SELECT COUNT(*) FROM jardiance_refills jr WHERE jr.prescription_id = jp.id) as total_refills,
+    (SELECT MAX(refill_date) FROM jardiance_refills jr WHERE jr.prescription_id = jp.id) as last_refill_date,
+    (SELECT AVG(gap_days) FROM jardiance_refills jr WHERE jr.prescription_id = jp.id AND gap_days > 0) as avg_refill_gap,
+
+    -- Barriers
+    (SELECT COUNT(*) FROM adherence_barriers ab WHERE ab.prescription_id = jp.id AND ab.resolved = false) as active_barriers_count,
+    (SELECT string_agg(barrier_type, ', ') FROM adherence_barriers ab WHERE ab.prescription_id = jp.id AND ab.resolved = false) as active_barriers
+
+FROM patients p
+LEFT JOIN jardiance_prescriptions jp ON p.id = jp.patient_id AND jp.currently_taking = true
+LEFT JOIN LATERAL (
+    SELECT mpr, pdc, category, assessment_date
+    FROM jardiance_adherence ja
+    WHERE ja.prescription_id = jp.id
+    ORDER BY assessment_date DESC
+    LIMIT 1
+) la ON true
+WHERE jp.id IS NOT NULL OR p.on_sglt2i = true;
+
+COMMENT ON VIEW patient_jardiance_summary IS 'Complete summary of patient Jardiance prescriptions and adherence metrics';
+
+-- ============================================
+-- 9. Initialize Comorbidity Flags for Existing Patients
+-- ============================================
+
+-- Update comorbidity flags for all existing patients
+UPDATE patients p
+SET
+    has_diabetes = EXISTS (
+        SELECT 1 FROM conditions c
+        WHERE c.patient_id = p.id
+          AND c.clinical_status = 'active'
+          AND (c.condition_code LIKE 'E11%' OR c.condition_code LIKE 'E10%')
+    ),
+    has_hypertension = EXISTS (
+        SELECT 1 FROM conditions c
+        WHERE c.patient_id = p.id
+          AND c.clinical_status = 'active'
+          AND c.condition_code = 'I10'
+    ),
+    has_heart_failure = EXISTS (
+        SELECT 1 FROM conditions c
+        WHERE c.patient_id = p.id
+          AND c.clinical_status = 'active'
+          AND c.condition_code LIKE 'I50%'
+    ),
+    has_cad = EXISTS (
+        SELECT 1 FROM conditions c
+        WHERE c.patient_id = p.id
+          AND c.clinical_status = 'active'
+          AND c.condition_code LIKE 'I25%'
+    );
+
+-- ============================================
+-- Migration 008 Complete
+-- ============================================
+
+SELECT 'Migration 008: Jardiance Adherence Tracking installed successfully' AS status;
