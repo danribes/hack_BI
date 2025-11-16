@@ -167,11 +167,25 @@ function App() {
   const [isAdvancingCycle, setIsAdvancingCycle] = useState(false);
   const [batchSize, setBatchSize] = useState<number>(50);
 
+  // Settings states
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [whatsappConfig, setWhatsappConfig] = useState<{
+    phone_number: string;
+    enabled: boolean;
+    configured: boolean;
+  }>({
+    phone_number: '',
+    enabled: false,
+    configured: false
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     fetchPatients();
     fetchStatistics();
+    fetchWhatsAppConfig();
   }, []);
 
   // Fetch patients when filters change
@@ -433,6 +447,75 @@ function App() {
       alert('Failed to advance cycle. Please try again.');
     } finally {
       setIsAdvancingCycle(false);
+    }
+  };
+
+  // Fetch WhatsApp configuration
+  const fetchWhatsAppConfig = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/settings/whatsapp`);
+      if (response.ok) {
+        const data = await response.json();
+        setWhatsappConfig(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching WhatsApp config:', err);
+    }
+  };
+
+  // Save WhatsApp configuration
+  const handleSaveWhatsAppSettings = async () => {
+    try {
+      setSavingSettings(true);
+
+      const response = await fetch(`${API_URL}/api/settings/whatsapp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone_number: whatsappConfig.phone_number,
+          enabled: whatsappConfig.enabled
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save settings');
+      }
+
+      const data = await response.json();
+      alert('WhatsApp settings saved successfully!');
+      setWhatsappConfig({ ...whatsappConfig, configured: true });
+      setShowSettingsModal(false);
+    } catch (err) {
+      console.error('Error saving WhatsApp settings:', err);
+      alert(err instanceof Error ? err.message : 'Failed to save WhatsApp settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Test WhatsApp connection
+  const handleTestWhatsApp = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/settings/whatsapp/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`✓ ${data.message}`);
+      } else {
+        alert(`✗ ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Error testing WhatsApp:', err);
+      alert('Failed to test WhatsApp connection');
     }
   };
 
@@ -1758,6 +1841,18 @@ function App() {
             </div>
             {!loading && !error && patients.length > 0 && (
               <div className="flex items-center gap-3">
+                {/* Settings Button */}
+                <button
+                  onClick={() => setShowSettingsModal(true)}
+                  className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors duration-200 shadow-lg"
+                  title="Settings"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+
                 {/* Batch Size Selector */}
                 <div className="flex flex-col items-end gap-1">
                   <label htmlFor="batch-size" className="text-xs text-gray-600 font-medium">
@@ -2025,6 +2120,108 @@ function App() {
         currentPatientId={(selectedPatient as PatientDetail | null)?.id}
         apiBaseUrl={import.meta.env.VITE_API_URL || 'http://localhost:3000'}
       />
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-lg w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </h2>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* WhatsApp Notifications Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  WhatsApp Notifications
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Enable/Disable Toggle */}
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">
+                      Enable Notifications
+                    </label>
+                    <button
+                      onClick={() => setWhatsappConfig({ ...whatsappConfig, enabled: !whatsappConfig.enabled })}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        whatsappConfig.enabled ? 'bg-green-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          whatsappConfig.enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Phone Number Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number (E.164 format)
+                    </label>
+                    <input
+                      type="tel"
+                      value={whatsappConfig.phone_number}
+                      onChange={(e) => setWhatsappConfig({ ...whatsappConfig, phone_number: e.target.value })}
+                      placeholder="+1234567890"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Enter phone number in international format (e.g., +1234567890)
+                    </p>
+                  </div>
+
+                  {/* Test Connection Button */}
+                  {whatsappConfig.configured && whatsappConfig.enabled && (
+                    <button
+                      onClick={handleTestWhatsApp}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Send Test Message
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveWhatsAppSettings}
+                  disabled={savingSettings}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                >
+                  {savingSettings ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

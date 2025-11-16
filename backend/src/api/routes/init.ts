@@ -1465,4 +1465,102 @@ router.post('/migrate-month-tracking', async (_req: Request, res: Response): Pro
   }
 });
 
+/**
+ * Migration endpoint for WhatsApp tables
+ * POST /api/init/migrate-whatsapp-tables
+ */
+router.post('/migrate-whatsapp-tables', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+    console.log('Running WhatsApp tables migration...');
+
+    // Step 1: Create whatsapp_config table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS whatsapp_config (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        phone_number VARCHAR(20) NOT NULL,
+        enabled BOOLEAN DEFAULT false,
+        twilio_account_sid VARCHAR(255),
+        twilio_auth_token VARCHAR(255),
+        twilio_whatsapp_number VARCHAR(20),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT single_config CHECK (id = 1)
+      );
+    `);
+    console.log('✓ Created whatsapp_config table');
+
+    // Step 2: Create whatsapp_messages table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS whatsapp_messages (
+        id SERIAL PRIMARY KEY,
+        phone_number VARCHAR(20) NOT NULL,
+        message TEXT NOT NULL,
+        status VARCHAR(20) NOT NULL CHECK (status IN ('sent', 'failed', 'pending')),
+        twilio_sid VARCHAR(100),
+        error_message TEXT,
+        sent_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log('✓ Created whatsapp_messages table');
+
+    // Step 3: Create indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_phone ON whatsapp_messages(phone_number, sent_at DESC);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_status ON whatsapp_messages(status, sent_at DESC);
+    `);
+    console.log('✓ Created indexes on whatsapp_messages');
+
+    // Step 4: Add comments
+    await pool.query(`
+      COMMENT ON TABLE whatsapp_config IS 'WhatsApp notification configuration using Twilio API';
+    `);
+    await pool.query(`
+      COMMENT ON TABLE whatsapp_messages IS 'Log of WhatsApp messages sent via Twilio';
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN whatsapp_config.phone_number IS 'Phone number to receive notifications (E.164 format, e.g., +1234567890)';
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN whatsapp_config.enabled IS 'Whether WhatsApp notifications are enabled';
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN whatsapp_messages.twilio_sid IS 'Twilio message SID for tracking';
+    `);
+    console.log('✓ Added table comments');
+
+    // Step 5: Verify tables exist
+    const configTableCheck = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'whatsapp_config';
+    `);
+    const messagesTableCheck = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'whatsapp_messages';
+    `);
+
+    console.log('✓ WhatsApp tables migration completed successfully');
+
+    res.json({
+      status: 'success',
+      message: 'WhatsApp tables migration completed successfully',
+      details: {
+        config_table_created: configTableCheck.rows.length > 0,
+        messages_table_created: messagesTableCheck.rows.length > 0,
+        indexes_created: true
+      }
+    });
+  } catch (error) {
+    console.error('Failed to run WhatsApp tables migration:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to run WhatsApp tables migration',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
