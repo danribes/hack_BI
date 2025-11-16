@@ -43,6 +43,7 @@ interface Patient {
   home_monitoring_active?: boolean;
   ckd_treatment_active?: boolean;
   ckd_treatment_type?: string | null;
+  evolution_summary?: string;
 }
 
 interface Observation {
@@ -417,6 +418,14 @@ function App() {
       const data = await response.json();
       console.log('Cycle advanced:', data);
 
+      // Create evolution map for merging with patient data
+      const evolutionMap = new Map();
+      if (data.data.selected_patients && data.data.selected_patients.length > 0) {
+        data.data.selected_patients.forEach((p: any) => {
+          evolutionMap.set(p.id, p.evolution_summary);
+        });
+      }
+
       // Refresh patient list based on current filter state
       if (activeFilters.patientType !== 'all' || activeFilters.ckdSeverity || activeFilters.nonCkdRisk) {
         await fetchFilteredPatients();
@@ -428,30 +437,14 @@ function App() {
         await fetchPatientDetail(selectedPatient.id);
       }
 
-      // Fetch full patient data for selected patients with evolution summaries
-      if (data.data.selected_patients && data.data.selected_patients.length > 0) {
-        const selectedPatientIds = data.data.selected_patients.map((p: any) => p.id);
-        const evolutionMap = new Map(
-          data.data.selected_patients.map((p: any) => [p.id, p.evolution_summary])
+      // Merge evolution summaries into the patients array
+      if (evolutionMap.size > 0) {
+        setPatients((currentPatients: Patient[]) =>
+          currentPatients.map((p: Patient) => ({
+            ...p,
+            evolution_summary: evolutionMap.get(p.id)
+          }))
         );
-
-        // Fetch full patient details for the selected patients
-        const fullPatientsResponse = await fetch(`${API_URL}/api/patients`);
-        if (fullPatientsResponse.ok) {
-          const fullPatientsData = await fullPatientsResponse.json();
-          const fullPatients = fullPatientsData.patients || [];
-
-          // Filter to only the selected patients and add evolution summary
-          const patientsWithEvolution = fullPatients
-            .filter((p: Patient) => selectedPatientIds.includes(p.id))
-            .map((p: Patient) => ({
-              ...p,
-              evolution_summary: evolutionMap.get(p.id)
-            }));
-
-          setSelectedPatientsWithEvolution(patientsWithEvolution);
-          setShowEvolutionModal(true);
-        }
       }
 
     } catch (err) {
@@ -2236,6 +2229,20 @@ function App() {
                                 : 'bg-gray-100 text-gray-600 border border-gray-300'
                             }`}>
                               {(patient.is_treated !== undefined ? patient.is_treated : patient.ckd_treatment_active) ? '✓ Under Treatment' : 'Not Treated'}
+                            </span>
+                          )}
+                          {/* Evolution Summary from AI */}
+                          {patient.evolution_summary && (
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              patient.evolution_summary.includes('critical') || patient.evolution_summary.includes('worsening') || patient.evolution_summary.includes('worsened') || patient.evolution_summary.includes('increasing')
+                                ? 'bg-red-100 text-red-800 border border-red-300'
+                                : patient.evolution_summary.includes('improving')
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : patient.evolution_summary === 'stable'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : 'bg-gray-100 text-gray-800 border border-gray-300'
+                            }`}>
+                              {patient.evolution_summary}
                             </span>
                           )}
                         </div>
