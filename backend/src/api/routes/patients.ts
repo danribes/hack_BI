@@ -945,13 +945,17 @@ router.post('/advance-cycle', async (req: Request, res: Response): Promise<any> 
     // For all other patients NOT in the advancing batch, ensure they stay at month 1
     // by copying their month 1 values if they exist
     let patientsReset = 0;
-    if (advancingPatientIds.length > 0) {
+    if (advancingPatientIds.length > 0 && advancingPatientIds.length < 900) {
+      // Only reset other patients if we're not advancing most/all patients
+      // Skip this step when advancing 900+ patients to avoid parameter limit issues
+
       // Get all patients that have observations but are NOT in the advancing batch
+      // Use ANY with array instead of IN to avoid parameter limits
       const otherPatientsResult = await pool.query(`
         SELECT DISTINCT patient_id
         FROM observations
-        WHERE patient_id NOT IN (${advancingPatientIds.map((_, idx) => `$${idx + 1}`).join(',')})
-      `, advancingPatientIds);
+        WHERE patient_id NOT IN (SELECT unnest($1::text[]))
+      `, [advancingPatientIds]);
 
       for (const otherPatient of otherPatientsResult.rows) {
         const patientId = otherPatient.patient_id;
