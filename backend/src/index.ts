@@ -12,6 +12,7 @@ import jardianceRouter from './api/routes/jardiance';
 import riskRouter from './api/routes/risk';
 import { createAgentRouter } from './api/routes/agent';
 import { createNotificationsRouter } from './api/routes/notifications';
+import { createSettingsRouter } from './api/routes/settings';
 import { DoctorAgentService } from './services/doctorAgent';
 import { PatientMonitorService } from './services/patientMonitor';
 
@@ -56,8 +57,10 @@ app.use('/api/risk', riskRouter);
 // Agent and Notifications routes (initialized with pool)
 const pool = getPool();
 const agentRouter = createAgentRouter(pool);
+const settingsRouter = createSettingsRouter(pool);
 // Note: patientMonitor will be created in startServer
 app.use('/api/agent', agentRouter);
+app.use('/api/settings', settingsRouter);
 
 // 404 handler
 app.use((_req, res) => {
@@ -114,6 +117,7 @@ const startServer = async () => {
       console.log(`✓ Patients API: http://localhost:${PORT}/api/patients`);
       console.log(`✓ Doctor Agent API: http://localhost:${PORT}/api/agent`);
       console.log(`✓ Notifications API: http://localhost:${PORT}/api/notifications`);
+      console.log(`✓ Settings API: http://localhost:${PORT}/api/settings`);
       console.log('✓ Ready to accept requests');
     });
 

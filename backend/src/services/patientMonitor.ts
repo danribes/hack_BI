@@ -1,5 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { DoctorAgentService } from './doctorAgent';
+import { WhatsAppService } from './whatsappService';
 
 interface PatientChangeEvent {
   patient_id: string;
@@ -12,12 +13,14 @@ interface PatientChangeEvent {
 export class PatientMonitorService {
   private db: Pool;
   private agentService: DoctorAgentService;
+  private whatsappService: WhatsAppService;
   private listenerClient: PoolClient | null = null;
   private isMonitoring = false;
 
   constructor(db: Pool, agentService: DoctorAgentService) {
     this.db = db;
     this.agentService = agentService;
+    this.whatsappService = new WhatsAppService(db);
   }
 
   /**
@@ -231,6 +234,23 @@ export class PatientMonitorService {
       ]);
 
       console.log(`✓ Alert created: ${subject} [${priority}]`);
+
+      // Send WhatsApp notification for risk/severity changes
+      if (event.change_type === 'risk_level_change' || event.change_type === 'critical_lab_value') {
+        try {
+          await this.whatsappService.sendNotification({
+            to: '', // Will be determined by WhatsApp config
+            subject,
+            message,
+            priority,
+            patientName,
+            mrn,
+          });
+        } catch (whatsappError) {
+          console.error('Failed to send WhatsApp notification:', whatsappError);
+          // Don't fail the alert creation if WhatsApp fails
+        }
+      }
     } catch (error) {
       console.error('Error creating alert:', error);
     }
@@ -296,6 +316,21 @@ export class PatientMonitorService {
           ]);
 
           console.log(`✓ AI-generated alert created for patient ${event.patient_id}`);
+
+          // Send WhatsApp notification for AI-generated alerts
+          try {
+            await this.whatsappService.sendNotification({
+              to: '', // Will be determined by WhatsApp config
+              subject: `AI Alert: ${alertResult.alertType} - ${patientName} (MRN: ${mrn})`,
+              message: alertResult.message || 'AI analysis detected a significant finding requiring review.',
+              priority: alertResult.priority,
+              patientName,
+              mrn,
+            });
+          } catch (whatsappError) {
+            console.error('Failed to send WhatsApp notification:', whatsappError);
+            // Don't fail the alert creation if WhatsApp fails
+          }
         }
       } else {
         console.log(`✓ AI analysis complete - no critical findings for patient ${event.patient_id}`);
