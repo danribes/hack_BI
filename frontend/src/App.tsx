@@ -165,6 +165,7 @@ function App() {
   const [statistics, setStatistics] = useState<any>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isAdvancingCycle, setIsAdvancingCycle] = useState(false);
+  const [batchSize, setBatchSize] = useState<number>(50);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -387,7 +388,11 @@ function App() {
   };
 
   const handleAdvanceCycle = async () => {
-    if (!confirm('This will advance all patients to the next month cycle. Are you sure?')) {
+    const confirmMessage = batchSize === 1000
+      ? 'This will advance ALL 1000 patients to the next month cycle. This may take up to 30 seconds. Are you sure?'
+      : `This will advance ${batchSize} patients to the next month cycle. Are you sure?`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -395,7 +400,7 @@ function App() {
       setIsAdvancingCycle(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/api/patients/advance-cycle`, {
+      const response = await fetch(`${API_URL}/api/patients/advance-cycle?batch_size=${batchSize}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -415,8 +420,12 @@ function App() {
         await fetchPatientDetail(selectedPatient.id);
       }
 
-      // Show success message
-      alert(`Successfully advanced cycle for ${data.data.patients_processed} patients.`);
+      // Show success message with batch info
+      const message = batchSize === 1000
+        ? `Successfully advanced ALL patients! Processed ${data.data.patients_processed} patients.`
+        : `Successfully advanced ${data.data.patients_processed} patients. (${1000 - data.data.patients_processed} patients remaining)`;
+
+      alert(message);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to advance cycle');
@@ -1748,16 +1757,39 @@ function App() {
               </p>
             </div>
             {!loading && !error && patients.length > 0 && (
-              <button
-                onClick={handleAdvanceCycle}
-                disabled={isAdvancingCycle}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200 shadow-lg"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {isAdvancingCycle ? 'Advancing Cycle...' : 'Advance All Patients (Next Month)'}
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Batch Size Selector */}
+                <div className="flex flex-col items-end gap-1">
+                  <label htmlFor="batch-size" className="text-xs text-gray-600 font-medium">
+                    Batch Size:
+                  </label>
+                  <select
+                    id="batch-size"
+                    value={batchSize}
+                    onChange={(e) => setBatchSize(Number(e.target.value))}
+                    disabled={isAdvancingCycle}
+                    className="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-900 font-semibold cursor-pointer hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                  >
+                    <option value={50}>50 patients</option>
+                    <option value={100}>100 patients</option>
+                    <option value={250}>250 patients</option>
+                    <option value={500}>500 patients</option>
+                    <option value={1000}>All 1000 patients</option>
+                  </select>
+                </div>
+
+                {/* Advance Cycle Button */}
+                <button
+                  onClick={handleAdvanceCycle}
+                  disabled={isAdvancingCycle}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200 shadow-lg"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {isAdvancingCycle ? 'Advancing Cycle...' : 'Advance to Next Month'}
+                </button>
+              </div>
             )}
           </div>
         </header>
