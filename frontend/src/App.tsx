@@ -291,15 +291,26 @@ function App() {
       const data = await response.json();
 
       // Log the response for debugging
-      console.log('Patient detail response:', data);
+      console.log('[FETCH_DETAIL] Patient detail response:', data);
+      console.log('[FETCH_DETAIL] Has kdigo_classification:', !!data.patient?.kdigo_classification);
+      console.log('[FETCH_DETAIL] Has risk_category:', !!data.patient?.risk_category);
+      console.log('[FETCH_DETAIL] Risk category value:', data.patient?.risk_category);
 
       // Ensure required fields are present
       if (!data.patient) {
+        console.error('[FETCH_DETAIL] No patient data in response');
         throw new Error('No patient data received from server');
       }
 
       if (!data.patient.kdigo_classification) {
-        console.warn('Missing kdigo_classification in patient data');
+        console.error('[FETCH_DETAIL] Missing kdigo_classification in patient data');
+        throw new Error('Patient data is missing KDIGO classification');
+      }
+
+      if (!data.patient.risk_category) {
+        console.error('[FETCH_DETAIL] Missing risk_category in patient data');
+        console.error('[FETCH_DETAIL] Full patient object:', data.patient);
+        throw new Error('Patient data is missing risk category');
       }
 
       if (!data.patient.observations) {
@@ -329,6 +340,8 @@ function App() {
       setUpdatingPatient(true);
       setError(null);
 
+      console.log('[UPDATE] Starting patient records update for:', selectedPatient.id);
+
       const response = await fetch(`${API_URL}/api/patients/${selectedPatient.id}/update-records`, {
         method: 'POST',
         headers: {
@@ -341,20 +354,23 @@ function App() {
       }
 
       const data = await response.json();
-      console.log('Update response:', data);
+      console.log('[UPDATE] Update response:', data);
 
       // Refresh patient details to show new data
+      console.log('[UPDATE] Fetching updated patient details...');
       await fetchPatientDetail(selectedPatient.id);
+      console.log('[UPDATE] Patient details refreshed successfully');
 
       // Show success message (you could add a toast notification here)
       alert(`Successfully generated cycle ${data.cycle_number} for patient. ${data.treatment_status === 'treated' ? 'Treatment improvements reflected.' : 'Natural progression simulated.'}`);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update patient records');
-      console.error('Error updating patient records:', err);
+      console.error('[UPDATE] Error updating patient records:', err);
       alert('Failed to update patient records. Please try again.');
     } finally {
       setUpdatingPatient(false);
+      console.log('[UPDATE] Update process completed');
     }
   };
 
@@ -571,6 +587,14 @@ function App() {
     // Check if required data is loaded
     const hasRequiredData = selectedPatient.kdigo_classification && selectedPatient.risk_category;
 
+    // Debug logging
+    console.log('[RENDER] Patient detail view rendering');
+    console.log('[RENDER] loadingDetail:', loadingDetail);
+    console.log('[RENDER] error:', error);
+    console.log('[RENDER] hasRequiredData:', hasRequiredData);
+    console.log('[RENDER] kdigo_classification:', !!selectedPatient.kdigo_classification);
+    console.log('[RENDER] risk_category:', selectedPatient.risk_category);
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4 py-8">
@@ -614,12 +638,43 @@ function App() {
             </button>
           </div>
 
+          {error && !loadingDetail && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 max-w-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Error Loading Patient</h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{error}</p>
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        onClick={() => {
+                          setError(null);
+                          fetchPatientDetail(selectedPatient.id);
+                        }}
+                        className="text-sm font-medium text-red-600 hover:text-red-500"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {loadingDetail ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mb-4"></div>
               <p className="text-gray-600 text-lg">Loading patient details...</p>
             </div>
-          ) : !hasRequiredData ? (
+          ) : !hasRequiredData && !error ? (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 max-w-lg">
                 <div className="flex">
@@ -638,7 +693,7 @@ function App() {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : !error && hasRequiredData ? (
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Patient Header Card */}
               <div className="bg-white rounded-lg shadow-xl overflow-hidden">
@@ -1712,7 +1767,7 @@ function App() {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     );
