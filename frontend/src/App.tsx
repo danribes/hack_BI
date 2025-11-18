@@ -1154,9 +1154,11 @@ function App() {
                               </div>
 
                               {/* Comment Text */}
-                              <div className="text-gray-800 mb-3">
-                                {comment.comment_text}
-                              </div>
+                              {comment.comment_text && (
+                                <div className="text-gray-800 mb-3">
+                                  {comment.comment_text}
+                                </div>
+                              )}
 
                               {/* Clinical Summary */}
                               {comment.clinical_summary && (
@@ -1167,21 +1169,24 @@ function App() {
                               )}
 
                               {/* Lab Value Changes */}
-                              {(comment.egfr_change !== null || comment.uacr_change !== null) && (
+                              {(comment.egfr_change !== null && comment.egfr_change !== undefined ||
+                                comment.uacr_change !== null && comment.uacr_change !== undefined) && (
                                 <div className="grid grid-cols-2 gap-2 mb-3">
-                                  {comment.egfr_change !== null && comment.egfr_change !== undefined && (
+                                  {comment.egfr_change !== null && comment.egfr_change !== undefined &&
+                                   typeof comment.egfr_change === 'number' && (
                                     <div className="bg-white border border-gray-200 rounded p-2">
                                       <div className="text-xs text-gray-600">eGFR Change</div>
                                       <div className={`text-sm font-semibold ${comment.egfr_change < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {comment.egfr_from?.toFixed(1) || 'N/A'} → {comment.egfr_to?.toFixed(1) || 'N/A'} ({comment.egfr_change > 0 ? '+' : ''}{comment.egfr_change?.toFixed(1) || '0.0'})
+                                        {typeof comment.egfr_from === 'number' ? comment.egfr_from.toFixed(1) : 'N/A'} → {typeof comment.egfr_to === 'number' ? comment.egfr_to.toFixed(1) : 'N/A'} ({comment.egfr_change > 0 ? '+' : ''}{comment.egfr_change.toFixed(1)})
                                       </div>
                                     </div>
                                   )}
-                                  {comment.uacr_change !== null && comment.uacr_change !== undefined && (
+                                  {comment.uacr_change !== null && comment.uacr_change !== undefined &&
+                                   typeof comment.uacr_change === 'number' && (
                                     <div className="bg-white border border-gray-200 rounded p-2">
                                       <div className="text-xs text-gray-600">uACR Change</div>
                                       <div className={`text-sm font-semibold ${comment.uacr_change > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {comment.uacr_from?.toFixed(1) || 'N/A'} → {comment.uacr_to?.toFixed(1) || 'N/A'} ({comment.uacr_change > 0 ? '+' : ''}{comment.uacr_change?.toFixed(1) || '0.0'})
+                                        {typeof comment.uacr_from === 'number' ? comment.uacr_from.toFixed(1) : 'N/A'} → {typeof comment.uacr_to === 'number' ? comment.uacr_to.toFixed(1) : 'N/A'} ({comment.uacr_change > 0 ? '+' : ''}{comment.uacr_change.toFixed(1)})
                                       </div>
                                     </div>
                                   )}
@@ -1210,7 +1215,7 @@ function App() {
                                     Mitigation Measures
                                   </div>
                                   <ul className="list-disc list-inside space-y-1">
-                                    {comment.mitigation_measures.filter(m => m).map((measure, idx) => (
+                                    {comment.mitigation_measures.filter(m => m && typeof m === 'string').map((measure, idx) => (
                                       <li key={idx} className="text-sm text-orange-900">{measure}</li>
                                     ))}
                                   </ul>
@@ -1227,7 +1232,7 @@ function App() {
                                     Recommended Actions
                                   </div>
                                   <ul className="list-disc list-inside space-y-1">
-                                    {comment.recommended_actions.filter(a => a).map((action, idx) => (
+                                    {comment.recommended_actions.filter(a => a && typeof a === 'string').map((action, idx) => (
                                       <li key={idx} className="text-sm text-blue-900">{action}</li>
                                     ))}
                                   </ul>
@@ -1237,9 +1242,14 @@ function App() {
                           );
                           } catch (err) {
                             console.error('[RENDER_COMMENT] Error rendering comment:', comment?.id, err);
+                            console.error('[RENDER_COMMENT] Comment data:', JSON.stringify(comment, null, 2));
+                            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
                             return (
                               <div key={comment?.id || Math.random()} className="border-l-4 border-red-300 bg-red-50 rounded-r-lg p-4">
-                                <div className="text-sm text-red-700">Error displaying comment. Please refresh the page.</div>
+                                <div className="text-sm text-red-700 font-semibold mb-2">Error displaying comment</div>
+                                <div className="text-xs text-red-600 mb-2">Error: {errorMessage}</div>
+                                <div className="text-xs text-gray-600">Comment ID: {comment?.id}</div>
+                                <div className="text-xs text-gray-500 mt-2">Check browser console for details</div>
                               </div>
                             );
                           }
