@@ -474,11 +474,9 @@ function App() {
       await fetchPatientDetail(selectedPatient.id);
       console.log('[UPDATE] Patient details refreshed successfully');
 
-      // Refresh health state comments to show any new comments
-      if (data.health_state_changed) {
-        console.log('[UPDATE] Health state changed, refreshing comments...');
-        await fetchHealthStateComments(selectedPatient.id);
-      }
+      // Refresh health state comments to show any new comments (including AI analysis)
+      console.log('[UPDATE] Refreshing comments to show AI analysis...');
+      await fetchHealthStateComments(selectedPatient.id);
 
       // Refresh patient list to show updated risk level in main list
       console.log('[UPDATE] Refreshing patient list...');
@@ -489,11 +487,14 @@ function App() {
       }
       console.log('[UPDATE] Patient list refreshed successfully');
 
-      // Show success message (you could add a toast notification here)
+      // Show success message
       const stateChangeMessage = data.health_state_changed
         ? ` Health state changed: ${data.previous_health_state} → ${data.new_health_state}.`
         : '';
-      alert(`Successfully generated cycle ${data.cycle_number} for patient. ${data.treatment_status === 'treated' ? 'Treatment improvements reflected.' : 'Natural progression simulated.'}${stateChangeMessage}`);
+      const aiAnalysisMessage = data.ai_comment_id
+        ? ' AI analysis generated - check Health State Evolution below!'
+        : '';
+      alert(`Successfully generated cycle ${data.cycle_number} for patient. ${data.treatment_status === 'treated' ? 'Treatment improvements reflected.' : 'Natural progression simulated.'}${stateChangeMessage}${aiAnalysisMessage}`);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update patient records');
@@ -1075,25 +1076,36 @@ function App() {
               </div>
 
               {/* Health State Change Comments */}
-              {healthStateComments.length > 0 && (
-                <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                  <div className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600">
-                    <h2 className="text-2xl font-bold text-white flex items-center">
-                      <svg className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                      Health State Evolution Comments
-                    </h2>
-                  </div>
+              <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                <div className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600">
+                  <h2 className="text-2xl font-bold text-white flex items-center">
+                    <svg className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    Health State Evolution
+                  </h2>
+                </div>
 
-                  <div className="p-8">
-                    {loadingComments ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="text-gray-500">Loading comments...</div>
+                <div className="p-8">
+                  {loadingComments ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                        <div className="text-gray-600 font-medium">🤖 AI is analyzing patient updates...</div>
+                        <div className="text-gray-500 text-sm mt-1">This may take a few moments</div>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {healthStateComments.filter(comment => comment && comment.id).map((comment) => {
+                    </div>
+                  ) : healthStateComments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="text-6xl mb-4">📋</div>
+                      <div className="text-gray-600 font-medium mb-2">No updates yet</div>
+                      <div className="text-gray-500 text-sm text-center max-w-md">
+                        Press "Update Patient Records" to generate new lab values and receive AI-powered analysis of patient progression.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {healthStateComments.filter(comment => comment && comment.id).map((comment) => {
                           try {
                             // Special handling for AI update analysis comments
                             const isAIUpdateAnalysis = comment.comment_type === 'ai_update_analysis' || comment.comment_type === 'ai_generated';
@@ -1236,7 +1248,6 @@ function App() {
                     )}
                   </div>
                 </div>
-              )}
 
               {/* Patient Trend Graphs */}
               {selectedPatient.observations && selectedPatient.observations.length > 0 && (
