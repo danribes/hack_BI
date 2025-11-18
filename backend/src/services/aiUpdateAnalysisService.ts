@@ -68,6 +68,7 @@ export class AIUpdateAnalysisService {
     const hasSignificantChanges = this.hasSignificantChanges(changes, previousLabValues, newLabValues);
 
     if (!hasSignificantChanges) {
+      console.log('[AI Analysis] No significant changes detected for patient, skipping AI comment generation');
       return {
         hasSignificantChanges: false,
         commentText: '',
@@ -78,6 +79,8 @@ export class AIUpdateAnalysisService {
         concernLevel: 'none'
       };
     }
+
+    console.log('[AI Analysis] Significant changes detected, generating AI analysis...');
 
     // Call Claude AI to analyze the changes
     const aiAnalysis = await this.generateAIAnalysis(patientContext, previousLabValues, newLabValues, changes);
@@ -485,7 +488,9 @@ Return ONLY the JSON response, no additional text.`;
         egfr_from: previousLabValues.egfr,
         egfr_to: newLabValues.egfr,
         uacr_from: previousLabValues.uacr,
-        uacr_to: newLabValues.uacr
+        uacr_to: newLabValues.uacr,
+        comment_text_length: commentText.length,
+        has_recommended_actions: Array.isArray(recommendedActions) && recommendedActions.length > 0
       });
 
       const result = await this.pool.query(
@@ -499,6 +504,7 @@ Return ONLY the JSON response, no additional text.`;
           is_ckd_patient,
           clinical_summary,
           recommended_actions,
+          mitigation_measures,
           severity,
           cycle_number,
           egfr_from,
@@ -510,7 +516,7 @@ Return ONLY the JSON response, no additional text.`;
           created_by,
           created_by_type,
           visibility
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         RETURNING id`,
         [
           patientId,
@@ -522,6 +528,7 @@ Return ONLY the JSON response, no additional text.`;
           isCkdPatient,
           clinicalSummary,
           recommendedActions,
+          [], // mitigation_measures - empty array for AI-generated comments
           severity,
           cycleNumber,
           previousLabValues.egfr !== undefined && previousLabValues.egfr !== null ? previousLabValues.egfr : null,
