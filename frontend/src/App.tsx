@@ -562,6 +562,8 @@ function App() {
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'Invalid Date';
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -1091,31 +1093,32 @@ function App() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {healthStateComments.map((comment) => {
-                          // Special handling for AI update analysis comments
-                          const isAIUpdateAnalysis = comment.comment_type === 'ai_update_analysis';
+                        {healthStateComments.filter(comment => comment && comment.id).map((comment) => {
+                          try {
+                            // Special handling for AI update analysis comments
+                            const isAIUpdateAnalysis = comment.comment_type === 'ai_update_analysis';
 
-                          const changeTypeColor = isAIUpdateAnalysis ? 'border-purple-300 bg-purple-50' :
-                            comment.change_type === 'worsened' ? 'border-red-300 bg-red-50' :
-                            comment.change_type === 'improved' ? 'border-green-300 bg-green-50' :
-                            comment.change_type === 'initial' ? 'border-blue-300 bg-blue-50' :
-                            'border-gray-300 bg-gray-50';
+                            const changeTypeColor = isAIUpdateAnalysis ? 'border-purple-300 bg-purple-50' :
+                              comment.change_type === 'worsened' ? 'border-red-300 bg-red-50' :
+                              comment.change_type === 'improved' ? 'border-green-300 bg-green-50' :
+                              comment.change_type === 'initial' ? 'border-blue-300 bg-blue-50' :
+                              'border-gray-300 bg-gray-50';
 
-                          const changeTypeIcon = isAIUpdateAnalysis ? '🤖' :
-                            comment.change_type === 'worsened' ? '⚠️' :
-                            comment.change_type === 'improved' ? '✓' :
-                            comment.change_type === 'initial' ? 'ℹ️' :
-                            '•';
+                            const changeTypeIcon = isAIUpdateAnalysis ? '🤖' :
+                              comment.change_type === 'worsened' ? '⚠️' :
+                              comment.change_type === 'improved' ? '✓' :
+                              comment.change_type === 'initial' ? 'ℹ️' :
+                              '•';
 
-                          const severityColor =
-                            comment.severity === 'critical' ? 'text-red-700' :
-                            comment.severity === 'warning' ? 'text-orange-700' :
-                            'text-blue-700';
+                            const severityColor =
+                              comment.severity === 'critical' ? 'text-red-700' :
+                              comment.severity === 'warning' ? 'text-orange-700' :
+                              'text-blue-700';
 
-                          const displayLabel = isAIUpdateAnalysis ? 'AI Analysis' :
-                            comment.change_type || 'Update';
+                            const displayLabel = isAIUpdateAnalysis ? 'AI Analysis' :
+                              comment.change_type || 'Update';
 
-                          return (
+                            return (
                             <div
                               key={comment.id}
                               className={`border-l-4 ${changeTypeColor} rounded-r-lg p-4`}
@@ -1134,7 +1137,7 @@ function App() {
                                   )}
                                 </div>
                                 <span className="text-xs text-gray-500">
-                                  {new Date(comment.created_at).toLocaleDateString()} - Cycle {comment.cycle_number}
+                                  {formatDate(comment.created_at)} - Cycle {comment.cycle_number}
                                 </span>
                               </div>
 
@@ -1154,19 +1157,19 @@ function App() {
                               {/* Lab Value Changes */}
                               {(comment.egfr_change !== null || comment.uacr_change !== null) && (
                                 <div className="grid grid-cols-2 gap-2 mb-3">
-                                  {comment.egfr_change !== null && (
+                                  {comment.egfr_change !== null && comment.egfr_change !== undefined && (
                                     <div className="bg-white border border-gray-200 rounded p-2">
                                       <div className="text-xs text-gray-600">eGFR Change</div>
                                       <div className={`text-sm font-semibold ${comment.egfr_change < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {comment.egfr_from?.toFixed(1)} → {comment.egfr_to?.toFixed(1)} ({comment.egfr_change > 0 ? '+' : ''}{comment.egfr_change.toFixed(1)})
+                                        {comment.egfr_from?.toFixed(1) || 'N/A'} → {comment.egfr_to?.toFixed(1) || 'N/A'} ({comment.egfr_change > 0 ? '+' : ''}{comment.egfr_change.toFixed(1)})
                                       </div>
                                     </div>
                                   )}
-                                  {comment.uacr_change !== null && (
+                                  {comment.uacr_change !== null && comment.uacr_change !== undefined && (
                                     <div className="bg-white border border-gray-200 rounded p-2">
                                       <div className="text-xs text-gray-600">uACR Change</div>
                                       <div className={`text-sm font-semibold ${comment.uacr_change > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {comment.uacr_from?.toFixed(1)} → {comment.uacr_to?.toFixed(1)} ({comment.uacr_change > 0 ? '+' : ''}{comment.uacr_change.toFixed(1)})
+                                        {comment.uacr_from?.toFixed(1) || 'N/A'} → {comment.uacr_to?.toFixed(1) || 'N/A'} ({comment.uacr_change > 0 ? '+' : ''}{comment.uacr_change.toFixed(1)})
                                       </div>
                                     </div>
                                   )}
@@ -1186,7 +1189,7 @@ function App() {
                               )}
 
                               {/* Mitigation Measures (for worsening) */}
-                              {comment.mitigation_measures && comment.mitigation_measures.length > 0 && (
+                              {Array.isArray(comment.mitigation_measures) && comment.mitigation_measures.length > 0 && (
                                 <div className="bg-orange-50 border border-orange-300 rounded p-3 mb-3">
                                   <div className="text-xs font-semibold text-orange-800 uppercase mb-2 flex items-center">
                                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1195,7 +1198,7 @@ function App() {
                                     Mitigation Measures
                                   </div>
                                   <ul className="list-disc list-inside space-y-1">
-                                    {comment.mitigation_measures.map((measure, idx) => (
+                                    {comment.mitigation_measures.filter(m => m).map((measure, idx) => (
                                       <li key={idx} className="text-sm text-orange-900">{measure}</li>
                                     ))}
                                   </ul>
@@ -1203,7 +1206,7 @@ function App() {
                               )}
 
                               {/* Recommended Actions */}
-                              {comment.recommended_actions && comment.recommended_actions.length > 0 && (
+                              {Array.isArray(comment.recommended_actions) && comment.recommended_actions.length > 0 && (
                                 <div className="bg-blue-50 border border-blue-300 rounded p-3">
                                   <div className="text-xs font-semibold text-blue-800 uppercase mb-2 flex items-center">
                                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1212,7 +1215,7 @@ function App() {
                                     Recommended Actions
                                   </div>
                                   <ul className="list-disc list-inside space-y-1">
-                                    {comment.recommended_actions.map((action, idx) => (
+                                    {comment.recommended_actions.filter(a => a).map((action, idx) => (
                                       <li key={idx} className="text-sm text-blue-900">{action}</li>
                                     ))}
                                   </ul>
@@ -1220,6 +1223,14 @@ function App() {
                               )}
                             </div>
                           );
+                          } catch (err) {
+                            console.error('[RENDER_COMMENT] Error rendering comment:', comment?.id, err);
+                            return (
+                              <div key={comment?.id || Math.random()} className="border-l-4 border-red-300 bg-red-50 rounded-r-lg p-4">
+                                <div className="text-sm text-red-700">Error displaying comment. Please refresh the page.</div>
+                              </div>
+                            );
+                          }
                         })}
                       </div>
                     )}
