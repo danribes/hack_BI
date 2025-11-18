@@ -7,12 +7,14 @@ export interface AssessMedicationSafetyInput {
 
 export interface MedicationAlert {
   medication: string;
-  alert_type: 'CONTRAINDICATED' | 'DOSE_REDUCTION' | 'CAUTION' | 'SAFE';
+  alert_type: 'CONTRAINDICATED' | 'DOSE_REDUCTION' | 'CAUTION' | 'SAFE' | 'SICK_DAY_HOLD';
   severity: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
   reason: string;
   current_egfr: number;
   recommendation: string;
   reference: string;
+  dosing_guidance?: string; // Specific dose recommendation
+  monitoring_requirements?: string[]; // What to monitor
 }
 
 export interface AssessMedicationSafetyOutput {
@@ -61,16 +63,28 @@ export async function assessMedicationSafety(
   const egfr = parseFloat(egfrResult.rows[0].value);
   const egfrCategory = determineGFRCategory(egfr);
 
-  // Get patient medications from database
-  // Note: In production, this would query a medications table
-  // For now, we'll check common CKD-relevant medications
+  // Get patient medications and conditions from database
   const patientQuery = `
     SELECT
       on_sglt2i,
       on_ras_inhibitor,
       nephrotoxic_meds,
       has_diabetes,
-      has_hypertension
+      has_hypertension,
+      has_heart_failure,
+      ckd_treatment_active,
+      COALESCE((SELECT value::boolean
+                FROM patient_conditions
+                WHERE patient_id = $1 AND condition_name = 'Type 1 Diabetes'
+                LIMIT 1), false) as has_type1_diabetes,
+      COALESCE((SELECT value::boolean
+                FROM patient_conditions
+                WHERE patient_id = $1 AND condition_name = 'Polycystic Kidney Disease'
+                LIMIT 1), false) as has_pkd,
+      COALESCE((SELECT value::boolean
+                FROM patient_conditions
+                WHERE patient_id = $1 AND condition_name = 'On Dialysis'
+                LIMIT 1), false) as is_on_dialysis
     FROM patients
     WHERE id = $1
   `;
@@ -81,6 +95,18 @@ export async function assessMedicationSafety(
   }
 
   const patient = patientResult.rows[0];
+
+  // Get uACR for comprehensive assessment
+  const uacrQuery = `
+    SELECT value
+    FROM observations
+    WHERE patient_id = $1
+      AND observation_type = 'uACR'
+    ORDER BY observed_date DESC
+    LIMIT 1
+  `;
+  const uacrResult = await pool.query(uacrQuery, [patient_id]);
+  const uacr = uacrResult.rows.length > 0 ? parseFloat(uacrResult.rows[0].value) : null;
 
   // Build medication list
   const currentMedications: string[] = [];
