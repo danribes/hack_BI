@@ -49,14 +49,19 @@ export class HealthStateCommentService {
         return await this.createInitialComment(data);
       }
 
-      // If health state hasn't actually changed, don't create a comment
-      if (data.from_health_state === data.to_health_state) {
-        console.log(`[Health State Comment] No change for patient ${data.patient_id}`);
+      // Check if health state changed OR if there are significant lab value changes
+      const healthStateChanged = data.from_health_state !== data.to_health_state;
+      const hasSignificantLabChanges = this.hasSignificantLabChanges(data);
+
+      if (!healthStateChanged && !hasSignificantLabChanges) {
+        console.log(`[Health State Comment] No significant changes for patient ${data.patient_id}`);
         return null;
       }
 
       // Generate the comment based on the change
-      const generatedComment = this.generateCommentForChange(data);
+      const generatedComment = healthStateChanged
+        ? this.generateCommentForChange(data)
+        : this.generateCommentForLabChanges(data);
 
       // Calculate severity information for CKD patients
       const toClassification = classifyKDIGO(data.egfr_to, data.uacr_to);
@@ -308,6 +313,129 @@ export class HealthStateCommentService {
     }
 
     return 'stable';
+  }
+
+  /**
+   * Check if there are significant lab value changes even if health state category didn't change
+   * This catches gradual declines within the same KDIGO category
+   */
+  private hasSignificantLabChanges(data: HealthStateChangeData): boolean {
+    if (!data.egfr_from || !data.uacr_from) {
+      return false;
+    }
+
+    const egfr_change = data.egfr_to - data.egfr_from;
+    const uacr_change = data.uacr_to - data.uacr_from;
+
+    const egfr_pct_change = data.egfr_from !== 0 ? Math.abs(egfr_change / data.egfr_from) * 100 : 0;
+    const uacr_pct_change = data.uacr_from !== 0 ? Math.abs(uacr_change / data.uacr_from) * 100 : 0;
+
+    // Detect significant changes:
+    // - eGFR: decrease/increase > 3 units OR > 5% change
+    // - uACR: change > 20% or crossing key thresholds (30, 300)
+
+    // Significant eGFR change
+    if (Math.abs(egfr_change) > 3 || egfr_pct_change > 5) {
+      console.log(`[Health State Comment] Significant eGFR change detected: ${egfr_change.toFixed(1)} units (${egfr_pct_change.toFixed(1)}%)`);
+      return true;
+    }
+
+    // Significant uACR change
+    if (uacr_pct_change > 20) {
+      console.log(`[Health State Comment] Significant uACR change detected: ${uacr_pct_change.toFixed(1)}%`);
+      return true;
+    }
+
+    // Check if uACR crossed important clinical thresholds (30 or 300 mg/g)
+    // even if percentage change is < 20%
+    const crossedA1A2 = (data.uacr_from < 30 && data.uacr_to >= 30) || (data.uacr_from >= 30 && data.uacr_to < 30);
+    const crossedA2A3 = (data.uacr_from < 300 && data.uacr_to >= 300) || (data.uacr_from >= 300 && data.uacr_to < 300);
+
+    if (crossedA1A2 || crossedA2A3) {
+      console.log(`[Health State Comment] uACR crossed albuminuria threshold: ${data.uacr_from} → ${data.uacr_to}`);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Generate comment for significant lab changes without health state category change
+   * This handles cases where eGFR/uACR change significantly but stay within the same KDIGO category
+   */
+  private generateCommentForLabChanges(data: HealthStateChangeData): GeneratedComment {
+    const egfr_change = data.egfr_from ? data.egfr_to - data.egfr_from : 0;
+    const uacr_change = data.uacr_from ? data.uacr_to - data.uacr_from : 0;
+
+    const toClassification = classifyKDIGO(data.egfr_to, data.uacr_to);
+
+    // Determine if labs worsened or improved
+    const isWorsening = egfr_change < 0 || uacr_change > 0;
+    const change_type: 'improved' | 'worsened' | 'stable' = isWorsening ? 'worsened' : 'improved';
+
+    let comment_text = '';
+    let clinical_summary = '';
+    let recommended_actions: string[] = [];
+    let mitigation_measures: string[] = [];
+    let severity: 'info' | 'warning' | 'critical' = 'info';
+
+    if (isWorsening) {
+      severity = 'warning';
+
+      // Check for critical decline
+      if (egfr_change < -10 || toClassification.gfr_category === 'G5' || toClassification.gfr_category === 'G4') {
+        severity = 'critical';
+      }
+
+      comment_text = `⚠️ Kidney function decline detected within ${data.to_health_state} health state. `;
+
+      clinical_summary = `Patient remains in ${data.to_health_state} (${toClassification.ckd_stage_name}) but shows concerning lab value changes. `;
+
+      if (egfr_change < 0) {
+        clinical_summary += `eGFR decreased by ${Math.abs(egfr_change).toFixed(1)} mL/min/1.73m² (from ${data.egfr_from?.toFixed(1)} to ${data.egfr_to.toFixed(1)}). `;
+        comment_text += `eGFR declined ${Math.abs(egfr_change).toFixed(1)} units. `;
+      }
+
+      if (uacr_change > 0) {
+        clinical_summary += `uACR increased by ${uacr_change.toFixed(1)} mg/g (from ${data.uacr_from?.toFixed(1)} to ${data.uacr_to.toFixed(1)}), indicating worsening proteinuria. `;
+        comment_text += `uACR increased ${uacr_change.toFixed(1)} mg/g. `;
+      }
+
+      clinical_summary += `Risk level: ${data.to_risk_level}. Intervention may be needed to prevent progression.`;
+
+      recommended_actions = this.getRecommendedActions(toClassification, 'worsened');
+      mitigation_measures = this.getMitigationMeasures(data, toClassification);
+
+    } else {
+      // Improvement
+      comment_text = `✓ Kidney function improvement within ${data.to_health_state} health state. `;
+
+      clinical_summary = `Patient remains in ${data.to_health_state} (${toClassification.ckd_stage_name}) with positive lab value changes. `;
+
+      if (egfr_change > 0) {
+        clinical_summary += `eGFR increased by ${egfr_change.toFixed(1)} mL/min/1.73m² (from ${data.egfr_from?.toFixed(1)} to ${data.egfr_to.toFixed(1)}). `;
+        comment_text += `eGFR improved ${egfr_change.toFixed(1)} units. `;
+      }
+
+      if (uacr_change < 0) {
+        clinical_summary += `uACR decreased by ${Math.abs(uacr_change).toFixed(1)} mg/g (from ${data.uacr_from?.toFixed(1)} to ${data.uacr_to.toFixed(1)}), indicating reduced proteinuria. `;
+        comment_text += `uACR decreased ${Math.abs(uacr_change).toFixed(1)} mg/g. `;
+      }
+
+      clinical_summary += `Risk level: ${data.to_risk_level}. Continue current management.`;
+
+      recommended_actions = this.getRecommendedActions(toClassification, 'improved');
+    }
+
+    return {
+      comment_text,
+      clinical_summary,
+      recommended_actions,
+      mitigation_measures,
+      acknowledgment_text: null,
+      severity,
+      change_type
+    };
   }
 
   /**
