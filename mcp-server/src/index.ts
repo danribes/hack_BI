@@ -20,6 +20,7 @@ import { calculateEGFR } from './tools/calculateEGFR.js';
 import { predictKidneyFailureRisk } from './tools/predictKidneyFailureRisk.js';
 import { checkScreeningProtocol } from './tools/checkScreeningProtocol.js';
 import { assessMedicationSafety } from './tools/assessMedicationSafety.js';
+import { analyzeAdherence } from './tools/analyzeAdherence.js';
 
 // Import Legacy Tools (kept for backwards compatibility)
 import { getPatientData } from './tools/patientData.js';
@@ -193,6 +194,30 @@ const TOOLS: Tool[] = [
         medication_name: {
           type: 'string',
           description: 'Optional: Check specific medication (e.g., "Metformin", "Gabapentin")',
+        },
+      },
+      required: ['patient_id'],
+    },
+  },
+
+  {
+    name: 'analyze_adherence',
+    description:
+      'Analyze medication and screening protocol adherence. Tracks medication refill gaps (Jardiance, RAS inhibitors) and screening compliance (eGFR, uACR, HbA1c) based on KDIGO risk-stratified monitoring schedules. Returns adherence score (0-100) and actionable alerts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        patient_id: {
+          type: 'string',
+          description: 'Patient identifier',
+        },
+        check_medication: {
+          type: 'string',
+          description: 'Optional: Focus analysis on specific medication (e.g., "Jardiance")',
+        },
+        report_date: {
+          type: 'string',
+          description: 'Optional: Date for analysis in YYYY-MM-DD format (default: today)',
         },
       },
       required: ['patient_id'],
@@ -428,6 +453,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'analyze_adherence': {
+        const result = await analyzeAdherence(args as any);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
       // ========== LEGACY TOOLS ==========
       case 'get_patient_data': {
         const result = await getPatientData(args as any);
@@ -532,7 +569,7 @@ async function main() {
   console.error('  PHASE 2: classify_kdigo');
   console.error('  PHASE 3: assess_treatment_options');
   console.error('  PHASE 4: monitor_adherence');
-  console.error('  CLINICAL: calculate_egfr, predict_kidney_failure_risk, check_screening_protocol, assess_medication_safety');
+  console.error('  CLINICAL: calculate_egfr, predict_kidney_failure_risk, check_screening_protocol, assess_medication_safety, analyze_adherence');
   console.error('  LEGACY: get_patient_data, query_lab_results, get_population_stats, search_guidelines');
   console.error('\n========================================\n');
 }

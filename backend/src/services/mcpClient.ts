@@ -255,6 +255,31 @@ export class MCPClient {
   }
 
   /**
+   * CLINICAL: Analyze medication and screening protocol adherence
+   * Tracks refill gaps and KDIGO-based screening compliance
+   */
+  async analyzeAdherence(
+    patientId: string,
+    checkMedication?: string,
+    reportDate?: string
+  ): Promise<any> {
+    if (!this.client || !this.isConnected) {
+      throw new Error('MCP client not connected');
+    }
+
+    const result = await this.client.callTool({
+      name: 'analyze_adherence',
+      arguments: {
+        patient_id: patientId,
+        check_medication: checkMedication,
+        report_date: reportDate,
+      },
+    });
+
+    return this.parseToolResult(result);
+  }
+
+  /**
    * Legacy: Get comprehensive patient data
    */
   async getPatientData(
