@@ -390,14 +390,20 @@ Return ONLY the JSON response, no additional text.`;
         `SELECT
           kdigo_classification->>'health_state' as current_health_state,
           kdigo_classification->>'risk_level' as current_risk_level,
-          kdigo_classification->'has_ckd' as is_ckd
+          kdigo_classification->>'has_ckd' as is_ckd
         FROM patients
         WHERE id = $1`,
         [patientId]
       );
 
       const currentData = healthStateQuery.rows[0];
-      const isCkdPatient = currentData?.is_ckd === true || currentData?.is_ckd === 'true';
+
+      // Handle case where patient data is not found
+      if (!currentData) {
+        console.warn(`[AI Update] Patient ${patientId} not found in database, using default values`);
+      }
+
+      const isCkdPatient = currentData?.is_ckd === 'true' || currentData?.is_ckd === true;
 
       // Determine change_type based on lab values
       let changeType: string | null = null;
@@ -467,7 +473,7 @@ Return ONLY the JSON response, no additional text.`;
           newLabValues.uacr && previousLabValues.uacr ? newLabValues.uacr - previousLabValues.uacr : null,
           'AI Analysis System',
           'ai',
-          true
+          'visible'
         ]
       );
 
