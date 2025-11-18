@@ -690,7 +690,9 @@ router.post('/populate-realistic-cohort', async (req: Request, res: Response): P
       { name: 'Vicadrostat (Investigational)', class: 'Investigational' }
     ];
 
-    const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Barbara', 'David', 'Elizabeth', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Daniel', 'Nancy', 'Matthew', 'Lisa', 'Anthony', 'Betty', 'Donald', 'Margaret', 'Mark', 'Sandra', 'Paul', 'Ashley', 'Steven', 'Kimberly', 'Andrew', 'Emily', 'Kenneth', 'Donna', 'Joshua', 'Michelle'];
+    // Separate name arrays by gender
+    const maleFirstNames = ['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles', 'Daniel', 'Matthew', 'Anthony', 'Donald', 'Mark', 'Paul', 'Steven', 'Andrew', 'Kenneth', 'Joshua'];
+    const femaleFirstNames = ['Mary', 'Patricia', 'Jennifer', 'Linda', 'Barbara', 'Elizabeth', 'Susan', 'Jessica', 'Sarah', 'Karen', 'Nancy', 'Lisa', 'Betty', 'Margaret', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle'];
     const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson'];
 
     let patientsCreated = 0;
@@ -698,9 +700,13 @@ router.post('/populate-realistic-cohort', async (req: Request, res: Response): P
 
     // Helper function to generate patient
     const generatePatient = async (category: string, _index: number) => {
-      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      // Determine gender first
       const gender = Math.random() > 0.5 ? 'male' : 'female';
+
+      // Then pick appropriate name based on gender
+      const firstNamePool = gender === 'male' ? maleFirstNames : femaleFirstNames;
+      const firstName = firstNamePool[Math.floor(Math.random() * firstNamePool.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
 
       // Age 66-90 with random variation
       const age = 66 + Math.floor(Math.random() * 25);
