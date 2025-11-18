@@ -48,6 +48,13 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
   // Convert to array and sort by month
   const timeSeriesData = Object.values(groupedByMonth).sort((a: any, b: any) => a.month - b.month);
 
+  // Helper function to determine if we should show connecting lines
+  // Only show lines if there are 2+ data points
+  const shouldShowLine = (dataKey: string) => {
+    const validPoints = timeSeriesData.filter((d: any) => d[dataKey] !== undefined && d[dataKey] !== null);
+    return validPoints.length >= 2;
+  };
+
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) {
@@ -126,13 +133,14 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                 <ReferenceLine y={60} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Normal (>60)', fill: '#10b981', fontSize: 11 }} />
                 <ReferenceLine y={30} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'Severe (<30)', fill: '#f59e0b', fontSize: 11 }} />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="eGFR"
                   stroke={isTreated ? "#10b981" : "#ef4444"}
-                  strokeWidth={3}
-                  dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 5 }}
+                  strokeWidth={shouldShowLine("eGFR") ? 3 : 0}
+                  dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 6 }}
                   name="eGFR"
                   unit="mL/min/1.73m²"
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -167,13 +175,14 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                 <ReferenceLine y={30} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Normal (<30)', fill: '#10b981', fontSize: 11 }} />
                 <ReferenceLine y={300} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'Severe (>300)', fill: '#ef4444', fontSize: 11 }} />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="uACR"
                   stroke={isTreated ? "#10b981" : "#ef4444"}
-                  strokeWidth={3}
-                  dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 5 }}
+                  strokeWidth={shouldShowLine("uACR") ? 3 : 0}
+                  dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 6 }}
                   name="uACR"
                   unit="mg/g"
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -208,23 +217,25 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                 <ReferenceLine y={130} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Target Systolic (130)', fill: '#10b981', fontSize: 11 }} />
                 <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Target Diastolic (80)', fill: '#10b981', fontSize: 11 }} />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="blood_pressure_systolic"
                   stroke="#ef4444"
-                  strokeWidth={3}
-                  dot={{ fill: "#ef4444", r: 5 }}
+                  strokeWidth={shouldShowLine("blood_pressure_systolic") ? 3 : 0}
+                  dot={{ fill: "#ef4444", r: 6 }}
                   name="Systolic"
                   unit="mmHg"
+                  connectNulls={false}
                 />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="blood_pressure_diastolic"
                   stroke="#3b82f6"
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  dot={{ fill: "#3b82f6", r: 5 }}
+                  strokeWidth={shouldShowLine("blood_pressure_diastolic") ? 3 : 0}
+                  strokeDasharray={shouldShowLine("blood_pressure_diastolic") ? "5 5" : "0"}
+                  dot={{ fill: "#3b82f6", r: 6 }}
                   name="Diastolic"
                   unit="mmHg"
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -258,13 +269,14 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                 {/* Reference line */}
                 <ReferenceLine y={7} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Target (<7%)', fill: '#10b981', fontSize: 11 }} />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="HbA1c"
                   stroke={isTreated ? "#8b5cf6" : "#f97316"}
-                  strokeWidth={3}
-                  dot={{ fill: isTreated ? "#8b5cf6" : "#f97316", r: 5 }}
+                  strokeWidth={shouldShowLine("HbA1c") ? 3 : 0}
+                  dot={{ fill: isTreated ? "#8b5cf6" : "#f97316", r: 6 }}
                   name="HbA1c"
                   unit="%"
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
