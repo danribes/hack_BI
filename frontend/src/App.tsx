@@ -1142,7 +1142,7 @@ function App() {
                                   <span className={`font-semibold text-sm uppercase tracking-wide ${severityColor}`}>
                                     {displayLabel}
                                   </span>
-                                  {comment.health_state_from && (
+                                  {comment.health_state_from && comment.health_state_to && (
                                     <span className="text-sm text-gray-600">
                                       {comment.health_state_from} → {comment.health_state_to}
                                     </span>
