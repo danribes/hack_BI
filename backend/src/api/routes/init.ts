@@ -936,32 +936,32 @@ router.post('/populate-realistic-cohort', async (req: Request, res: Response): P
         bun = 80 + Math.random() * 100; // 80-180 mg/dL
       }
 
-      // Insert all observations
+      // Insert all observations with month_number = 1 (initial baseline)
       await pool.query(`
-        INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, status)
+        INSERT INTO observations (patient_id, observation_type, value_numeric, unit, observation_date, month_number, status)
         VALUES
           -- Kidney Function Panel
-          ($1, 'eGFR', $2, 'mL/min/1.73m²', $3, 'final'),
-          ($1, 'uACR', $4, 'mg/g', $3, 'final'),
-          ($1, 'serum_creatinine', $5, 'mg/dL', $3, 'final'),
-          ($1, 'BUN', $6, 'mg/dL', $3, 'final'),
-          ($1, 'BMI', $7, 'kg/m²', $3, 'final'),
+          ($1, 'eGFR', $2, 'mL/min/1.73m²', $3, 1, 'final'),
+          ($1, 'uACR', $4, 'mg/g', $3, 1, 'final'),
+          ($1, 'serum_creatinine', $5, 'mg/dL', $3, 1, 'final'),
+          ($1, 'BUN', $6, 'mg/dL', $3, 1, 'final'),
+          ($1, 'BMI', $7, 'kg/m²', $3, 1, 'final'),
 
           -- Blood Pressure & Cardiovascular (CRITICAL)
-          ($1, 'blood_pressure_systolic', $8, 'mmHg', $3, 'final'),
-          ($1, 'blood_pressure_diastolic', $9, 'mmHg', $3, 'final'),
-          ($1, 'LDL_cholesterol', $10, 'mg/dL', $3, 'final'),
-          ($1, 'HDL_cholesterol', $11, 'mg/dL', $3, 'final'),
+          ($1, 'blood_pressure_systolic', $8, 'mmHg', $3, 1, 'final'),
+          ($1, 'blood_pressure_diastolic', $9, 'mmHg', $3, 1, 'final'),
+          ($1, 'LDL_cholesterol', $10, 'mg/dL', $3, 1, 'final'),
+          ($1, 'HDL_cholesterol', $11, 'mg/dL', $3, 1, 'final'),
 
           -- Metabolic (IMPORTANT)
-          ($1, 'HbA1c', $12, '%', $3, 'final'),
+          ($1, 'HbA1c', $12, '%', $3, 1, 'final'),
 
           -- Hematology & Minerals (CRITICAL for CKD)
-          ($1, 'hemoglobin', $13, 'g/dL', $3, 'final'),
-          ($1, 'potassium', $14, 'mEq/L', $3, 'final'),
-          ($1, 'calcium', $15, 'mg/dL', $3, 'final'),
-          ($1, 'phosphorus', $16, 'mg/dL', $3, 'final'),
-          ($1, 'albumin', $17, 'g/dL', $3, 'final')
+          ($1, 'hemoglobin', $13, 'g/dL', $3, 1, 'final'),
+          ($1, 'potassium', $14, 'mEq/L', $3, 1, 'final'),
+          ($1, 'calcium', $15, 'mg/dL', $3, 1, 'final'),
+          ($1, 'phosphorus', $16, 'mg/dL', $3, 1, 'final'),
+          ($1, 'albumin', $17, 'g/dL', $3, 1, 'final')
       `, [
         newPatientId, egfr, today, uacr, creatinine, bun, bmi,
         systolic, diastolic, ldl, hdl,
