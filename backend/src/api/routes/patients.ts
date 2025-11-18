@@ -1103,58 +1103,71 @@ Provide ONLY the JSON object, nothing else.`;
         albuminuriaCategory: newKdigoClassification.albuminuria_category,
       };
 
-      // Call AI analysis service
+      // Call AI analysis service - now always generates a comment
       const aiAnalysis = await aiAnalysisService.analyzePatientUpdate(
         patientContext,
         previousLabValues,
         newLabValues
       );
 
-      // Create comment if there are significant changes
-      if (aiAnalysis.hasSignificantChanges) {
-        aiCommentId = await aiAnalysisService.createAIUpdateComment(
-          id,
-          aiAnalysis,
-          nextMonthNumber,
-          previousLabValues,
-          newLabValues
-        );
+      // Create AI-generated comment
+      aiCommentId = await aiAnalysisService.createAIUpdateComment(
+        id,
+        aiAnalysis,
+        nextMonthNumber,
+        previousLabValues,
+        newLabValues
+      );
 
-        console.log(`✓ AI update analysis comment created: ${aiCommentId}`);
-      } else {
-        // Create a basic update summary comment even if no significant changes
-        console.log(`[Patient Update] No significant changes detected, creating basic update comment`);
+      console.log(`✓ AI update analysis comment created: ${aiCommentId}`);
+    } catch (aiError) {
+      console.error('[Patient Update] Error generating AI update analysis:', aiError);
 
-        // Determine appropriate recommendation based on treatment status
+      // Create a fallback basic comment if AI analysis fails
+      try {
+        console.log(`[Patient Update] Creating fallback comment due to AI error...`);
+
         const recommendedAction = isTreated
           ? 'Continue current management plan'
           : (hasCKD && newKdigoClassification.ckd_stage && newKdigoClassification.ckd_stage >= 3)
             ? 'Consider initiating CKD treatment per clinical guidelines'
             : 'Continue monitoring';
 
-        const basicComment = {
-          hasSignificantChanges: true, // Force creation
-          commentText: `Lab values updated for cycle ${nextMonthNumber}. No significant changes detected.`,
-          clinicalSummary: `Routine lab update. Values remain stable within expected range. ${!isTreated && hasCKD ? 'Patient not currently on CKD treatment.' : ''}`,
-          keyChanges: [`Cycle ${nextMonthNumber} completed`],
-          recommendedActions: [recommendedAction],
+        const fallbackComment = {
+          hasSignificantChanges: true,
+          commentText: `Lab values updated for cycle ${nextMonthNumber}.`,
+          clinicalSummary: `Routine lab update completed. ${!isTreated && hasCKD ? 'Patient not currently on CKD treatment - consider initiating therapy.' : 'Continue current management.'}`,
+          keyChanges: [`Cycle ${nextMonthNumber} completed`, `eGFR: ${generatedValues.eGFR.toFixed(1)} mL/min/1.73m²`, `uACR: ${generatedValues.uACR.toFixed(1)} mg/g`],
+          recommendedActions: [recommendedAction, 'Follow up as scheduled'],
           severity: 'info' as const,
           concernLevel: 'none' as const
         };
 
         aiCommentId = await aiAnalysisService.createAIUpdateComment(
           id,
-          basicComment,
+          fallbackComment,
           nextMonthNumber,
           previousLabValues,
-          newLabValues
+          {
+            egfr: generatedValues.eGFR,
+            uacr: generatedValues.uACR,
+            creatinine: generatedValues.serum_creatinine,
+            bun: generatedValues.BUN,
+            systolic_bp: generatedValues.blood_pressure_systolic,
+            diastolic_bp: generatedValues.blood_pressure_diastolic,
+            hba1c: generatedValues.HbA1c,
+            glucose: generatedValues.glucose,
+            hemoglobin: generatedValues.hemoglobin,
+            heart_rate: generatedValues.heart_rate,
+            oxygen_saturation: generatedValues.oxygen_saturation,
+          }
         );
 
-        console.log(`✓ Basic update comment created: ${aiCommentId}`);
+        console.log(`✓ Fallback update comment created: ${aiCommentId}`);
+      } catch (fallbackError) {
+        console.error('[Patient Update] Error creating fallback comment:', fallbackError);
+        // Don't fail the update even if fallback comment creation fails
       }
-    } catch (aiError) {
-      console.error('[Patient Update] Error generating AI update analysis:', aiError);
-      // Don't fail the update if AI analysis fails
     }
   } else {
     console.log(`[Patient Update] Skipping AI analysis after reset (no previous data to compare)`);

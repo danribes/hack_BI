@@ -74,23 +74,14 @@ export class AIUpdateAnalysisService {
     // Check if there are significant changes (threshold: any change > 5% or important clinical thresholds)
     const hasSignificantChanges = this.hasSignificantChanges(changes, previousLabValues, newLabValues);
 
-    if (!hasSignificantChanges) {
-      console.log('[AI Analysis] No significant changes detected for patient, skipping AI comment generation');
-      return {
-        hasSignificantChanges: false,
-        commentText: '',
-        clinicalSummary: '',
-        keyChanges: [],
-        recommendedActions: [],
-        severity: 'info',
-        concernLevel: 'none'
-      };
-    }
+    console.log(`[AI Analysis] Analyzing patient update (significant changes: ${hasSignificantChanges})`);
 
-    console.log('[AI Analysis] Significant changes detected, generating AI analysis...');
-
-    // Call Claude AI to analyze the changes
+    // Always call Claude AI to analyze the changes, even for stable patients
+    // This ensures that every update receives an AI-powered assessment
     const aiAnalysis = await this.generateAIAnalysis(patientContext, previousLabValues, newLabValues, changes);
+
+    // Mark that we always have something to comment on
+    aiAnalysis.hasSignificantChanges = true;
 
     return aiAnalysis;
   }
@@ -287,12 +278,13 @@ ${this.formatLabValues(current)}
 ${this.formatChanges(changes)}
 
 **Task:**
-Analyze these changes and provide a structured response in the following JSON format:
+Analyze these changes and provide a structured response in the following JSON format.
+IMPORTANT: Even if changes are minimal or the patient is stable, still provide a meaningful analysis commenting on the stability, current status, and appropriate next steps.
 
 {
   "commentText": "A brief, patient-friendly summary (1-2 sentences) of the update",
-  "clinicalSummary": "A detailed clinical interpretation (2-3 sentences) for healthcare providers",
-  "keyChanges": ["Change 1", "Change 2", "Change 3"],
+  "clinicalSummary": "A detailed clinical interpretation (2-3 sentences) for healthcare providers. If changes are minimal, comment on stability and ongoing management needs.",
+  "keyChanges": ["Change 1", "Change 2", "Change 3"] (or ["Lab values remain stable"] if minimal changes),
   "recommendedActions": ["Action 1", "Action 2", "Action 3"],
   "severity": "info|warning|critical",
   "concernLevel": "none|mild|moderate|high"

@@ -30,7 +30,9 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
       return acc;
     }
 
-    const monthNum = obs.month_number || 0;
+    // Treat null/undefined/0 month_number as 1 (initial baseline)
+    // This ensures all initial observations are grouped together
+    const monthNum = obs.month_number || 1;
     if (!acc[monthNum]) {
       acc[monthNum] = {
         month: monthNum,
