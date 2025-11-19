@@ -522,6 +522,7 @@ BEFORE making ANY treatment or monitoring recommendation, you MUST:
    - Declining eGFR in untreated patient = WARNING or CRITICAL severity
    - Worsening in treated patient = WARNING severity (treatment needs optimization)
    - Any progression to higher risk category = at least WARNING severity
+   - **HEALTH STATE TRANSITION** (e.g., Non-CKD → CKD, G3a → G3b, A1 → A2) = WARNING or CRITICAL severity
 
 5. **Actionable Recommendations:**
    - Be SPECIFIC based on treatment status
@@ -529,10 +530,49 @@ BEFORE making ANY treatment or monitoring recommendation, you MUST:
    - For UNTREATED patients: "Initiate RAS inhibitor therapy", "Start SGLT2 inhibitor"
    - Always verify treatment status before suggesting any treatment-related action
 
-6. **Health State Changes:**
-   - Worsening health state (G3b→G4, A1→A2, etc.) = clear deterioration, needs intervention
-   - For TREATED patients with deterioration: recommend treatment adjustment
-   - For UNTREATED patients with deterioration: recommend urgent treatment initiation
+6. **Health State Changes - CRITICAL: Detect and Alert on Transitions:**
+
+   **A. Check for Health State Transition:**
+   - Compare "Previous Health State" vs "Current Health State" in Patient Context
+   - Examples of transitions:
+     * Non-CKD → CKD (ANY stage): **CRITICAL - New CKD diagnosis**
+     * G1/G2 → G3a/G3b: **WARNING - Progressed to CKD**
+     * G3a → G3b: **WARNING - Worsening kidney function**
+     * G3b → G4: **CRITICAL - Advanced CKD**
+     * A1 → A2: **WARNING - Developing albuminuria**
+     * A2 → A3: **CRITICAL - Severe proteinuria**
+
+   **B. If Health State Changed:**
+   - Severity: Set to WARNING (for one-stage progression) or CRITICAL (for multi-stage or to G4/G5)
+   - Concern Level: Set to MODERATE or HIGH (never "none" for state transition)
+   - Comment Text: MUST mention the transition explicitly
+     * Example: "Patient has progressed from Non-CKD to Moderate CKD (G3a-A1)"
+     * Example: "Health state worsened from G2-A1 to G3a-A2"
+   - Clinical Summary: Explain WHAT changed, WHY it matters, WHAT to do
+     * Example: "eGFR declined from [X] to [Y] mL/min/1.73m², crossing threshold into CKD Stage 3a. This represents new-onset CKD requiring treatment initiation and closer monitoring."
+
+   **C. For NON-CKD → CKD Transition (MOST CRITICAL):**
+   - This is a MAJOR clinical event - NOT routine!
+   - Severity: WARNING or CRITICAL
+   - Concern Level: MODERATE or HIGH
+   - MUST include in recommended actions:
+     * "Initiate CKD disease-modifying therapy" (with specific medications from Phase 3)
+     * "Initiate Minuteful Kidney home monitoring" (if recommended)
+     * "Schedule follow-up in [specific timeframe]" (based on new KDIGO risk)
+     * "Patient education about CKD diagnosis and kidney-protective measures"
+     * "Assess for CKD complications" (anemia, bone disease if eGFR <45)
+
+   **D. For Worsening Within CKD Stages:**
+   - Declining eGFR: Quantify the decline (mL/min/year)
+   - Worsening albuminuria: Note percentage increase
+   - If UNTREATED: "Progressive CKD without disease-modifying therapy - URGENT need for treatment initiation"
+   - If TREATED: "Progression despite treatment - consider therapy optimization or nephrology referral"
+
+   **E. Stable Health State:**
+   - If "Previous Health State" = "Current Health State":
+     * Acknowledge stability in clinical summary
+     * Still assess if biomarkers changed within same health state
+     * Example: "Health state remains G3a-A1 (stable), but eGFR declined 3 mL/min since last cycle"
 
 7. **Monitoring Status Considerations - CRITICAL: Distinguish Between TWO Types of Monitoring:**
 
@@ -930,6 +970,18 @@ Return ONLY the JSON response, no additional text.`;
     }
 
     try {
+      // Delete previous AI-generated comments for this patient to keep only the latest
+      // This ensures doctors see a comprehensive latest comment rather than historical ones
+      console.log('[AI Update] Deleting previous AI comments for patient:', patientId);
+      const deleteResult = await this.pool.query(
+        `DELETE FROM patient_health_state_comments
+         WHERE patient_id = $1
+           AND comment_type = 'ai_generated'
+           AND created_by_type = 'ai'`,
+        [patientId]
+      );
+      console.log('[AI Update] Deleted', deleteResult.rowCount, 'previous AI comments');
+
       // Calculate KDIGO classification from the new lab values instead of querying the database
       // (kdigo_classification is computed on-the-fly, not stored in the patients table)
       const currentKdigo = classifyKDIGO(
@@ -1060,6 +1112,16 @@ Return ONLY the JSON response, no additional text.`;
       );
 
       console.log('[AI Update] Comment created successfully, ID:', result.rows[0].id);
+
+      // Check if this is a health state transition and send email notification
+      await this.sendHealthStateTransitionEmail(
+        patientId,
+        analysis,
+        healthStateTo,
+        severity,
+        changeType
+      );
+
       return result.rows[0].id;
     } catch (error) {
       console.error('[AI Update] Error creating AI update comment:', error);
@@ -1070,6 +1132,98 @@ Return ONLY the JSON response, no additional text.`;
         });
       }
       throw error;
+    }
+  }
+
+  /**
+   * Sends email notification to doctor when significant health state transition occurs
+   */
+  private async sendHealthStateTransitionEmail(
+    patientId: string,
+    analysis: AIAnalysisResult,
+    newHealthState: string,
+    severity: string,
+    changeType: string | null
+  ): Promise<void> {
+    // Only send email for significant changes (warning or critical severity)
+    if (severity !== 'warning' && severity !== 'critical') {
+      console.log('[Email] Skipping email - severity is info:', severity);
+      return;
+    }
+
+    // Only send for worsened state (not for improved or stable)
+    if (changeType !== 'worsened') {
+      console.log('[Email] Skipping email - change type is not worsened:', changeType);
+      return;
+    }
+
+    try {
+      // Get patient information for email
+      const patientQuery = await this.pool.query(
+        `SELECT first_name, last_name, medical_record_number, date_of_birth
+         FROM patients
+         WHERE id = $1`,
+        [patientId]
+      );
+
+      if (patientQuery.rows.length === 0) {
+        console.log('[Email] Patient not found, skipping email');
+        return;
+      }
+
+      const patient = patientQuery.rows[0];
+      const patientName = `${patient.first_name} ${patient.last_name}`;
+      const mrn = patient.medical_record_number;
+
+      // Import EmailService (dynamic import to avoid circular dependency)
+      const { EmailService } = await import('./emailService');
+      const emailService = new EmailService(this.pool);
+
+      // Build email subject based on severity
+      const subjectPrefix = severity === 'critical' ? '🚨 URGENT' : '⚠️ ALERT';
+      const subject = `${subjectPrefix}: Health State Change - ${patientName} (${mrn})`;
+
+      // Build email message with comprehensive information
+      const message = `
+Health State Transition Alert
+
+Patient: ${patientName}
+MRN: ${mrn}
+New Health State: ${newHealthState}
+Severity: ${severity.toUpperCase()}
+
+${analysis.clinicalSummary}
+
+Key Changes:
+${analysis.keyChanges.map(change => `• ${change}`).join('\n')}
+
+Recommended Actions:
+${analysis.recommendedActions.map(action => `• ${action}`).join('\n')}
+
+Please review this patient's chart and take appropriate action.
+
+This is an automated notification from the RenalGuard CKD Management System.
+`;
+
+      // Send email notification
+      console.log('[Email] Sending health state transition email for:', patientName);
+      const emailSent = await emailService.sendNotification({
+        to: '', // Will use default doctor email from config
+        subject,
+        message,
+        priority: severity === 'critical' ? 'urgent' : 'high',
+        patientName,
+        mrn
+      });
+
+      if (emailSent) {
+        console.log('[Email] ✅ Successfully sent health state transition email for:', patientName);
+      } else {
+        console.log('[Email] ❌ Failed to send health state transition email for:', patientName);
+      }
+    } catch (error) {
+      console.error('[Email] Error sending health state transition email:', error);
+      // Don't throw error - email failure shouldn't break the comment creation
     }
   }
 
