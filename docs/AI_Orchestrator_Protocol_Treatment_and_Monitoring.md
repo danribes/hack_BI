@@ -130,22 +130,122 @@ Rationale: [clinical justification from Phase 3]"
 - [ ] Reference to evidence base (EMPA-KIDNEY, KDIGO guidelines)
 - [ ] Safety monitoring requirements
 
+## Critical Distinctions
+
+### Two Types of Monitoring - MUST Be Distinguished
+
+**Problem**: AI was saying "continue monitoring" without specifying which type, leading to confusion.
+
+**Solution**: ALWAYS distinguish between:
+
+1. **Clinical/Lab Monitoring**
+   - Scheduled clinic visits and laboratory blood/urine tests
+   - ALWAYS ongoing for CKD patients
+   - Frequency based on KDIGO risk level:
+     * RED (Very High): Every 1-3 months
+     * ORANGE (High): Every 3-6 months
+     * YELLOW (Moderate): Every 6-12 months
+     * GREEN (Low): Annually
+   - Example: "Continue scheduled lab monitoring every 6-12 months per moderate risk guidelines"
+
+2. **Home Monitoring (Minuteful Kidney)**
+   - FDA-cleared smartphone uACR device for at-home testing BETWEEN clinic visits
+   - Only initiated when Phase 3 recommends it
+   - Frequency: Weekly, Bi-weekly, or Monthly
+   - Example: "Initiate Minuteful Kidney home monitoring (Monthly frequency) for at-home uACR tracking between clinic visits"
+
+**Required Format**: Both types must be specified
+- ✅ CORRECT: "Continue scheduled lab monitoring every 6-12 months. Initiate Minuteful Kidney home monitoring (Monthly) for at-home uACR tracking."
+- ❌ WRONG: "Continue monitoring and follow up as scheduled" (too vague)
+
+## Enhanced Analysis Requirements
+
+### Biomarker Evolution (Section 8 of AI Prompt)
+
+AI MUST comment on trends for:
+
+**A. eGFR Trends**
+- Compare current to previous value
+- Quantify change: "eGFR declined from 58 to 54 mL/min/1.73m² (7% decrease)"
+- Contextualize: "This represents gradual progression / concerning decline / stable function"
+- Integration with treatment:
+  * Untreated + declining → "Progressive decline without treatment - URGENT need for therapy"
+  * Treated + stable → "Current treatment effective in stabilizing kidney function"
+  * Treated + declining → "Despite treatment, declining - consider optimization"
+
+**B. uACR Trends**
+- Compare current to previous value
+- Quantify change: "Albuminuria increased from 45 to 68 mg/g (51% increase)"
+- Note category changes: "Progressed from A1 (normal) to A2 (moderate albuminuria)"
+- Integration with treatment:
+  * On RAS inhibitor → "Expect 30-40% proteinuria reduction with therapy"
+
+**C. Clinical Significance Thresholds**
+- eGFR decline >5 mL/min/year = rapid progression
+- eGFR decline 2-5 mL/min/year = moderate progression
+- uACR doubling = significant worsening
+
+### Comorbidity Assessment (Section 9 of AI Prompt)
+
+AI MUST address impact of comorbidities on CKD:
+
+**A. Diabetes Impact**
+- Comment on HbA1c control and kidney disease impact
+- HbA1c >8%: "Poor glycemic control accelerates kidney damage - intensify diabetes management"
+- Diabetic CKD without SGLT2i: "SGLT2 inhibitor provides dual benefit for diabetes AND kidney protection"
+
+**B. Hypertension Impact**
+- Comment on BP control
+- BP ≥140/90: "Uncontrolled hypertension accelerates CKD progression"
+- Target <130/80 for CKD patients
+- Hypertensive CKD with albuminuria: "RAS inhibitor provides BP control AND kidney protection"
+
+**C. Heart Failure Impact**
+- If present: "SGLT2 inhibitors provide cardiovascular AND kidney protection"
+
+**D. Integrated Recommendations**
+- Diabetes + CKD → "SGLT2 inhibitor for dual benefit"
+- Hypertension + Albuminuria → "RAS inhibitor for BP control and proteinuria reduction"
+- Diabetes + Hypertension + CKD → "Both RAS inhibitor AND SGLT2 inhibitor for comprehensive disease modification"
+
 ## Validation Criteria
 
 ### For a patient like Betty Anderson (G3a-A1, Moderate CKD, Not on Treatment/Monitoring):
 
 **Expected AI Recommendations MUST include**:
-1. ✅ **Monitoring**: "Recommend initiating Minuteful Kidney home monitoring (Monthly frequency) for CKD Stage 3a"
-2. ✅ **Treatment Evaluation**: If diabetes present → "Consider SGLT2 inhibitor (Moderate indication)"
-3. ✅ **Treatment Evaluation**: If eGFR declining → "Consider RAS inhibitor (Moderate indication for CKD without significant albuminuria)"
-4. ✅ **Follow-up**: "Monitor eGFR and uACR every 6-12 months per moderate risk guidelines"
-5. ❌ **Should NOT say**: "Continue monitoring" without specific recommendations (this is inadequate for new CKD diagnosis)
+1. ✅ **Biomarker Evolution**: "eGFR declined from [X] to [Y] mL/min/1.73m² - represents [gradual progression/concerning decline]"
+2. ✅ **Clinical Lab Monitoring**: "Continue scheduled lab monitoring every 6-12 months per moderate risk guidelines"
+3. ✅ **Home Monitoring**: "Initiate Minuteful Kidney home monitoring (Monthly frequency) for at-home uACR tracking between clinic visits"
+4. ✅ **Treatment Evaluation**: If diabetes present → "Consider SGLT2 inhibitor (Moderate indication for dual glycemic and kidney benefit)"
+5. ✅ **Treatment Evaluation**: If eGFR declining → "Consider RAS inhibitor (Moderate indication for CKD without significant albuminuria)"
+6. ✅ **Comorbidity Integration**: If diabetes + hypertension → "Address diabetes control (HbA1c [X]%) and BP management (BP [X]/[Y])"
+7. ❌ **Should NOT say**: "Continue monitoring" without specifying clinical vs. home monitoring
+
+### For a patient like Shirley Anderson (G2-A2, Mild CKD with moderate albuminuria, Not on Treatment/Monitoring):
+
+**Expected AI Recommendations MUST include**:
+1. ✅ **Biomarker Evolution**: "uACR increased from [X] to [Y] mg/g - progressed to A2 category (moderate albuminuria)"
+2. ✅ **Clinical Lab Monitoring**: "Continue scheduled lab monitoring every 6-12 months per moderate risk guidelines (YELLOW/KDIGO)"
+3. ✅ **Home Monitoring**: "Initiate Minuteful Kidney home monitoring (Monthly frequency) for at-home uACR tracking between clinic visits"
+4. ✅ **Treatment - RAS Inhibitor**: "Initiate RAS inhibitor therapy (STRONG indication - KDIGO Grade 1A for albuminuria, proven 30-40% proteinuria reduction)"
+5. ✅ **Treatment - SGLT2i**: If diabetes present → "Consider SGLT2 inhibitor for dual glycemic and kidney benefit"
+6. ✅ **Comorbidity Integration**: Address hypertension (if present) → "RAS inhibitor provides BP control AND kidney protection"
+7. ❌ **Should NOT say**: "Continue monitoring and follow up as scheduled" without distinguishing clinical vs. home monitoring
+8. ❌ **Should NOT say**: "Consider initiating therapy" without being specific about which medication
+
+**Why Both Monitoring Types Are Needed**:
+- **Clinical Lab Monitoring**: Standard follow-up every 6-12 months for comprehensive metabolic panel, eGFR, uACR, BP check
+- **Home Monitoring (Minuteful Kidney)**: Monthly at-home uACR testing BETWEEN clinic visits to detect early changes in albuminuria
+- **Rationale**: Albuminuria can fluctuate; monthly home testing provides trend data that 6-month clinic visits would miss
 
 ### Success Metrics:
 - 100% of patients transitioning to CKD Stage 3+ receive treatment initiation evaluation
 - 100% of patients with eGFR <60 receive home monitoring recommendation
 - 100% of patients with diabetes + CKD receive SGLT2i evaluation
 - 100% of patients with uACR ≥30 receive RAS inhibitor evaluation
+- 100% of AI analyses distinguish between clinical monitoring and home monitoring
+- 100% of AI analyses comment on biomarker trends (eGFR, uACR)
+- 100% of AI analyses address comorbidity impact when relevant (diabetes, hypertension, heart failure)
 
 ## Error Prevention
 
