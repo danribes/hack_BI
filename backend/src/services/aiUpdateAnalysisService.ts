@@ -78,6 +78,9 @@ interface PatientContext {
   has_pvd?: boolean;
   smoking_status?: 'never' | 'former' | 'current';
   bmi?: number;
+  // MCP Comprehensive Analyses (baseline and post-update)
+  mcpBaselineAnalysis?: any;
+  mcpPostUpdateAnalysis?: any;
 }
 
 interface AIAnalysisResult {
@@ -600,7 +603,74 @@ This patient has improved from CKD to Non-CKD status this cycle. This is excelle
       }
     }
 
-    return `You are an expert nephrologist analyzing patient lab value changes. Generate a concise clinical analysis of the following patient update.
+    // Build comprehensive MCP analysis section
+    let mcpComprehensiveSection = '';
+    if (context.mcpBaselineAnalysis && context.mcpPostUpdateAnalysis) {
+      mcpComprehensiveSection = `
+═══════════════════════════════════════════════════════════════════════════════
+🔬 MCP COMPREHENSIVE CLINICAL DECISION SUPPORT ANALYSIS 🔬
+═══════════════════════════════════════════════════════════════════════════════
+
+**CRITICAL: The following contains complete MCP-generated clinical intelligence including:**
+- Treatment recommendations (Jardiance/SGLT2i, RAS inhibitors, home monitoring)
+- Risk stratification and progression analysis
+- Lifestyle modifications (diet, exercise, weight management)
+- Medication safety assessments
+- Protocol adherence tracking
+
+This data is the GOLD STANDARD for your clinical recommendations. Use it extensively.
+
+**BASELINE ANALYSIS (BEFORE UPDATE):**
+${JSON.stringify(context.mcpBaselineAnalysis, null, 2)}
+
+**POST-UPDATE ANALYSIS (AFTER UPDATE):**
+${JSON.stringify(context.mcpPostUpdateAnalysis, null, 2)}
+
+**YOUR TASK WITH MCP DATA:**
+1. **Compare Baseline vs Post-Update**: Identify what changed between the two analyses
+2. **Extract Treatment Recommendations**: Include specific medications, dosing, and evidence from MCP
+3. **Identify Critical Alerts**: Highlight any critical alerts or action items from MCP
+4. **Synthesize Lifestyle Recommendations**: Include diet, exercise, weight management suggestions
+5. **Create Comprehensive Report**: Your clinical summary should reference and expand upon MCP findings
+
+**IMPORTANT RULES FOR USING MCP DATA:**
+- If MCP recommends Jardiance (SGLT2i), include the specific evidence level and reasoning
+- If MCP recommends RAS inhibitor, include the indication and rationale
+- If MCP recommends Minuteful Kidney monitoring, include frequency and benefits
+- If MCP identifies progression risk, quantify it in your summary
+- If MCP notes lifestyle factors (obesity, smoking), address them in recommended actions
+
+═══════════════════════════════════════════════════════════════════════════════
+`;
+    } else if (context.mcpBaselineAnalysis) {
+      mcpComprehensiveSection = `
+═══════════════════════════════════════════════════════════════════════════════
+🔬 MCP BASELINE ANALYSIS AVAILABLE 🔬
+═══════════════════════════════════════════════════════════════════════════════
+
+**BASELINE ANALYSIS (BEFORE UPDATE):**
+${JSON.stringify(context.mcpBaselineAnalysis, null, 2)}
+
+Note: Post-update MCP analysis not available. Base recommendations on baseline analysis and lab changes.
+
+═══════════════════════════════════════════════════════════════════════════════
+`;
+    } else if (context.mcpPostUpdateAnalysis) {
+      mcpComprehensiveSection = `
+═══════════════════════════════════════════════════════════════════════════════
+🔬 MCP POST-UPDATE ANALYSIS AVAILABLE 🔬
+═══════════════════════════════════════════════════════════════════════════════
+
+**POST-UPDATE ANALYSIS:**
+${JSON.stringify(context.mcpPostUpdateAnalysis, null, 2)}
+
+Note: Baseline MCP analysis not available. Base recommendations on current analysis.
+
+═══════════════════════════════════════════════════════════════════════════════
+`;
+    }
+
+    return `You are an expert nephrologist analyzing patient lab value changes. Generate a comprehensive clinical analysis of the following patient update, incorporating MCP clinical decision support data.
 
 **Patient Context:**
 - Name: ${context.firstName} ${context.lastName}
@@ -615,6 +685,7 @@ This patient has improved from CKD to Non-CKD status this cycle. This is excelle
 - Cycle: ${context.previousCycleNumber || 'N/A'} → ${context.cycleNumber}
 ${phase3Section}${riskAssessmentSection}
 ${transitionAlert}
+${mcpComprehensiveSection}
 **Previous Lab Values (Cycle ${context.previousCycleNumber || 'N/A'}):**
 ${this.formatLabValues(previous)}
 
