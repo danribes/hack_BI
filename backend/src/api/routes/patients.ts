@@ -4,6 +4,7 @@ import { classifyKDIGO, classifyKDIGOWithSCORED, calculateSCORED, calculateFrami
 import { HealthStateCommentService } from '../../services/healthStateCommentService';
 import { AIUpdateAnalysisService } from '../../services/aiUpdateAnalysisService';
 import { EmailService } from '../../services/emailService';
+import { getMCPClient } from '../../services/mcpClient';
 
 const router = Router();
 
@@ -1120,6 +1121,39 @@ router.post('/:id/update-records', async (req: Request, res: Response): Promise<
     const isMonitored = patient.home_monitoring_active || false;
     const hasCKD = kdigoClassification.has_ckd;
 
+    // =================================================================================
+    // PHASE 1: PRE-UPDATE MCP BASELINE ANALYSIS
+    // =================================================================================
+    // Capture comprehensive baseline assessment BEFORE any changes
+    // This includes risk assessment, treatment recommendations, and current health state
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`[Patient Update] 📊 PHASE 1: PRE-UPDATE BASELINE ANALYSIS`);
+    console.log(`[Patient Update] Patient: ${patient.first_name} ${patient.last_name} (${patient.medical_record_number})`);
+    console.log(`[Patient Update] Current Cycle: ${nextMonthNumber - 1} → Next Cycle: ${nextMonthNumber}`);
+    console.log(`${'='.repeat(80)}\n`);
+
+    let baselineAnalysis = null;
+    try {
+      const mcpClient = await getMCPClient();
+      console.log('[MCP Baseline] Fetching comprehensive baseline analysis...');
+      baselineAnalysis = await mcpClient.comprehensiveCKDAnalysis(id);
+      console.log('[MCP Baseline] ✅ Baseline analysis complete');
+      console.log('[MCP Baseline] Current Health State:', baselineAnalysis?.patient_summary?.current_health_state || 'Unknown');
+      console.log('[MCP Baseline] CKD Status:', baselineAnalysis?.patient_summary?.has_ckd ? 'Yes' : 'No');
+      console.log('[MCP Baseline] Risk Level:', baselineAnalysis?.patient_summary?.risk_level || 'Unknown');
+    } catch (mcpError) {
+      console.error('[MCP Baseline] ⚠️  Error fetching baseline analysis:', mcpError);
+      console.log('[MCP Baseline] Continuing without baseline analysis...');
+      // Don't fail the update if MCP baseline fails
+    }
+
+    // =================================================================================
+    // PHASE 2: GENERATE NEW LAB VALUES
+    // =================================================================================
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`[Patient Update] 🧪 PHASE 2: GENERATING NEW LAB VALUES`);
+    console.log(`${'='.repeat(80)}\n`);
+
     // Import Anthropic client
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const anthropic = new Anthropic({
@@ -1473,11 +1507,70 @@ Provide ONLY the JSON object, nothing else.`;
       }
     }
 
+    // =================================================================================
+    // PHASE 3: POST-UPDATE MCP COMPARATIVE ANALYSIS
+    // =================================================================================
+    // Capture comprehensive post-update assessment AFTER all changes
+    // This will be compared with baseline to generate comprehensive report
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`[Patient Update] 📊 PHASE 3: POST-UPDATE COMPARATIVE ANALYSIS`);
+    console.log(`${'='.repeat(80)}\n`);
+
+    let postUpdateAnalysis = null;
+    try {
+      const mcpClient = await getMCPClient();
+      console.log('[MCP Post-Update] Fetching comprehensive post-update analysis...');
+      postUpdateAnalysis = await mcpClient.comprehensiveCKDAnalysis(id);
+      console.log('[MCP Post-Update] ✅ Post-update analysis complete');
+      console.log('[MCP Post-Update] New Health State:', postUpdateAnalysis?.patient_summary?.current_health_state || 'Unknown');
+      console.log('[MCP Post-Update] New CKD Status:', postUpdateAnalysis?.patient_summary?.has_ckd ? 'Yes' : 'No');
+      console.log('[MCP Post-Update] New Risk Level:', postUpdateAnalysis?.patient_summary?.risk_level || 'Unknown');
+
+      // Log comparison if both baseline and post-update analyses are available
+      if (baselineAnalysis && postUpdateAnalysis) {
+        console.log('\n[MCP Comparison] 🔄 Changes Detected:');
+        const baselineState = baselineAnalysis.patient_summary?.current_health_state;
+        const postUpdateState = postUpdateAnalysis.patient_summary?.current_health_state;
+        if (baselineState !== postUpdateState) {
+          console.log(`  ⚠️  Health State: ${baselineState} → ${postUpdateState}`);
+        } else {
+          console.log(`  ℹ️  Health State: ${postUpdateState} (unchanged)`);
+        }
+
+        const baselineEGFR = baselineAnalysis.patient_summary?.latest_egfr;
+        const postUpdateEGFR = postUpdateAnalysis.patient_summary?.latest_egfr;
+        if (baselineEGFR && postUpdateEGFR) {
+          const egfrChange = postUpdateEGFR - baselineEGFR;
+          console.log(`  📉 eGFR: ${baselineEGFR.toFixed(1)} → ${postUpdateEGFR.toFixed(1)} (${egfrChange > 0 ? '+' : ''}${egfrChange.toFixed(1)} mL/min/1.73m²)`);
+        }
+
+        const baselineUACR = baselineAnalysis.patient_summary?.latest_uacr;
+        const postUpdateUACR = postUpdateAnalysis.patient_summary?.latest_uacr;
+        if (baselineUACR && postUpdateUACR) {
+          const uacrChange = postUpdateUACR - baselineUACR;
+          console.log(`  📊 uACR: ${baselineUACR.toFixed(1)} → ${postUpdateUACR.toFixed(1)} (${uacrChange > 0 ? '+' : ''}${uacrChange.toFixed(1)} mg/g)`);
+        }
+        console.log('');
+      }
+    } catch (mcpError) {
+      console.error('[MCP Post-Update] ⚠️  Error fetching post-update analysis:', mcpError);
+      console.log('[MCP Post-Update] Continuing without post-update analysis...');
+      // Don't fail the update if MCP post-update fails
+    }
+
+    // =================================================================================
+    // PHASE 4: COMPREHENSIVE AI-POWERED COMPARATIVE REPORT
+    // =================================================================================
+    // Generate extensive report comparing baseline vs post-update with MCP insights
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`[Patient Update] 🤖 PHASE 4: GENERATING COMPREHENSIVE AI REPORT`);
+    console.log(`${'='.repeat(80)}\n`);
+
     // Generate AI-powered update analysis comment
     // Skip AI analysis after reset since there's no previous data to compare
     let aiCommentId = null;
     if (!wasReset) {
-      console.log(`[Patient Update] Generating AI analysis for patient ${id}...`);
+      console.log(`[Patient Update] Generating comprehensive AI analysis for patient ${id}...`);
 
       // Declare these outside try block so they're accessible in catch block
       const aiAnalysisService = new AIUpdateAnalysisService(pool);
@@ -1563,6 +1656,15 @@ Provide ONLY the JSON object, nothing else.`;
         has_pvd: comorbidities.has_peripheral_vascular_disease,
         smoking_status,
         bmi,
+        // ⭐ CRITICAL: MCP Baseline and Post-Update Comprehensive Analyses ⭐
+        // These contain complete clinical decision support data including:
+        // - Treatment recommendations (Jardiance, RAS inhibitors, home monitoring)
+        // - Risk stratification and progression analysis
+        // - Lifestyle and dietary modifications
+        // - Medication safety assessments
+        // - Protocol adherence tracking
+        mcpBaselineAnalysis: baselineAnalysis || undefined,
+        mcpPostUpdateAnalysis: postUpdateAnalysis || undefined,
       };
 
       // Call AI analysis service - now always generates a comment
