@@ -1537,7 +1537,7 @@ router.post('/:id/reset-records', async (req: Request, res: Response): Promise<a
  * POST /api/patients/reset-all
  * Removes all generated observations (month_number > 1) and comments for ALL patients
  */
-router.post('/reset-all', async (req: Request, res: Response): Promise<any> => {
+router.post('/reset-all', async (_req: Request, res: Response): Promise<any> => {
   try {
     const pool = getPool();
 
