@@ -469,16 +469,81 @@ IMPORTANT: Even if changes are minimal or the patient is stable, still provide a
    - For TREATED patients with deterioration: recommend treatment adjustment
    - For UNTREATED patients with deterioration: recommend urgent treatment initiation
 
-7. **Monitoring Status Considerations:**
+7. **Monitoring Status Considerations - CRITICAL: Distinguish Between TWO Types of Monitoring:**
+
+   **A. CLINICAL/LAB MONITORING (Scheduled clinic visits and laboratory tests):**
+   - This is ALWAYS ongoing for CKD patients
+   - Frequency based on risk level: Every 1-3 months (RED), 3-6 months (ORANGE), 6-12 months (YELLOW), Annually (GREEN)
+   - Use phrases: "Continue scheduled lab monitoring every [X months] per [risk level] guidelines"
+   - NEVER say just "continue monitoring" without specifying what type
+
+   **B. HOME MONITORING (Minuteful Kidney device for at-home uACR testing):**
    - CHECK THE PHASE 3 TREATMENT DECISION ANALYSIS FOR HOME MONITORING (Minuteful Kidney) RECOMMENDATIONS!
    - If "Monitoring Status: NOT ON MONITORING" AND Phase 3 shows "Recommended: YES":
      * MUST recommend initiating Minuteful Kidney home monitoring
      * Include the specific frequency from Phase 3 (Weekly, Bi-weekly, Monthly)
      * Include the rationale from Phase 3
-     * Emphasize benefits: "Early detection of changes, improved patient engagement, cost-effective monitoring"
-   - If "Monitoring Status: Active (...)" → Patient IS being monitored, acknowledge and recommend continuation
-   - For patients WITHOUT Phase 3 monitoring recommendation but high-risk/CKD → Recommend evaluation for monitoring
-   - Use specific phrases: "Initiate Minuteful Kidney home monitoring (Monthly frequency)", not "consider monitoring"
+     * Emphasize adherence benefits: "At-home convenience, 99% usability, ~50% completion in non-compliant populations"
+   - If "Monitoring Status: Active (...)" → Patient IS using home monitoring device, acknowledge this
+   - For patients WITHOUT Phase 3 monitoring recommendation but high-risk/CKD → Recommend evaluation for home monitoring
+   - Use specific phrases: "Initiate Minuteful Kidney home monitoring (Monthly frequency) for at-home uACR tracking between clinic visits"
+
+   **IMPORTANT**: ALWAYS specify BOTH types of monitoring in your recommendations:
+   - Example CORRECT: "Continue scheduled lab monitoring every 6-12 months. Initiate Minuteful Kidney home monitoring (Monthly) for at-home uACR tracking."
+   - Example WRONG: "Continue monitoring and follow up as scheduled" ← TOO VAGUE!
+
+8. **Biomarker Evolution Analysis - MUST Comment on Trends:**
+
+   **A. eGFR Trends:**
+   - Compare current eGFR to previous value
+   - Declining trend (any decrease): "eGFR declined from [X] to [Y] mL/min/1.73m² ([Z]% decrease)"
+   - Stable (<2 mL/min change): "eGFR remains stable at [Y] mL/min/1.73m²"
+   - Improving: "eGFR improved from [X] to [Y] mL/min/1.73m²"
+   - Contextualize: "This represents [stable kidney function / gradual progression / concerning decline]"
+
+   **B. uACR Trends:**
+   - Compare current uACR to previous value
+   - Increasing: "Albuminuria increased from [X] to [Y] mg/g ([Z]% increase)"
+   - Decreasing: "Albuminuria decreased from [X] to [Y] mg/g ([Z]% decrease)"
+   - Stable: "Albuminuria remains stable at [Y] mg/g"
+   - Note category changes: "Progressed from A1 (normal) to A2 (moderate albuminuria)" or "Improved from A2 to A1"
+   - If on treatment: "On RAS inhibitor therapy, expect 30-40% reduction in proteinuria"
+
+   **C. Clinical Significance:**
+   - eGFR decline >5 mL/min/year = rapid progression
+   - eGFR decline 2-5 mL/min/year = moderate progression
+   - uACR doubling = significant worsening
+   - Both stable = treatment effective OR disease stable
+
+   **D. Integration with Treatment Status:**
+   - If UNTREATED and declining → "Progressive decline without treatment intervention - URGENT need for therapy initiation"
+   - If TREATED and stable/improving → "Current treatment appears effective in stabilizing kidney function"
+   - If TREATED and declining → "Despite treatment, kidney function declining - consider treatment optimization"
+
+9. **Comorbidity Assessment - Address Impact on CKD:**
+
+   **A. Diabetes Impact:**
+   - If patient has diabetes: Comment on HbA1c control and its impact on kidney disease
+   - HbA1c >8%: "Poor glycemic control (HbA1c [X]%) accelerates kidney damage - intensify diabetes management"
+   - HbA1c 7-8%: "Moderate glycemic control - optimize to <7% to slow CKD progression"
+   - HbA1c <7%: "Good glycemic control - continue current diabetes management"
+   - If diabetic CKD without SGLT2i: "Diabetic kidney disease - SGLT2 inhibitor provides dual benefit for diabetes and kidney protection"
+
+   **B. Hypertension Impact:**
+   - Comment on blood pressure control
+   - BP ≥140/90: "Uncontrolled hypertension accelerates CKD progression"
+   - BP 130-139/80-89: "Borderline BP control - target <130/80 for CKD patients"
+   - BP <130/80: "Good BP control - continue current management"
+   - If hypertensive with albuminuria without RAS inhibitor: "Hypertensive CKD with albuminuria - RAS inhibitor provides BP control AND kidney protection"
+
+   **C. Heart Failure Impact:**
+   - If heart failure present: "Heart failure present - SGLT2 inhibitors provide cardiovascular AND kidney protection"
+   - Comment on fluid management and medication interactions
+
+   **D. Integrated Comorbidity Recommendations:**
+   - Diabetes + CKD → "Recommend SGLT2 inhibitor for dual glycemic and kidney benefit"
+   - Hypertension + Albuminuria → "Recommend RAS inhibitor for BP control and proteinuria reduction"
+   - Diabetes + Hypertension + CKD → "Consider both RAS inhibitor AND SGLT2 inhibitor for comprehensive disease modification"
 
 Return ONLY the JSON response, no additional text.`;
   }
