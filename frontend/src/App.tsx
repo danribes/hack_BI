@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import PatientFilters from './components/PatientFilters';
 import { DoctorChatBar } from './components/DoctorChatBar';
 import { PatientTrendGraphs } from './components/PatientTrendGraphs';
+import { AdherenceCard, AdherenceData } from './components/AdherenceCard';
 
 interface KDIGOClassification {
   gfr_category: string;
@@ -191,6 +192,8 @@ interface PatientDetail extends Patient {
 function App() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientDetail | null>(null);
+  const [adherenceData, setAdherenceData] = useState<AdherenceData | null>(null);
+  const [loadingAdherence, setLoadingAdherence] = useState(false);
   const [healthStateComments, setHealthStateComments] = useState<HealthStateComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -516,9 +519,43 @@ function App() {
     }
   };
 
+  const fetchAdherenceData = async (patientId: string) => {
+    try {
+      setLoadingAdherence(true);
+
+      const response = await fetch(`${API_URL}/api/patients/${patientId}/adherence`);
+
+      if (!response.ok) {
+        // If adherence endpoint returns 404 or 500, patient may not have treatment data
+        if (response.status === 404 || response.status === 500) {
+          console.log(`[FETCH_ADHERENCE] No adherence data available for patient`);
+          setAdherenceData(null);
+          return;
+        }
+        throw new Error(`Failed to fetch adherence data: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'success' && data.adherence) {
+        setAdherenceData(data.adherence);
+        console.log(`[FETCH_ADHERENCE] Loaded adherence data for patient`);
+      } else {
+        setAdherenceData(null);
+      }
+
+    } catch (err) {
+      console.error('[FETCH_ADHERENCE] Error fetching adherence data:', err);
+      setAdherenceData(null);
+    } finally {
+      setLoadingAdherence(false);
+    }
+  };
+
   const handlePatientClick = async (patientId: string) => {
     await fetchPatientDetail(patientId);
     await fetchHealthStateComments(patientId);
+    await fetchAdherenceData(patientId);
   };
 
   const updatePatientRecords = async () => {
@@ -1493,6 +1530,13 @@ function App() {
                           <span className="font-semibold text-gray-900">{selectedPatient.kdigo_classification.monitoring_frequency}</span>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Treatment Adherence Card */}
+                  {selectedPatient.is_treated && (
+                    <div className="mt-6">
+                      <AdherenceCard adherenceData={adherenceData} loading={loadingAdherence} />
                     </div>
                   )}
                 </div>

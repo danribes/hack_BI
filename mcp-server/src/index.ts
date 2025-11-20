@@ -14,6 +14,7 @@ import { assessPreDiagnosisRisk } from './tools/phase1PreDiagnosisRisk.js';
 import { classifyKDIGO } from './tools/phase2KDIGOClassification.js';
 import { assessTreatmentOptions } from './tools/phase3TreatmentDecision.js';
 import { monitorAdherence } from './tools/phase4AdherenceMonitoring.js';
+import { monitorCompositeAdherence } from './tools/compositeAdherenceMonitoring.js';
 
 // Import Orchestrator Tool (Master Pipeline)
 import { comprehensiveCKDAnalysis } from './tools/comprehensiveCKDAnalysis.js';
@@ -136,6 +137,30 @@ const TOOLS: Tool[] = [
         measurement_period_days: {
           type: 'number',
           description: 'Period for MPR calculation in days (default: 90)',
+        },
+      },
+      required: ['patient_id'],
+    },
+  },
+
+  {
+    name: 'monitor_composite_adherence',
+    description:
+      'PHASE 4 ENHANCED: Comprehensive composite adherence monitoring combining multiple methods: (1) MPR from pharmacy data, (2) Lab-based treatment response from eGFR/uACR trends, (3) Patient self-reported adherence. Calculates weighted composite score, detects barriers, predicts non-adherence risk, and provides actionable interventions. Recommended for comprehensive adherence assessment of treated patients.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        patient_id: {
+          type: 'string',
+          description: 'Patient identifier',
+        },
+        measurement_period_days: {
+          type: 'number',
+          description: 'Period for adherence calculation in days (default: 90)',
+        },
+        include_predictions: {
+          type: 'boolean',
+          description: 'Include adherence risk prediction (default: true)',
         },
       },
       required: ['patient_id'],
@@ -437,6 +462,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'monitor_composite_adherence': {
+        const result = await monitorCompositeAdherence(args as any);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
       // ========== CLINICAL CALCULATION TOOLS ==========
       case 'calculate_egfr': {
         const result = await calculateEGFR(args as any);
@@ -602,7 +639,7 @@ async function main() {
   console.error('  PHASE 1: assess_pre_diagnosis_risk');
   console.error('  PHASE 2: classify_kdigo');
   console.error('  PHASE 3: assess_treatment_options');
-  console.error('  PHASE 4: monitor_adherence');
+  console.error('  PHASE 4: monitor_adherence, monitor_composite_adherence (ENHANCED)');
   console.error('  CLINICAL: calculate_egfr, predict_kidney_failure_risk, check_screening_protocol, assess_medication_safety, analyze_adherence');
   console.error('  LEGACY: get_patient_data, query_lab_results, get_population_stats, search_guidelines');
   console.error('\n========================================\n');
