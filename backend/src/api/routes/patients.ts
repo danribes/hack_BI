@@ -2050,6 +2050,49 @@ router.post('/:id/comments/:commentId/archive', async (req: Request, res: Respon
 });
 
 /**
+ * GET /api/patients/:id/adherence
+ * Get composite adherence data for a treated patient
+ */
+router.get('/:id/adherence', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const pool = getPool();
+
+    // Get MCP client to call composite adherence monitoring tool
+    const mcpClient = getMCPClient();
+
+    // Call the composite adherence monitoring MCP tool
+    const adherenceResult = await mcpClient.callTool('monitor_composite_adherence', {
+      patient_id: id,
+      measurement_period_days: 90,
+      include_predictions: true
+    });
+
+    // Check if the tool returned an error or no treatment data
+    if (!adherenceResult || adherenceResult.error) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No adherence data available for this patient',
+        error: adherenceResult?.error || 'Patient may not be on active treatment'
+      });
+    }
+
+    // Return the adherence data
+    res.json({
+      status: 'success',
+      adherence: adherenceResult
+    });
+  } catch (error) {
+    console.error('[Patients API] Error fetching adherence data:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch adherence data',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /api/patients/:id/reset-records
  * Reset patient records by removing all generated data, keeping only original data (month 1)
  */
