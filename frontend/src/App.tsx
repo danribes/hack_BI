@@ -590,6 +590,10 @@ function App() {
       console.log('[UPDATE] Refreshing comments to show AI analysis...');
       await fetchHealthStateComments(selectedPatient.id);
 
+      // Refresh adherence data to reflect new lab trends
+      console.log('[UPDATE] Refreshing adherence data...');
+      await fetchAdherenceData(selectedPatient.id);
+
       // Refresh patient list to show updated risk level in main list
       console.log('[UPDATE] Refreshing patient list...');
       if (activeFilters.patientType !== 'all' || activeFilters.ckdSeverity || activeFilters.nonCkdRisk) {
