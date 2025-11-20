@@ -2061,11 +2061,7 @@ router.get('/:id/adherence', async (req: Request, res: Response): Promise<any> =
     const mcpClient = await getMCPClient();
 
     // Call the composite adherence monitoring MCP tool
-    const adherenceResult = await mcpClient.callTool('monitor_composite_adherence', {
-      patient_id: id,
-      measurement_period_days: 90,
-      include_predictions: true
-    });
+    const adherenceResult = await mcpClient.monitorCompositeAdherence(id, 90, true);
 
     // Check if the tool returned an error or no treatment data
     if (!adherenceResult || adherenceResult.error) {

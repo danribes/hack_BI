@@ -195,6 +195,31 @@ export class MCPClient {
   }
 
   /**
+   * PHASE 4 ENHANCED: Monitor composite adherence (MPR + Lab-based + Self-report)
+   * Comprehensive adherence assessment combining multiple measurement methods
+   */
+  async monitorCompositeAdherence(
+    patientId: string,
+    measurementPeriodDays: number = 90,
+    includePredictions: boolean = true
+  ): Promise<any> {
+    if (!this.client || !this.isConnected) {
+      throw new Error('MCP client not connected');
+    }
+
+    const result = await this.client.callTool({
+      name: 'monitor_composite_adherence',
+      arguments: {
+        patient_id: patientId,
+        measurement_period_days: measurementPeriodDays,
+        include_predictions: includePredictions,
+      },
+    });
+
+    return this.parseToolResult(result);
+  }
+
+  /**
    * CLINICAL: Calculate eGFR using CKD-EPI 2021 formula
    * Use for on-the-fly eGFR calculation from creatinine values
    */
