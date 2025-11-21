@@ -25,13 +25,34 @@ This migration:
 
 ## How to Run
 
-### Option 1: Using the helper script (Recommended)
+### For Render Deployment (Recommended)
+
+**Step 1:** Get your DATABASE_URL from Render
+1. Go to https://dashboard.render.com
+2. Click on your database (e.g., `ckd-analyzer-db`)
+3. Copy the **External Database URL** (starts with `postgresql://`)
+
+**Step 2:** Run the migration script
+```bash
+cd /home/user/hack_BI
+./scripts/run_migration_020_render.sh 'postgresql://your-database-url'
+```
+
+The script will:
+- Test your connection
+- Show current database state
+- Ask for confirmation before deleting
+- Run the migration
+- Verify the result
+
+### For Local Docker Development
+
 ```bash
 cd /home/user/hack_BI
 ./scripts/run_migration_020.sh
 ```
 
-### Option 2: Using Docker (if containers are running)
+Or manually:
 ```bash
 docker exec -i healthcare-postgres psql \
   -U healthcare_user \
@@ -39,7 +60,8 @@ docker exec -i healthcare-postgres psql \
   < infrastructure/postgres/migrations/020_remove_unclassified_patients.sql
 ```
 
-### Option 3: Using psql directly
+### For Local psql Connection
+
 ```bash
 psql -h localhost -p 5433 \
   -U healthcare_user \
