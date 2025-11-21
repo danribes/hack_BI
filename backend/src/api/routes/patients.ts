@@ -1846,6 +1846,35 @@ Provide ONLY the JSON object, nothing else.`;
       } else {
         console.log(`[Patient Update] ⊘ Skipping AI comment creation - patient stable with no significant changes`);
         console.log(`[Patient Update]    This prevents unnecessary alert fatigue for clinicians`);
+
+        // However, if no health state comment was created either, we should create a basic stable comment
+        // This ensures the patient list always has an evolution summary to display
+        if (!commentId && !aiCommentId) {
+          console.log(`[Patient Update] 📝 Creating stable patient comment for list display...`);
+          try {
+            // Create a basic stable comment using the AI analysis data
+            aiCommentId = await aiAnalysisService.createAIUpdateComment(
+              id,
+              {
+                ...aiAnalysis,
+                hasSignificantChanges: true, // Override to force comment creation
+                commentText: aiAnalysis.commentText || 'Patient status stable. Continue current management plan.',
+                clinicalSummary: aiAnalysis.clinicalSummary || 'No significant changes in kidney function markers.',
+                recommendedActions: aiAnalysis.recommendedActions && aiAnalysis.recommendedActions.length > 0
+                  ? aiAnalysis.recommendedActions
+                  : ['Continue current treatment and monitoring schedule'],
+                severity: 'info'
+              },
+              nextMonthNumber,
+              previousLabValues,
+              newLabValues
+            );
+            console.log(`[Patient Update] ✓ Stable patient comment created with ID: ${aiCommentId}`);
+          } catch (stableCommentError) {
+            console.error('[Patient Update] Error creating stable patient comment:', stableCommentError);
+            // Don't fail the update if stable comment creation fails
+          }
+        }
       }
 
       // Send email notification if CKD status transition occurred
