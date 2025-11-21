@@ -835,16 +835,14 @@ router.get('/statistics', async (_req: Request, res: Response): Promise<any> => 
       }
     });
 
-    // Get actual total patient count from patients table (not just tracked patients)
-    const totalPatientsResult = await pool.query(`
-      SELECT COUNT(*) as count FROM patients
-    `);
-    const actualTotalPatients = parseInt(totalPatientsResult.rows[0].count);
+    // Calculate total patient count as sum of CKD and non-CKD patients
+    // This ensures the total matches the breakdown (CKD + non-CKD)
+    const totalPatients = ckdStats.total + nonCkdStats.total;
 
     res.json({
       status: 'success',
       statistics: {
-        total_patients: actualTotalPatients,
+        total_patients: totalPatients,
         ckd: ckdStats,
         non_ckd: nonCkdStats,
         health_state_changes: healthStateChangeStats
