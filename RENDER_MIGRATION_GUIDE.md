@@ -6,27 +6,14 @@ This guide walks you through removing the 200 unclassified patients from your Re
 
 ### Prerequisites
 - Access to your Render dashboard
-- PostgreSQL client installed locally (see below)
+- Node.js installed (already available if you're running the backend)
 - Your project cloned locally
+
+**Note:** This guide uses a Node.js script that works in all environments (Codespaces, local, CI/CD). No need to install `psql`!
 
 ### Step-by-Step Instructions
 
-#### 1. Install PostgreSQL Client (if not already installed)
-
-**macOS:**
-```bash
-brew install postgresql
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install postgresql-client
-```
-
-**Windows:**
-Download from [postgresql.org/download/windows](https://www.postgresql.org/download/windows/)
-
-#### 2. Get Your Database URL from Render
+#### 1. Get Your Database URL from Render
 
 1. Go to [dashboard.render.com](https://dashboard.render.com)
 2. Click on your database service (e.g., `ckd-analyzer-db`)
@@ -35,9 +22,15 @@ Download from [postgresql.org/download/windows](https://www.postgresql.org/downl
    - It looks like: `postgresql://user:password@host/database`
    - Example: `postgresql://ckd_analyzer_user:XxXxX...@dpg-abc123.oregon-postgres.render.com/ckd_analyzer`
 
-#### 3. Run the Migration
+#### 2. Run the Migration
 
-Open your terminal in the project directory and run:
+**Option A: Using Node.js (Recommended - works everywhere)**
+
+```bash
+node scripts/run_migration_020.js 'postgresql://YOUR_DATABASE_URL_HERE'
+```
+
+**Option B: Using bash script (requires psql installed)**
 
 ```bash
 ./scripts/run_migration_020_render.sh 'postgresql://YOUR_DATABASE_URL_HERE'
@@ -45,10 +38,10 @@ Open your terminal in the project directory and run:
 
 **Example:**
 ```bash
-./scripts/run_migration_020_render.sh 'postgresql://ckd_analyzer_user:pass123@dpg-abc123.oregon-postgres.render.com/ckd_analyzer'
+node scripts/run_migration_020.js 'postgresql://ckd_analyzer_user:pass123@dpg-abc123.oregon-postgres.render.com/ckd_analyzer'
 ```
 
-#### 4. Confirm the Migration
+#### 3. Confirm the Migration
 
 The script will show you:
 - Current state (1200 patients, 200 unclassified)
@@ -108,7 +101,8 @@ The migration:
 - Check that your database is running on Render
 
 ### "psql: command not found"
-- Install the PostgreSQL client (see Step 1 above)
+- Use the Node.js script instead: `node scripts/run_migration_020.js 'postgresql://...'`
+- The Node.js script doesn't require psql to be installed
 
 ### "Migration already applied"
 - The migration is idempotent and safe to run multiple times
