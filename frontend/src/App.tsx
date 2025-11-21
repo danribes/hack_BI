@@ -2933,17 +2933,35 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Clinical Summary and Recommended Actions - Only for worsened or critical patients */}
-                    {patient.latest_comment && (patient.latest_comment.change_type === 'worsened' || patient.latest_comment.severity === 'critical') && (
+                    {/* Clinical Summary and Recommended Actions - Show for all patients with comments */}
+                    {patient.latest_comment && (patient.latest_comment.clinical_summary || (patient.latest_comment.recommended_actions && patient.latest_comment.recommended_actions.length > 0)) && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         {patient.latest_comment.clinical_summary && (
                           <div className="mb-3">
                             <div className="flex items-start">
-                              <svg className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              <svg className={`h-5 w-5 mr-2 mt-0.5 flex-shrink-0 ${
+                                patient.latest_comment.change_type === 'worsened' || patient.latest_comment.severity === 'critical'
+                                  ? 'text-amber-500'
+                                  : patient.latest_comment.change_type === 'improved'
+                                  ? 'text-green-500'
+                                  : 'text-blue-500'
+                              }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               <div className="flex-1">
-                                <span className="text-xs font-semibold text-amber-700 uppercase">Reason for Concern:</span>
+                                <span className={`text-xs font-semibold uppercase ${
+                                  patient.latest_comment.change_type === 'worsened' || patient.latest_comment.severity === 'critical'
+                                    ? 'text-amber-700'
+                                    : patient.latest_comment.change_type === 'improved'
+                                    ? 'text-green-700'
+                                    : 'text-blue-700'
+                                }`}>
+                                  {patient.latest_comment.change_type === 'worsened' || patient.latest_comment.severity === 'critical'
+                                    ? 'Reason for Concern:'
+                                    : patient.latest_comment.change_type === 'improved'
+                                    ? 'Clinical Update:'
+                                    : 'Clinical Summary:'}
+                                </span>
                                 <p className="text-sm text-gray-700 mt-1">{patient.latest_comment.clinical_summary}</p>
                               </div>
                             </div>
