@@ -74,6 +74,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the backend (which will spawn MCP server as child process)
-# Temporary: autoMigrate disabled until markMigrationsApplied.js is run
-CMD ["node", "dist/index.js"]
+# Start the backend with automatic migrations (which will spawn MCP server as child process)
+# autoMigrate.js runs first to apply any pending migrations, then starts the server
+CMD ["sh", "-c", "node autoMigrate.js && node dist/index.js"]
