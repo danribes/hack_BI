@@ -12,7 +12,9 @@
     "build:backend": "tsc",
     "build:mcp": "cd ../mcp-server && npm install --prefer-offline --no-audit && npm run build",
     "start": "node dist/index.js",
-    "test": "echo \"Tests will be added\" && exit 0"
+    "test": "echo \"Tests will be added\" && exit 0",
+    "migrate": "node runMigration.js",
+    "migrate:023": "node runMigration.js 023"
   },
   "keywords": [
     "healthcare",
