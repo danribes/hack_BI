@@ -148,26 +148,14 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ apiUrl, docto
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Email Template Editor</h2>
-            <p className="text-sm text-gray-600 mt-1">Customize email notifications for your patients</p>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
+    <div className="w-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">Email Template Editor</h3>
+        <p className="text-sm text-gray-600 mt-1">Customize email notifications for your patients</p>
+      </div>
 
-        <div className="p-6">
-          {/* Message */}
-          {message && (
+      {/* Message */}
+      {message && (
             <div
               className={`mb-4 p-4 rounded-lg ${
                 message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
@@ -328,20 +316,6 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ apiUrl, docto
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t px-6 py-4 flex justify-end bg-gray-50">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              Close
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
