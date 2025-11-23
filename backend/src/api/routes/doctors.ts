@@ -414,6 +414,50 @@ router.put('/:email', async (req: Request, res: Response): Promise<any> => {
 });
 
 /**
+ * DELETE /api/doctors/:email
+ * Delete doctor profile and all assignments
+ */
+router.delete('/:email', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { email } = req.params;
+    const pool = getPool();
+
+    // First, delete all patient assignments for this doctor
+    await pool.query(`
+      DELETE FROM doctor_patient_assignments
+      WHERE doctor_email = $1
+    `, [email]);
+
+    // Then delete the doctor profile
+    const result = await pool.query(`
+      DELETE FROM doctors
+      WHERE email = $1
+      RETURNING email, name
+    `, [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Doctor not found'
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      message: `Doctor ${result.rows[0].name} deleted successfully`,
+      deleted: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error deleting doctor:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete doctor',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /api/patients/:id/assign-doctor
  * Assign a doctor to a patient
  */
