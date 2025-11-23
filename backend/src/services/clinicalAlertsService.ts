@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { EmailService } from './emailService.js';
+import { getPrimaryDoctor } from '../utils/doctorLookup.js';
 
 interface PatientData {
   id: string;
@@ -30,8 +31,10 @@ interface AdherenceData {
 
 export class ClinicalAlertsService {
   private emailService: EmailService;
+  private db: Pool;
 
   constructor(db: Pool) {
+    this.db = db;
     this.emailService = new EmailService(db);
   }
 
@@ -106,8 +109,11 @@ export class ClinicalAlertsService {
     message += `• Check medication adherence\n`;
     message += `• Review for potential contributing factors (infections, NSAIDs, volume depletion)`;
 
+    // Fetch assigned doctor for this patient
+    const doctor = await getPrimaryDoctor(this.db, patient.id);
+
     await this.emailService.sendNotification({
-      to: '',
+      to: doctor.doctor_email,
       subject: `🔻 ALERT: ${patientName} - Kidney Function Worsening`,
       message,
       priority: 'HIGH',
@@ -115,7 +121,7 @@ export class ClinicalAlertsService {
       mrn: patient.medical_record_number,
     });
 
-    console.log(`✓ Worsening trends alert sent for ${patient.medical_record_number}`);
+    console.log(`✓ Worsening trends alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
   }
 
   /**
@@ -161,8 +167,11 @@ export class ClinicalAlertsService {
     message += `• Increase monitoring frequency\n`;
     message += `• Patient education on disease progression`;
 
+    // Fetch assigned doctor for this patient
+    const doctor = await getPrimaryDoctor(this.db, patient.id);
+
     await this.emailService.sendNotification({
-      to: '',
+      to: doctor.doctor_email,
       subject: `⚠️ CRITICAL: ${patientName} - Health State Deteriorated to ${current_health_state}`,
       message,
       priority: 'CRITICAL',
@@ -170,7 +179,7 @@ export class ClinicalAlertsService {
       mrn: patient.medical_record_number,
     });
 
-    console.log(`✓ Health state deterioration alert sent for ${patient.medical_record_number}`);
+    console.log(`✓ Health state deterioration alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
   }
 
   /**
@@ -208,8 +217,11 @@ export class ClinicalAlertsService {
     message += `  - Home nursing support if appropriate\n`;
     message += `• Reassess after intervention to ensure improvement`;
 
+    // Fetch assigned doctor for this patient
+    const doctor = await getPrimaryDoctor(this.db, patient.id);
+
     await this.emailService.sendNotification({
-      to: '',
+      to: doctor.doctor_email,
       subject: `💊 ALERT: ${patientName} - Poor Medication Adherence (${adherence.compositePercentage}%)`,
       message,
       priority: 'HIGH',
@@ -217,7 +229,7 @@ export class ClinicalAlertsService {
       mrn: patient.medical_record_number,
     });
 
-    console.log(`✓ Poor adherence alert sent for ${patient.medical_record_number}`);
+    console.log(`✓ Poor adherence alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
   }
 
   /**
@@ -266,8 +278,11 @@ export class ClinicalAlertsService {
     message += `• Hemoglobin A1c (if diabetic)\n`;
     message += `• Lipid panel`;
 
+    // Fetch assigned doctor for this patient
+    const doctor = await getPrimaryDoctor(this.db, patient.id);
+
     await this.emailService.sendNotification({
-      to: '',
+      to: doctor.doctor_email,
       subject: `🏠 URGENT: ${patientName} - Minuteful Kidney Shows Worsening uACR`,
       message,
       priority: 'CRITICAL',
@@ -275,7 +290,7 @@ export class ClinicalAlertsService {
       mrn: patient.medical_record_number,
     });
 
-    console.log(`✓ Minuteful worsening uACR alert sent for ${patient.medical_record_number}`);
+    console.log(`✓ Minuteful worsening uACR alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
   }
 
   /**
