@@ -6,13 +6,9 @@
  * Example: node runMigration.js 023
  */
 
-import { Pool } from 'pg';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
 // Get migration number from command line
 const migrationNumber = process.argv[2];
@@ -74,6 +70,13 @@ async function runMigration() {
       await client.query('BEGIN');
 
       await client.query(sql);
+
+      // Record migration
+      const migrationName = migrationFile.replace('.sql', '');
+      await client.query(
+        'INSERT INTO schema_migrations (migration_name) VALUES ($1) ON CONFLICT (migration_name) DO NOTHING',
+        [migrationName]
+      );
 
       await client.query('COMMIT');
       console.log('✅ Migration completed successfully!');
