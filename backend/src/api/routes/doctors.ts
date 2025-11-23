@@ -328,4 +328,242 @@ router.get('/:id/primary-doctor', async (req: Request, res: Response): Promise<a
   }
 });
 
+/**
+ * POST /api/doctors/assign-by-category
+ * Bulk assign doctors to patients by category
+ */
+router.post('/assign-by-category', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { assignments } = req.body;
+    // assignments = [
+    //   { category: 'non_ckd_low', doctor_email: 'dr.smith@hospital.com', doctor_name: 'Dr. Smith' },
+    //   { category: 'ckd_mild', doctor_email: 'dr.jones@hospital.com', doctor_name: 'Dr. Jones' }
+    // ]
+
+    if (!assignments || !Array.isArray(assignments)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'assignments array is required'
+      });
+    }
+
+    const pool = getPool();
+    const results = [];
+
+    for (const assignment of assignments) {
+      const { category, doctor_email, doctor_name } = assignment;
+
+      if (!category || !doctor_email) {
+        continue; // Skip invalid assignments
+      }
+
+      // Get patients for this category
+      let query = '';
+      let params: any[] = [];
+
+      switch (category) {
+        case 'non_ckd_low':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+            WHERE npd.risk_level = 'low'
+          `;
+          break;
+
+        case 'non_ckd_moderate':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+            WHERE npd.risk_level = 'moderate'
+          `;
+          break;
+
+        case 'non_ckd_high':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+            WHERE npd.risk_level = 'high'
+          `;
+          break;
+
+        case 'ckd_mild':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+            WHERE cpd.ckd_severity = 'mild'
+          `;
+          break;
+
+        case 'ckd_moderate':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+            WHERE cpd.ckd_severity = 'moderate'
+          `;
+          break;
+
+        case 'ckd_severe':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+            WHERE cpd.ckd_severity = 'severe'
+          `;
+          break;
+
+        case 'ckd_kidney_failure':
+          query = `
+            SELECT p.id FROM patients p
+            INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+            WHERE cpd.ckd_severity = 'kidney_failure'
+          `;
+          break;
+
+        default:
+          continue; // Skip unknown categories
+      }
+
+      // Get patient IDs for this category
+      const patientResult = await pool.query(query, params);
+      const patientIds = patientResult.rows.map(row => row.id);
+
+      // Assign doctor to all patients in this category
+      let assignedCount = 0;
+      for (const patientId of patientIds) {
+        // Remove existing primary assignments for this patient
+        await pool.query(`
+          UPDATE doctor_patient_assignments
+          SET is_primary = false
+          WHERE patient_id = $1 AND is_primary = true
+        `, [patientId]);
+
+        // Insert or update the assignment
+        await pool.query(`
+          INSERT INTO doctor_patient_assignments (patient_id, doctor_email, doctor_name, is_primary)
+          VALUES ($1, $2, $3, true)
+          ON CONFLICT (patient_id, doctor_email)
+          DO UPDATE SET
+            doctor_name = EXCLUDED.doctor_name,
+            is_primary = EXCLUDED.is_primary,
+            updated_at = NOW()
+        `, [patientId, doctor_email, doctor_name]);
+
+        assignedCount++;
+      }
+
+      results.push({
+        category,
+        doctor_email,
+        patients_assigned: assignedCount
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      message: 'Bulk assignments completed',
+      results
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error in bulk assignment by category:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to assign doctors by category',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/doctors/category-stats
+ * Get patient counts by category
+ */
+router.get('/category-stats', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+
+    const stats = await pool.query(`
+      SELECT
+        'non_ckd_low' as category,
+        COUNT(*) as patient_count,
+        'Non-CKD Low Risk' as display_name
+      FROM patients p
+      INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+      WHERE npd.risk_level = 'low'
+
+      UNION ALL
+
+      SELECT
+        'non_ckd_moderate' as category,
+        COUNT(*) as patient_count,
+        'Non-CKD Moderate Risk' as display_name
+      FROM patients p
+      INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+      WHERE npd.risk_level = 'moderate'
+
+      UNION ALL
+
+      SELECT
+        'non_ckd_high' as category,
+        COUNT(*) as patient_count,
+        'Non-CKD High Risk' as display_name
+      FROM patients p
+      INNER JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+      WHERE npd.risk_level = 'high'
+
+      UNION ALL
+
+      SELECT
+        'ckd_mild' as category,
+        COUNT(*) as patient_count,
+        'CKD Mild' as display_name
+      FROM patients p
+      INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+      WHERE cpd.ckd_severity = 'mild'
+
+      UNION ALL
+
+      SELECT
+        'ckd_moderate' as category,
+        COUNT(*) as patient_count,
+        'CKD Moderate' as display_name
+      FROM patients p
+      INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+      WHERE cpd.ckd_severity = 'moderate'
+
+      UNION ALL
+
+      SELECT
+        'ckd_severe' as category,
+        COUNT(*) as patient_count,
+        'CKD Severe' as display_name
+      FROM patients p
+      INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+      WHERE cpd.ckd_severity = 'severe'
+
+      UNION ALL
+
+      SELECT
+        'ckd_kidney_failure' as category,
+        COUNT(*) as patient_count,
+        'CKD Kidney Failure' as display_name
+      FROM patients p
+      INNER JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
+      WHERE cpd.ckd_severity = 'kidney_failure'
+
+      ORDER BY category
+    `);
+
+    return res.json({
+      status: 'success',
+      categories: stats.rows
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error fetching category stats:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch category statistics',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
