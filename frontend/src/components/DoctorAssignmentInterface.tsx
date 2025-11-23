@@ -34,6 +34,8 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [editingDoctor, setEditingDoctor] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Doctor>({ email: '', name: '', specialty: '' });
 
   useEffect(() => {
     fetchDoctors();
@@ -96,6 +98,75 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to add doctor' });
+    }
+  };
+
+  const handleEditDoctor = (doctor: Doctor) => {
+    setEditingDoctor(doctor.email);
+    setEditForm({ ...doctor });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDoctor(null);
+    setEditForm({ email: '', name: '', specialty: '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.name) {
+      setMessage({ type: 'error', text: 'Doctor name is required' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/${editingDoctor}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          specialty: editForm.specialty,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setDoctors(doctors.map(d => d.email === editingDoctor ? data.doctor : d));
+        setMessage({ type: 'success', text: 'Doctor updated successfully!' });
+        handleCancelEdit();
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to update doctor' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to update doctor' });
+    }
+  };
+
+  const handleDeleteDoctor = async (doctorEmail: string, doctorName: string) => {
+    if (!confirm(`Are you sure you want to delete ${doctorName}? This will remove all patient assignments for this doctor.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/${doctorEmail}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setDoctors(doctors.filter(d => d.email !== doctorEmail));
+        setMessage({ type: 'success', text: `${doctorName} deleted successfully!` });
+        // Clear assignments for this doctor
+        const newAssignments = { ...assignments };
+        Object.keys(newAssignments).forEach(key => {
+          if (newAssignments[key] === doctorEmail) {
+            delete newAssignments[key];
+          }
+        });
+        setAssignments(newAssignments);
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to delete doctor' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to delete doctor' });
     }
   };
 
@@ -217,10 +288,62 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {doctors.map((doctor) => (
                 <div key={doctor.email} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="font-medium text-gray-800">{doctor.name}</div>
-                  <div className="text-sm text-gray-600">{doctor.email}</div>
-                  {doctor.specialty && (
-                    <div className="text-xs text-gray-500 mt-1">{doctor.specialty}</div>
+                  {editingDoctor === doctor.email ? (
+                    // Edit mode
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Doctor name"
+                      />
+                      <input
+                        type="text"
+                        value={editForm.specialty || ''}
+                        onChange={(e) => setEditForm({ ...editForm, specialty: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Specialty"
+                      />
+                      <div className="text-xs text-gray-500 break-all">{doctor.email}</div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveEdit}
+                          className="flex-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex-1 px-3 py-1.5 bg-gray-400 text-white text-sm rounded hover:bg-gray-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // View mode
+                    <>
+                      <div className="font-medium text-gray-800">{doctor.name}</div>
+                      <div className="text-sm text-gray-600 break-all">{doctor.email}</div>
+                      {doctor.specialty && (
+                        <div className="text-xs text-gray-500 mt-1">{doctor.specialty}</div>
+                      )}
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => handleEditDoctor(doctor)}
+                          className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDoctor(doctor.email, doctor.name)}
+                          className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}
