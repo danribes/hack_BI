@@ -36,11 +36,22 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editingDoctor, setEditingDoctor] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Doctor>({ email: '', name: '', specialty: '' });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     fetchDoctors();
     fetchCategories();
   }, []);
+
+  // Auto-dismiss success messages after 5 seconds
+  useEffect(() => {
+    if (message?.type === 'success') {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   const fetchDoctors = async () => {
     try {
@@ -172,6 +183,11 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
 
   const handleAssignmentChange = (category: string, doctorEmail: string) => {
     setAssignments({ ...assignments, [category]: doctorEmail });
+    setHasUnsavedChanges(true);
+    // Clear any existing messages when making changes
+    if (message) {
+      setMessage(null);
+    }
   };
 
   const handleSaveAssignments = async () => {
@@ -206,6 +222,7 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
           type: 'success',
           text: `Successfully assigned ${totalAssigned} patients to ${data.results.length} categories!`,
         });
+        setHasUnsavedChanges(false);
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to save assignments' });
       }
@@ -238,11 +255,30 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
           {/* Message */}
           {message && (
             <div
-              className={`mb-4 p-4 rounded-lg ${
-                message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+              className={`mb-4 p-4 rounded-lg flex items-start justify-between ${
+                message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
               }`}
             >
-              {message.text}
+              <div className="flex items-start">
+                {message.type === 'success' ? (
+                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span>{message.text}</span>
+              </div>
+              <button
+                onClick={() => setMessage(null)}
+                className="ml-4 text-gray-500 hover:text-gray-700 flex-shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
 
@@ -437,16 +473,30 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
             )}
             <button
               onClick={handleSaveAssignments}
-              disabled={saving || doctors.length === 0}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              disabled={saving || doctors.length === 0 || !hasUnsavedChanges}
+              className={`px-6 py-2 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${
+                hasUnsavedChanges ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'
+              }`}
             >
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Saving...
                 </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Assignments
+                </>
               ) : (
-                'Save Assignments'
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  All Saved
+                </>
               )}
             </button>
           </div>
