@@ -51,6 +51,7 @@ COPY --from=builder /app/mcp-server/dist ./mcp-server/dist
 COPY infrastructure/postgres/migrations ./infrastructure/postgres/migrations
 COPY backend/autoMigrate.js ./backend/autoMigrate.js
 COPY backend/runMigration.js ./backend/runMigration.js
+COPY backend/markMigrationsApplied.js ./backend/markMigrationsApplied.js
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -73,7 +74,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the backend (which will spawn MCP server as child process)
-# Note: Automatic migrations disabled - migrations 001-023 were applied manually
-# For future migrations, use: node runMigration.js <number>
-CMD ["node", "dist/index.js"]
+# Start the backend with automatic migrations (which will spawn MCP server as child process)
+# Run autoMigrate.js first to apply any pending migrations, then start the server
+CMD ["sh", "-c", "node autoMigrate.js && node dist/index.js"]
