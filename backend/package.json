@@ -11,10 +11,12 @@
     "build": "npm run build:backend && npm run build:mcp",
     "build:backend": "tsc",
     "build:mcp": "cd ../mcp-server && npm install --prefer-offline --no-audit && npm run build",
-    "start": "node dist/index.js",
+    "start": "node autoMigrate.js && node dist/index.js",
+    "start:no-migrate": "node dist/index.js",
     "test": "echo \"Tests will be added\" && exit 0",
     "migrate": "node runMigration.js",
-    "migrate:023": "node runMigration.js 023"
+    "migrate:023": "node runMigration.js 023",
+    "migrate:auto": "node autoMigrate.js"
   },
   "keywords": [
     "healthcare",
