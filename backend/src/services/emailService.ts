@@ -22,6 +22,8 @@ interface EmailMessage {
   priority: string;
   patientName: string;
   mrn: string;
+  templateName?: string; // Optional template name to use
+  templateVariables?: { [key: string]: string }; // Additional template variables
 }
 
 export class EmailService {
@@ -190,9 +192,57 @@ export class EmailService {
         throw new Error('Failed to initialize email transporter');
       }
 
-      // Format the email message
-      console.log('📧 Formatting email message...');
-      const formattedMessage = this.formatMessage(messageData);
+      // Try to use template if specified
+      let emailSubject = messageData.subject;
+      let emailBody: { text: string; html: string };
+
+      if (messageData.templateName) {
+        console.log(`📧 Attempting to use template: ${messageData.templateName}...`);
+
+        // Prepare template variables
+        const templateVars = {
+          patient_name: messageData.patientName,
+          mrn: messageData.mrn,
+          doctor_name: config.doctor_email.split('@')[0], // Simple extraction, could be improved
+          doctor_email: config.doctor_email,
+          alert_details: messageData.message,
+          facility_name: config.from_name || 'CKD Analyzer System',
+          priority: messageData.priority,
+          ...messageData.templateVariables, // Merge additional variables
+        };
+
+        const renderedTemplate = await this.renderTemplate(
+          config.doctor_email,
+          messageData.templateName,
+          templateVars
+        );
+
+        if (renderedTemplate) {
+          console.log('✓ Template rendered successfully');
+          emailSubject = renderedTemplate.subject;
+
+          if (renderedTemplate.isHtml) {
+            emailBody = {
+              text: renderedTemplate.body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+              html: renderedTemplate.body
+            };
+          } else {
+            emailBody = {
+              text: renderedTemplate.body,
+              html: renderedTemplate.body.replace(/\n/g, '<br>')
+            };
+          }
+        } else {
+          // Fall back to default formatting
+          console.log('⚠️  Falling back to default formatting');
+          emailBody = this.formatMessage(messageData);
+        }
+      } else {
+        // Use default formatting
+        console.log('📧 Formatting email message with default format...');
+        emailBody = this.formatMessage(messageData);
+      }
+
       const fromEmail = config.from_email || 'noreply@ckd-analyzer.com';
       const fromName = config.from_name || 'CKD Analyzer System';
 
@@ -202,9 +252,9 @@ export class EmailService {
       const info = await this.transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
         to: config.doctor_email,
-        subject: messageData.subject,
-        text: formattedMessage.text,
-        html: formattedMessage.html,
+        subject: emailSubject,
+        text: emailBody.text,
+        html: emailBody.html,
       });
 
       console.log(`✓ Email sent successfully! Message ID: ${info.messageId}`);
@@ -261,6 +311,95 @@ export class EmailService {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  /**
+   * Fetch email template from database
+   */
+  private async getTemplate(
+    doctorEmail: string,
+    templateName: string
+  ): Promise<{ subject: string; body: string; isHtml: boolean } | null> {
+    try {
+      // Try to get doctor-specific template first
+      let result = await this.db.query(
+        `SELECT subject_template, body_template, is_html
+         FROM email_templates
+         WHERE doctor_email = $1 AND template_name = $2
+         LIMIT 1`,
+        [doctorEmail, templateName]
+      );
+
+      // Fall back to default template if no custom template exists
+      if (result.rows.length === 0) {
+        result = await this.db.query(
+          `SELECT subject_template, body_template, is_html
+           FROM email_templates
+           WHERE doctor_email = 'doctor@example.com' AND template_name = $1
+           LIMIT 1`,
+          [templateName]
+        );
+      }
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        subject: row.subject_template,
+        body: row.body_template,
+        isHtml: row.is_html
+      };
+    } catch (error) {
+      console.error('Error fetching email template:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Replace template variables with actual values
+   */
+  private replaceVariables(template: string, variables: { [key: string]: string }): string {
+    let result = template;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      result = result.replace(regex, String(value || ''));
+    }
+    return result;
+  }
+
+  /**
+   * Render email from template
+   */
+  private async renderTemplate(
+    doctorEmail: string,
+    templateName: string,
+    variables: { [key: string]: string }
+  ): Promise<{ subject: string; body: string; isHtml: boolean } | null> {
+    const template = await this.getTemplate(doctorEmail, templateName);
+
+    if (!template) {
+      console.log(`⚠️  No template found for ${templateName}, using default formatting`);
+      return null;
+    }
+
+    // Add current date/time to variables
+    const now = new Date();
+    const enhancedVariables = {
+      ...variables,
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+    };
+
+    const subject = this.replaceVariables(template.subject, enhancedVariables);
+    const body = this.replaceVariables(template.body, enhancedVariables);
+
+    return {
+      subject,
+      body,
+      isHtml: template.isHtml
+    };
   }
 
   /**
