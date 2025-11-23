@@ -20,10 +20,9 @@ interface TemplateVariable {
 interface EmailTemplateEditorProps {
   apiUrl: string;
   doctorEmail: string;
-  onClose?: () => void;
 }
 
-const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ apiUrl, doctorEmail, onClose }) => {
+const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ apiUrl, doctorEmail }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [subjectTemplate, setSubjectTemplate] = useState('');
