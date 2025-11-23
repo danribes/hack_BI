@@ -262,8 +262,8 @@ export class EmailService {
       // Log the sent message
       await this.logMessage(
         config.doctor_email,
-        messageData.subject,
-        formattedMessage.text,
+        emailSubject,
+        emailBody.text,
         'sent',
         info.messageId
       );
