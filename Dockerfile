@@ -47,6 +47,11 @@ RUN cd mcp-server && npm ci --only=production --prefer-offline --no-audit && npm
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/mcp-server/dist ./mcp-server/dist
 
+# Copy migration files and runner scripts
+COPY infrastructure/postgres/migrations ./infrastructure/postgres/migrations
+COPY backend/autoMigrate.js ./backend/autoMigrate.js
+COPY backend/runMigration.js ./backend/runMigration.js
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \

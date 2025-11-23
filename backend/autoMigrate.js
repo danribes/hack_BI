@@ -5,13 +5,9 @@
  * This script is called by the backend on startup to ensure all migrations are applied
  */
 
-import { Pool } from 'pg';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -26,16 +22,17 @@ const pool = new Pool({
 });
 
 async function getAppliedMigrations(client) {
-  // Create migrations tracking table if it doesn't exist
+  // Create migrations tracking table if it doesn't exist (matching existing structure)
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
-      version VARCHAR(255) PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
+      migration_name VARCHAR(255) UNIQUE NOT NULL,
       applied_at TIMESTAMP DEFAULT NOW()
     );
   `);
 
-  const result = await client.query('SELECT version FROM schema_migrations ORDER BY version');
-  return new Set(result.rows.map(row => row.version));
+  const result = await client.query('SELECT migration_name FROM schema_migrations ORDER BY migration_name');
+  return new Set(result.rows.map(row => row.migration_name));
 }
 
 async function runPendingMigrations() {
@@ -50,6 +47,12 @@ async function runPendingMigrations() {
 
     // Read all migration files
     const migrationsDir = path.join(__dirname, '..', 'infrastructure', 'postgres', 'migrations');
+
+    if (!fs.existsSync(migrationsDir)) {
+      console.log('⚠️  Migrations directory not found, skipping');
+      return;
+    }
+
     const files = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql') && !f.includes('README'))
       .sort();
@@ -59,9 +62,9 @@ async function runPendingMigrations() {
     let pendingCount = 0;
 
     for (const file of files) {
-      const version = file.replace('.sql', '');
+      const migrationName = file.replace('.sql', '');
 
-      if (appliedMigrations.has(version)) {
+      if (appliedMigrations.has(migrationName)) {
         continue; // Skip already applied
       }
 
@@ -75,8 +78,8 @@ async function runPendingMigrations() {
         await client.query('BEGIN');
         await client.query(sql);
         await client.query(
-          'INSERT INTO schema_migrations (version) VALUES ($1)',
-          [version]
+          'INSERT INTO schema_migrations (migration_name) VALUES ($1)',
+          [migrationName]
         );
         await client.query('COMMIT');
         console.log(`✅ Migration ${file} completed successfully`);
