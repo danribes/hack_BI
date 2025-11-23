@@ -406,26 +406,46 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
                   <div className="space-y-3">
                     {categories
                       .filter(cat => cat.category.startsWith('non_ckd'))
-                      .map((cat) => (
-                        <div key={cat.category} className="flex items-center justify-between bg-gray-50 p-3 rounded">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800">{cat.display_name}</div>
-                            <div className="text-sm text-gray-600">{cat.patient_count} patients</div>
+                      .map((cat) => {
+                        const assignedDoctor = doctors.find(d => d.email === assignments[cat.category]);
+                        return (
+                          <div key={cat.category} className="bg-gray-50 p-3 rounded">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-800">{cat.display_name}</div>
+                                <div className="text-sm text-gray-600">{cat.patient_count} patients</div>
+                              </div>
+                              <select
+                                value={assignments[cat.category] || ''}
+                                onChange={(e) => handleAssignmentChange(cat.category, e.target.value)}
+                                className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[250px] ${
+                                  assignedDoctor
+                                    ? 'border-green-500 bg-green-50'
+                                    : 'border-gray-300 bg-white'
+                                }`}
+                              >
+                                <option value="">Select Doctor...</option>
+                                {doctors.map((doctor) => (
+                                  <option key={doctor.email} value={doctor.email}>
+                                    {doctor.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            {assignedDoctor && (
+                              <div className="mt-2 flex items-center text-sm text-green-700 bg-green-100 px-3 py-2 rounded">
+                                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-medium">Assigned to: {assignedDoctor.name}</span>
+                                {assignedDoctor.specialty && (
+                                  <span className="ml-2 text-green-600">({assignedDoctor.specialty})</span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <select
-                            value={assignments[cat.category] || ''}
-                            onChange={(e) => handleAssignmentChange(cat.category, e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[250px]"
-                          >
-                            <option value="">Select Doctor...</option>
-                            {doctors.map((doctor) => (
-                              <option key={doctor.email} value={doctor.email}>
-                                {doctor.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 </div>
 
@@ -435,26 +455,46 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
                   <div className="space-y-3">
                     {categories
                       .filter(cat => cat.category.startsWith('ckd'))
-                      .map((cat) => (
-                        <div key={cat.category} className="flex items-center justify-between bg-white p-3 rounded">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800">{cat.display_name}</div>
-                            <div className="text-sm text-gray-600">{cat.patient_count} patients</div>
+                      .map((cat) => {
+                        const assignedDoctor = doctors.find(d => d.email === assignments[cat.category]);
+                        return (
+                          <div key={cat.category} className="bg-white p-3 rounded">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-800">{cat.display_name}</div>
+                                <div className="text-sm text-gray-600">{cat.patient_count} patients</div>
+                              </div>
+                              <select
+                                value={assignments[cat.category] || ''}
+                                onChange={(e) => handleAssignmentChange(cat.category, e.target.value)}
+                                className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[250px] ${
+                                  assignedDoctor
+                                    ? 'border-green-500 bg-green-50'
+                                    : 'border-gray-300 bg-white'
+                                }`}
+                              >
+                                <option value="">Select Doctor...</option>
+                                {doctors.map((doctor) => (
+                                  <option key={doctor.email} value={doctor.email}>
+                                    {doctor.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            {assignedDoctor && (
+                              <div className="mt-2 flex items-center text-sm text-green-700 bg-green-100 px-3 py-2 rounded">
+                                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-medium">Assigned to: {assignedDoctor.name}</span>
+                                {assignedDoctor.specialty && (
+                                  <span className="ml-2 text-green-600">({assignedDoctor.specialty})</span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <select
-                            value={assignments[cat.category] || ''}
-                            onChange={(e) => handleAssignmentChange(cat.category, e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[250px]"
-                          >
-                            <option value="">Select Doctor...</option>
-                            {doctors.map((doctor) => (
-                              <option key={doctor.email} value={doctor.email}>
-                                {doctor.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 </div>
               </div>
