@@ -11,6 +11,8 @@ import initRouter from './api/routes/init';
 import jardianceRouter from './api/routes/jardiance';
 import riskRouter from './api/routes/risk';
 import doctorsRouter from './api/routes/doctors';
+import emailTemplatesRouter from './api/routes/emailTemplates';
+import analyticsRouter from './api/routes/analytics';
 import { createAgentRouter } from './api/routes/agent';
 import { createNotificationsRouter } from './api/routes/notifications';
 import { createSettingsRouter } from './api/routes/settings';
@@ -57,6 +59,8 @@ app.use('/api/init', initRouter);
 app.use('/api/jardiance', jardianceRouter);
 app.use('/api/risk', riskRouter);
 app.use('/api/doctors', doctorsRouter);
+app.use('/api/email-templates', emailTemplatesRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Agent and Notifications routes (initialized with pool)
 const pool = getPool();

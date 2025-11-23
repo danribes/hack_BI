@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { EmailService } from './emailService.js';
-import { getPrimaryDoctor } from '../utils/doctorLookup.js';
+import { getPrimaryDoctor, getAllDoctorsForPatient, isInQuietHours } from '../utils/doctorLookup.js';
 
 interface PatientData {
   id: string;
@@ -36,6 +36,40 @@ export class ClinicalAlertsService {
   constructor(db: Pool) {
     this.db = db;
     this.emailService = new EmailService(db);
+  }
+
+  /**
+   * Notify all assigned doctors for a patient based on alert priority
+   * Respects notification preferences and quiet hours
+   */
+  private async notifyAllDoctors(
+    patient: PatientData,
+    subject: string,
+    message: string,
+    priority: 'CRITICAL' | 'HIGH' | 'MODERATE'
+  ): Promise<void> {
+    const patientName = `${patient.first_name} ${patient.last_name}`;
+    const doctors = await getAllDoctorsForPatient(this.db, patient.id, priority);
+
+    for (const doctor of doctors) {
+      // Skip if in quiet hours for non-critical alerts
+      if (priority !== 'CRITICAL' && isInQuietHours(doctor.notification_preferences)) {
+        console.log(`⏰ Skipping notification to ${doctor.doctor_email} due to quiet hours`);
+        continue;
+      }
+
+      const doctorRole = doctor.is_primary ? 'Primary' : 'Consulting';
+      console.log(`📧 Sending ${priority} alert to ${doctorRole} doctor: ${doctor.doctor_email}`);
+
+      await this.emailService.sendNotification({
+        to: doctor.doctor_email,
+        subject,
+        message,
+        priority,
+        patientName,
+        mrn: patient.medical_record_number,
+      });
+    }
   }
 
   /**
@@ -109,19 +143,15 @@ export class ClinicalAlertsService {
     message += `• Check medication adherence\n`;
     message += `• Review for potential contributing factors (infections, NSAIDs, volume depletion)`;
 
-    // Fetch assigned doctor for this patient
-    const doctor = await getPrimaryDoctor(this.db, patient.id);
-
-    await this.emailService.sendNotification({
-      to: doctor.doctor_email,
-      subject: `🔻 ALERT: ${patientName} - Kidney Function Worsening`,
+    // Notify all assigned doctors
+    await this.notifyAllDoctors(
+      patient,
+      `🔻 ALERT: ${patientName} - Kidney Function Worsening`,
       message,
-      priority: 'HIGH',
-      patientName,
-      mrn: patient.medical_record_number,
-    });
+      'HIGH'
+    );
 
-    console.log(`✓ Worsening trends alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
+    console.log(`✓ Worsening trends alert sent for ${patient.medical_record_number}`);
   }
 
   /**
@@ -167,19 +197,15 @@ export class ClinicalAlertsService {
     message += `• Increase monitoring frequency\n`;
     message += `• Patient education on disease progression`;
 
-    // Fetch assigned doctor for this patient
-    const doctor = await getPrimaryDoctor(this.db, patient.id);
-
-    await this.emailService.sendNotification({
-      to: doctor.doctor_email,
-      subject: `⚠️ CRITICAL: ${patientName} - Health State Deteriorated to ${current_health_state}`,
+    // Notify all assigned doctors (CRITICAL - everyone gets notified)
+    await this.notifyAllDoctors(
+      patient,
+      `⚠️ CRITICAL: ${patientName} - Health State Deteriorated to ${current_health_state}`,
       message,
-      priority: 'CRITICAL',
-      patientName,
-      mrn: patient.medical_record_number,
-    });
+      'CRITICAL'
+    );
 
-    console.log(`✓ Health state deterioration alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
+    console.log(`✓ Health state deterioration alert sent for ${patient.medical_record_number}`);
   }
 
   /**
@@ -217,19 +243,15 @@ export class ClinicalAlertsService {
     message += `  - Home nursing support if appropriate\n`;
     message += `• Reassess after intervention to ensure improvement`;
 
-    // Fetch assigned doctor for this patient
-    const doctor = await getPrimaryDoctor(this.db, patient.id);
-
-    await this.emailService.sendNotification({
-      to: doctor.doctor_email,
-      subject: `💊 ALERT: ${patientName} - Poor Medication Adherence (${adherence.compositePercentage}%)`,
+    // Notify all assigned doctors
+    await this.notifyAllDoctors(
+      patient,
+      `💊 ALERT: ${patientName} - Poor Medication Adherence (${adherence.compositePercentage}%)`,
       message,
-      priority: 'HIGH',
-      patientName,
-      mrn: patient.medical_record_number,
-    });
+      'HIGH'
+    );
 
-    console.log(`✓ Poor adherence alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
+    console.log(`✓ Poor adherence alert sent for ${patient.medical_record_number}`);
   }
 
   /**
@@ -278,19 +300,15 @@ export class ClinicalAlertsService {
     message += `• Hemoglobin A1c (if diabetic)\n`;
     message += `• Lipid panel`;
 
-    // Fetch assigned doctor for this patient
-    const doctor = await getPrimaryDoctor(this.db, patient.id);
-
-    await this.emailService.sendNotification({
-      to: doctor.doctor_email,
-      subject: `🏠 URGENT: ${patientName} - Minuteful Kidney Shows Worsening uACR`,
+    // Notify all assigned doctors (CRITICAL - everyone gets notified)
+    await this.notifyAllDoctors(
+      patient,
+      `🏠 URGENT: ${patientName} - Minuteful Kidney Shows Worsening uACR`,
       message,
-      priority: 'CRITICAL',
-      patientName,
-      mrn: patient.medical_record_number,
-    });
+      'CRITICAL'
+    );
 
-    console.log(`✓ Minuteful worsening uACR alert sent to ${doctor.doctor_email} for ${patient.medical_record_number}`);
+    console.log(`✓ Minuteful worsening uACR alert sent for ${patient.medical_record_number}`);
   }
 
   /**
