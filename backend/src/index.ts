@@ -10,11 +10,13 @@ import patientsRouter from './api/routes/patients';
 import initRouter from './api/routes/init';
 import jardianceRouter from './api/routes/jardiance';
 import riskRouter from './api/routes/risk';
+import doctorsRouter from './api/routes/doctors';
 import { createAgentRouter } from './api/routes/agent';
 import { createNotificationsRouter } from './api/routes/notifications';
 import { createSettingsRouter } from './api/routes/settings';
 import { DoctorAgentService } from './services/doctorAgent';
 import { PatientMonitorService } from './services/patientMonitor';
+import { AlertReminderService } from './services/alertReminderService';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,12 +49,14 @@ app.get('/health', (_req, res) => {
 
 // Initialize services (will be started in startServer)
 let patientMonitor: PatientMonitorService | null = null;
+let alertReminder: AlertReminderService | null = null;
 
 // API Routes
 app.use('/api/patients', patientsRouter);
 app.use('/api/init', initRouter);
 app.use('/api/jardiance', jardianceRouter);
 app.use('/api/risk', riskRouter);
+app.use('/api/doctors', doctorsRouter);
 
 // Agent and Notifications routes (initialized with pool)
 const pool = getPool();
@@ -110,12 +114,23 @@ const startServer = async () => {
       console.log('   Continuing without real-time monitoring...');
     }
 
+    // Start alert reminder service (checks every 30 minutes)
+    try {
+      alertReminder = new AlertReminderService(pool);
+      alertReminder.start();
+      console.log('✓ Alert reminder service started (runs every 30 minutes)');
+    } catch (error) {
+      console.error('⚠️  Warning: Alert reminder service failed to start:', error);
+      console.log('   Continuing without automated reminders...');
+    }
+
     // Start listening
     app.listen(PORT, () => {
       console.log(`✓ Server running on port ${PORT}`);
       console.log(`✓ Health check: http://localhost:${PORT}/health`);
       console.log(`✓ Patients API: http://localhost:${PORT}/api/patients`);
       console.log(`✓ Doctor Agent API: http://localhost:${PORT}/api/agent`);
+      console.log(`✓ Doctors API: http://localhost:${PORT}/api/doctors`);
       console.log(`✓ Notifications API: http://localhost:${PORT}/api/notifications`);
       console.log(`✓ Settings API: http://localhost:${PORT}/api/settings`);
       console.log('✓ Ready to accept requests');

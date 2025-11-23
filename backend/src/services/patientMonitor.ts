@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { DoctorAgentService } from './doctorAgent';
 import { EmailService } from './emailService';
+import { getPrimaryDoctor } from '../utils/doctorLookup.js';
 
 interface PatientChangeEvent {
   patient_id: string;
@@ -221,25 +222,28 @@ export class PatientMonitorService {
         timestamp: event.timestamp,
       };
 
+      // Fetch assigned doctor for this patient
+      const doctor = await getPrimaryDoctor(this.db, event.patient_id);
+
       await this.db.query(insertQuery, [
         event.patient_id,
         notificationType,
         priority,
         subject,
         message,
-        'doctor@example.com', // TODO: Get actual doctor email from patient assignment
-        'Primary Care Provider',
+        doctor.doctor_email,
+        doctor.doctor_name || 'Primary Care Provider',
         'pending',
         JSON.stringify(alertSummary),
       ]);
 
-      console.log(`✓ Alert created: ${subject} [${priority}]`);
+      console.log(`✓ Alert created: ${subject} [${priority}] for Dr. ${doctor.doctor_name}`);
 
       // Send email notification for risk/severity changes
       if (event.change_type === 'risk_level_change' || event.change_type === 'critical_lab_value') {
         try {
           await this.emailService.sendNotification({
-            to: '', // Will be determined by email config
+            to: doctor.doctor_email,
             subject,
             message,
             priority,
@@ -303,24 +307,27 @@ export class PatientMonitorService {
             original_change: event.change_type,
           };
 
+          // Fetch assigned doctor for this patient
+          const aiAlertDoctor = await getPrimaryDoctor(this.db, event.patient_id);
+
           await this.db.query(insertQuery, [
             event.patient_id,
             'critical_alert',
             alertResult.priority,
             `AI Alert: ${alertResult.alertType} - ${patientName} (MRN: ${mrn})`,
             alertResult.message || 'AI analysis detected a significant finding requiring review.',
-            'doctor@example.com',
-            'Primary Care Provider',
+            aiAlertDoctor.doctor_email,
+            aiAlertDoctor.doctor_name || 'Primary Care Provider',
             'pending',
             JSON.stringify(alertSummary),
           ]);
 
-          console.log(`✓ AI-generated alert created for patient ${event.patient_id}`);
+          console.log(`✓ AI-generated alert created for patient ${event.patient_id}, sent to Dr. ${aiAlertDoctor.doctor_name}`);
 
           // Send email notification for AI-generated alerts
           try {
             await this.emailService.sendNotification({
-              to: '', // Will be determined by email config
+              to: aiAlertDoctor.doctor_email,
               subject: `AI Alert: ${alertResult.alertType} - ${patientName} (MRN: ${mrn})`,
               message: alertResult.message || 'AI analysis detected a significant finding requiring review.',
               priority: alertResult.priority || 'HIGH',
