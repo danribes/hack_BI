@@ -322,6 +322,90 @@ router.post('/assign-by-category', async (req: Request, res: Response): Promise<
 });
 
 /**
+ * GET /api/doctors/category-assignments
+ * Get current doctor assignments by category
+ * Returns which doctor is assigned to each category based on existing assignments
+ */
+router.get('/category-assignments', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+
+    // Query to find the most commonly assigned doctor for each category
+    const result = await pool.query(`
+      WITH category_assignments AS (
+        -- CKD patients
+        SELECT
+          'ckd' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
+        WHERE dpa.is_primary = true
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- Non-CKD patients
+        SELECT
+          'non_ckd' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN non_ckd_patient_data nckd ON dpa.patient_id = nckd.patient_id
+        WHERE dpa.is_primary = true
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+      ),
+      ranked_assignments AS (
+        SELECT
+          category,
+          doctor_email,
+          doctor_name,
+          patient_count,
+          ROW_NUMBER() OVER (PARTITION BY category ORDER BY patient_count DESC) as rank
+        FROM category_assignments
+      )
+      SELECT
+        category,
+        doctor_email,
+        doctor_name,
+        patient_count
+      FROM ranked_assignments
+      WHERE rank = 1
+    `);
+
+    // Format response
+    const assignments: Record<string, { email: string; name: string; patientCount: number } | null> = {
+      ckd: null,
+      non_ckd: null
+    };
+
+    for (const row of result.rows) {
+      assignments[row.category] = {
+        email: row.doctor_email,
+        name: row.doctor_name,
+        patientCount: parseInt(row.patient_count)
+      };
+    }
+
+    console.log('[Doctors API] Fetched category assignments:', assignments);
+
+    return res.json({
+      status: 'success',
+      data: assignments
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error fetching category assignments:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch category assignments',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * GET /api/doctors/:email
  * Get doctor by email
  */
