@@ -14,6 +14,16 @@ interface Doctor {
   smtp_enabled?: boolean;
 }
 
+interface ExternalEmail {
+  id: number;
+  email: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Category {
   category: string;
   patient_count: number;
@@ -54,11 +64,16 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
     from_name: '',
     smtp_enabled: false
   });
+  const [externalEmails, setExternalEmails] = useState<ExternalEmail[]>([]);
+  const [newExternalEmail, setNewExternalEmail] = useState('');
+  const [newExternalName, setNewExternalName] = useState('');
+  const [newExternalDescription, setNewExternalDescription] = useState('');
 
   useEffect(() => {
     fetchDoctors();
     fetchCategories();
     fetchAssignments();
+    fetchExternalEmails();
   }, []);
 
   // Auto-dismiss success messages after 5 seconds
@@ -335,6 +350,92 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
     }
   };
 
+  const fetchExternalEmails = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/external-notifications`);
+      const data = await response.json();
+      if (data.status === 'success') {
+        setExternalEmails(data.emails);
+      }
+    } catch (error) {
+      console.error('Failed to fetch external emails:', error);
+    }
+  };
+
+  const handleAddExternalEmail = async () => {
+    if (!newExternalEmail || !newExternalName) {
+      setMessage({ type: 'error', text: 'Email and name are required' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/external-notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newExternalEmail,
+          name: newExternalName,
+          description: newExternalDescription || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setExternalEmails([...externalEmails, data.email]);
+        setNewExternalEmail('');
+        setNewExternalName('');
+        setNewExternalDescription('');
+        setMessage({ type: 'success', text: 'External notification email added successfully!' });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to add external email' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to add external email' });
+    }
+  };
+
+  const handleToggleExternalEmail = async (id: number, enabled: boolean) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/external-notifications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setExternalEmails(externalEmails.map(e => e.id === id ? data.email : e));
+        setMessage({ type: 'success', text: `Email ${enabled ? 'enabled' : 'disabled'} successfully!` });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to update email' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to update email' });
+    }
+  };
+
+  const handleDeleteExternalEmail = async (id: number, email: string) => {
+    if (!confirm(`Are you sure you want to delete ${email}? They will no longer receive notifications.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/external-notifications/${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setExternalEmails(externalEmails.filter(e => e.id !== id));
+        setMessage({ type: 'success', text: `${email} deleted successfully!` });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to delete email' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to delete email' });
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-auto">
@@ -416,6 +517,99 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
                 Add Doctor
               </button>
             </div>
+          </div>
+
+          {/* External Notification Emails Section */}
+          <div className="mb-8 bg-green-50 border border-green-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              ➕ External Notification Emails
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Add external email addresses that will receive ALL system alerts (not assigned to specific categories)
+            </p>
+
+            {/* Add External Email Form */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+              <input
+                type="email"
+                placeholder="Email *"
+                value={newExternalEmail}
+                onChange={(e) => setNewExternalEmail(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="text"
+                placeholder="Name *"
+                value={newExternalName}
+                onChange={(e) => setNewExternalName(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="text"
+                placeholder="Description (optional)"
+                value={newExternalDescription}
+                onChange={(e) => setNewExternalDescription(e.target.value)}
+                className="md:col-span-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <button
+                onClick={handleAddExternalEmail}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+              >
+                Add Email
+              </button>
+            </div>
+
+            {/* External Emails List */}
+            {externalEmails.length > 0 && (
+              <div className="space-y-2">
+                {externalEmails.map((email) => (
+                  <div
+                    key={email.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      email.enabled
+                        ? 'bg-white border-green-300'
+                        : 'bg-gray-100 border-gray-300 opacity-60'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-800">{email.name}</span>
+                        {!email.enabled && (
+                          <span className="text-xs text-gray-500">(Disabled)</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600">{email.email}</div>
+                      {email.description && (
+                        <div className="text-xs text-gray-500 mt-1">{email.description}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleExternalEmail(email.id, !email.enabled)}
+                        className={`px-3 py-1 text-sm rounded ${
+                          email.enabled
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        } transition-colors`}
+                      >
+                        {email.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExternalEmail(email.id, email.email)}
+                        className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {externalEmails.length === 0 && (
+              <p className="text-gray-500 text-center py-4 text-sm">
+                No external notification emails configured yet
+              </p>
+            )}
           </div>
 
           {/* Existing Doctors */}

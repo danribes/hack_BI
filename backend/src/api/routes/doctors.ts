@@ -842,4 +842,146 @@ router.get('/:id/primary-doctor', async (req: Request, res: Response): Promise<a
   }
 });
 
+/**
+ * GET /api/doctors/external-notifications
+ * Get all external notification email addresses
+ */
+router.get('/external-notifications', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+    const result = await pool.query(`
+      SELECT id, email, name, description, enabled, created_at, updated_at
+      FROM external_notification_emails
+      ORDER BY created_at DESC
+    `);
+
+    return res.json({
+      status: 'success',
+      emails: result.rows
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error fetching external notification emails:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch external notification emails',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/doctors/external-notifications
+ * Add a new external notification email
+ */
+router.post('/external-notifications', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { email, name, description } = req.body;
+
+    if (!email || !name) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email and name are required'
+      });
+    }
+
+    const pool = getPool();
+    const result = await pool.query(`
+      INSERT INTO external_notification_emails (email, name, description, enabled)
+      VALUES ($1, $2, $3, true)
+      RETURNING id, email, name, description, enabled, created_at, updated_at
+    `, [email, name, description || null]);
+
+    return res.json({
+      status: 'success',
+      email: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error adding external notification email:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to add external notification email',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * PUT /api/doctors/external-notifications/:id
+ * Update an external notification email
+ */
+router.put('/external-notifications/:id', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const { email, name, description, enabled } = req.body;
+
+    const pool = getPool();
+    const result = await pool.query(`
+      UPDATE external_notification_emails
+      SET
+        email = COALESCE($1, email),
+        name = COALESCE($2, name),
+        description = COALESCE($3, description),
+        enabled = COALESCE($4, enabled),
+        updated_at = NOW()
+      WHERE id = $5
+      RETURNING id, email, name, description, enabled, created_at, updated_at
+    `, [email, name, description, enabled, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'External notification email not found'
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      email: result.rows[0]
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error updating external notification email:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update external notification email',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * DELETE /api/doctors/external-notifications/:id
+ * Delete an external notification email
+ */
+router.delete('/external-notifications/:id', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const pool = getPool();
+
+    const result = await pool.query(`
+      DELETE FROM external_notification_emails
+      WHERE id = $1
+      RETURNING id, email, name
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'External notification email not found'
+      });
+    }
+
+    return res.json({
+      status: 'success',
+      message: `External notification email ${result.rows[0].email} deleted successfully`
+    });
+  } catch (error) {
+    console.error('[Doctors API] Error deleting external notification email:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete external notification email',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
