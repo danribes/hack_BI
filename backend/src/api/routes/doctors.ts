@@ -326,7 +326,7 @@ router.post('/assign-by-category', async (req: Request, res: Response): Promise<
  * Get current doctor assignments by category
  * Returns which doctor is assigned to each category based on existing assignments
  */
-router.get('/category-assignments', async (req: Request, res: Response): Promise<any> => {
+router.get('/category-assignments', async (_req: Request, res: Response): Promise<any> => {
   try {
     const pool = getPool();
 
