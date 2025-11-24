@@ -246,12 +246,12 @@ export class EmailService {
       const fromEmail = config.from_email || 'noreply@ckd-analyzer.com';
       const fromName = config.from_name || 'CKD Analyzer System';
 
-      console.log(`📧 Sending email to ${config.doctor_email}...`);
+      console.log(`📧 Sending email to ${messageData.to}...`);
 
       // Send email
       const info = await this.transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
-        to: config.doctor_email,
+        to: messageData.to,
         subject: emailSubject,
         text: emailBody.text,
         html: emailBody.html,
@@ -261,7 +261,7 @@ export class EmailService {
 
       // Log the sent message
       await this.logMessage(
-        config.doctor_email,
+        messageData.to,
         emailSubject,
         emailBody.text,
         'sent',
