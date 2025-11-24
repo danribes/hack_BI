@@ -41,6 +41,7 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   useEffect(() => {
     fetchDoctors();
     fetchCategories();
+    fetchAssignments();
   }, []);
 
   // Auto-dismiss success messages after 5 seconds
@@ -77,6 +78,26 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
       console.error('Failed to fetch categories:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/category-assignments`);
+      const data = await response.json();
+      if (data.status === 'success') {
+        // Convert the response to the assignments format
+        const fetchedAssignments: { [key: string]: string } = {};
+        Object.entries(data.data).forEach(([category, assignmentData]: [string, any]) => {
+          if (assignmentData && assignmentData.email) {
+            fetchedAssignments[category] = assignmentData.email;
+          }
+        });
+        setAssignments(fetchedAssignments);
+        console.log('Loaded existing assignments:', fetchedAssignments);
+      }
+    } catch (error) {
+      console.error('Failed to fetch assignments:', error);
     }
   };
 
@@ -223,6 +244,8 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
           text: `Successfully assigned ${totalAssigned} patients to ${data.results.length} categories!`,
         });
         setHasUnsavedChanges(false);
+        // Reload assignments to show the updated selections
+        await fetchAssignments();
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to save assignments' });
       }
