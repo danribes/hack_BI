@@ -11,6 +11,10 @@ interface EmailConfig {
   smtp_password?: string;
   from_email?: string;
   from_name?: string;
+  notify_ckd_transitions?: boolean;
+  notify_lab_updates?: boolean;
+  notify_significant_changes?: boolean;
+  notify_clinical_alerts?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -111,12 +115,16 @@ export class EmailService {
       smtp_password?: string;
       from_email?: string;
       from_name?: string;
+      notify_ckd_transitions?: boolean;
+      notify_lab_updates?: boolean;
+      notify_significant_changes?: boolean;
+      notify_clinical_alerts?: boolean;
     }
   ): Promise<void> {
     try {
       await this.db.query(
-        `INSERT INTO email_config (id, doctor_email, enabled, smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name, updated_at)
-         VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        `INSERT INTO email_config (id, doctor_email, enabled, smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name, notify_ckd_transitions, notify_lab_updates, notify_significant_changes, notify_clinical_alerts, updated_at)
+         VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
          ON CONFLICT (id)
          DO UPDATE SET
            doctor_email = $1,
@@ -127,6 +135,10 @@ export class EmailService {
            smtp_password = $6,
            from_email = $7,
            from_name = $8,
+           notify_ckd_transitions = $9,
+           notify_lab_updates = $10,
+           notify_significant_changes = $11,
+           notify_clinical_alerts = $12,
            updated_at = NOW()`,
         [
           doctorEmail,
@@ -137,6 +149,10 @@ export class EmailService {
           smtpSettings?.smtp_password || null,
           smtpSettings?.from_email || null,
           smtpSettings?.from_name || 'CKD Analyzer System',
+          smtpSettings?.notify_ckd_transitions !== undefined ? smtpSettings.notify_ckd_transitions : true,
+          smtpSettings?.notify_lab_updates !== undefined ? smtpSettings.notify_lab_updates : false,
+          smtpSettings?.notify_significant_changes !== undefined ? smtpSettings.notify_significant_changes : true,
+          smtpSettings?.notify_clinical_alerts !== undefined ? smtpSettings.notify_clinical_alerts : true,
         ]
       );
 

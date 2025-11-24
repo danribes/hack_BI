@@ -8,6 +8,10 @@ interface EmailConfig {
   smtp_configured: boolean;
   from_email?: string;
   from_name?: string;
+  notify_ckd_transitions?: boolean;
+  notify_lab_updates?: boolean;
+  notify_significant_changes?: boolean;
+  notify_clinical_alerts?: boolean;
 }
 
 interface EmailMessage {
@@ -48,6 +52,12 @@ const Settings: React.FC<SettingsProps> = ({ apiUrl, onClose }) => {
   const [fromEmail, setFromEmail] = useState('');
   const [fromName, setFromName] = useState('CKD Analyzer System');
 
+  // Notification preferences state
+  const [notifyCkdTransitions, setNotifyCkdTransitions] = useState(true);
+  const [notifyLabUpdates, setNotifyLabUpdates] = useState(false);
+  const [notifySignificantChanges, setNotifySignificantChanges] = useState(true);
+  const [notifyClinicalAlerts, setNotifyClinicalAlerts] = useState(true);
+
   // Message history state
   const [emailMessages, setEmailMessages] = useState<EmailMessage[]>([]);
   const [totalMessages, setTotalMessages] = useState(0);
@@ -74,6 +84,10 @@ const Settings: React.FC<SettingsProps> = ({ apiUrl, onClose }) => {
         setEmailEnabled(data.data.enabled || false);
         setFromEmail(data.data.from_email || '');
         setFromName(data.data.from_name || 'CKD Analyzer System');
+        setNotifyCkdTransitions(data.data.notify_ckd_transitions !== undefined ? data.data.notify_ckd_transitions : true);
+        setNotifyLabUpdates(data.data.notify_lab_updates !== undefined ? data.data.notify_lab_updates : false);
+        setNotifySignificantChanges(data.data.notify_significant_changes !== undefined ? data.data.notify_significant_changes : true);
+        setNotifyClinicalAlerts(data.data.notify_clinical_alerts !== undefined ? data.data.notify_clinical_alerts : true);
       }
     } catch (error) {
       console.error('Failed to fetch email config:', error);
@@ -106,6 +120,10 @@ const Settings: React.FC<SettingsProps> = ({ apiUrl, onClose }) => {
       const payload: any = {
         doctor_email: doctorEmail,
         enabled: emailEnabled,
+        notify_ckd_transitions: notifyCkdTransitions,
+        notify_lab_updates: notifyLabUpdates,
+        notify_significant_changes: notifySignificantChanges,
+        notify_clinical_alerts: notifyClinicalAlerts,
       };
 
       if (showAdvanced && smtpHost) {
@@ -329,6 +347,88 @@ const Settings: React.FC<SettingsProps> = ({ apiUrl, onClose }) => {
                   <label htmlFor="emailEnabled" className="ml-2 text-sm font-medium text-gray-700">
                     Enable email notifications
                   </label>
+                </div>
+              </div>
+
+              {/* Notification Preferences */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Notification Preferences</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Choose when you want to receive email notifications
+                </p>
+
+                <div className="space-y-3">
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="notifyCkdTransitions"
+                      checked={notifyCkdTransitions}
+                      onChange={(e) => setNotifyCkdTransitions(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <label htmlFor="notifyCkdTransitions" className="text-sm font-medium text-gray-700">
+                        CKD Status Transitions
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        When patient transitions between CKD and Non-CKD status
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="notifySignificantChanges"
+                      checked={notifySignificantChanges}
+                      onChange={(e) => setNotifySignificantChanges(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <label htmlFor="notifySignificantChanges" className="text-sm font-medium text-gray-700">
+                        Significant Lab Changes
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        eGFR decline &gt;10% or uACR increase &gt;30%
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="notifyLabUpdates"
+                      checked={notifyLabUpdates}
+                      onChange={(e) => setNotifyLabUpdates(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <label htmlFor="notifyLabUpdates" className="text-sm font-medium text-gray-700">
+                        All Lab Updates
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        Every patient lab update (may generate many emails)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                      id="notifyClinicalAlerts"
+                      checked={notifyClinicalAlerts}
+                      onChange={(e) => setNotifyClinicalAlerts(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <label htmlFor="notifyClinicalAlerts" className="text-sm font-medium text-gray-700">
+                        Clinical Alerts
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        Rapid progression, severe values, adherence issues
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
