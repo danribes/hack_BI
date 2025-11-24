@@ -1980,10 +1980,89 @@ Provide ONLY the JSON object, nothing else.`;
   }
 
     // =================================================================================
-    // PHASE 4: CLINICAL ALERTS & EMAIL NOTIFICATIONS
+    // PHASE 4: LAB UPDATE EMAIL NOTIFICATIONS (CONFIGURABLE)
     // =================================================================================
     console.log(`\n${'='.repeat(80)}`);
-    console.log(`[Patient Update] 📧 PHASE 4: CHECKING CLINICAL ALERTS`);
+    console.log(`[Patient Update] 📧 PHASE 4: LAB UPDATE EMAIL NOTIFICATIONS`);
+    console.log(`${'='.repeat(80)}\n`);
+
+    // Check email notification preferences and send if configured
+    if (!wasReset && baselineAnalysis && postUpdateAnalysis) {
+      try {
+        const emailService = new EmailService(pool);
+        const emailConfig = await emailService.getConfig();
+
+        if (emailConfig && emailConfig.enabled) {
+          // Calculate lab changes
+          const egfrChange = baselineAnalysis.patient_summary?.latest_egfr && postUpdateAnalysis.patient_summary?.latest_egfr
+            ? baselineAnalysis.patient_summary.latest_egfr - postUpdateAnalysis.patient_summary.latest_egfr
+            : 0;
+          const egfrChangePercent = baselineAnalysis.patient_summary?.latest_egfr && egfrChange
+            ? (egfrChange / baselineAnalysis.patient_summary.latest_egfr) * 100
+            : 0;
+          const uacrChange = baselineAnalysis.patient_summary?.latest_uacr && postUpdateAnalysis.patient_summary?.latest_uacr
+            ? postUpdateAnalysis.patient_summary.latest_uacr - baselineAnalysis.patient_summary.latest_uacr
+            : 0;
+          const uacrChangePercent = baselineAnalysis.patient_summary?.latest_uacr && uacrChange
+            ? (uacrChange / baselineAnalysis.patient_summary.latest_uacr) * 100
+            : 0;
+
+          const hasSignificantChange = Math.abs(egfrChangePercent) > 10 || Math.abs(uacrChangePercent) > 30;
+
+          // Determine if we should send email based on preferences
+          const shouldSendEmail =
+            (emailConfig.notify_lab_updates) || // Send for all updates
+            (emailConfig.notify_significant_changes && hasSignificantChange && !hasTransitioned); // Send for significant changes (not transitions, those are handled separately)
+
+          if (shouldSendEmail) {
+            console.log(`[Patient Update] Sending ${hasSignificantChange ? 'significant change' : 'routine update'} email notification...`);
+
+            const changeDescription = hasSignificantChange
+              ? `Significant laboratory value changes detected:\n` +
+                `${Math.abs(egfrChangePercent) > 10 ? `- eGFR ${egfrChange > 0 ? 'declined' : 'improved'} by ${Math.abs(egfrChangePercent).toFixed(1)}%\n` : ''}` +
+                `${Math.abs(uacrChangePercent) > 30 ? `- uACR ${uacrChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(uacrChangePercent).toFixed(1)}%\n` : ''}`
+              : `Routine lab values updated for cycle ${nextMonthNumber}.`;
+
+            const emailMessage =
+              `Lab Results Updated - ${patient.first_name} ${patient.last_name}\n\n` +
+              `${changeDescription}\n\n` +
+              `Current Lab Values (Cycle ${nextMonthNumber}):\n` +
+              `- eGFR: ${postUpdateAnalysis.patient_summary?.latest_egfr?.toFixed(1) || 'N/A'} mL/min/1.73m²` +
+              `${egfrChange !== 0 ? ` (${egfrChange > 0 ? '+' : ''}${egfrChange.toFixed(1)})` : ''}\n` +
+              `- uACR: ${postUpdateAnalysis.patient_summary?.latest_uacr?.toFixed(1) || 'N/A'} mg/g` +
+              `${uacrChange !== 0 ? ` (${uacrChange > 0 ? '+' : ''}${uacrChange.toFixed(1)})` : ''}\n\n` +
+              `Current Classification: ${newHealthState}\n` +
+              `${currentHasCKD ? `CKD Stage: ${newKdigoClassification.ckd_stage_name}\n` : ''}` +
+              `Risk Level: ${newKdigoClassification.risk_level}\n\n` +
+              `Please review the patient's record for detailed AI analysis and recommendations.`;
+
+            await emailService.sendNotification({
+              to: emailConfig.doctor_email,
+              subject: hasSignificantChange
+                ? `⚠️ Significant Lab Changes - ${patient.first_name} ${patient.last_name}`
+                : `📊 Lab Update - ${patient.first_name} ${patient.last_name}`,
+              message: emailMessage,
+              priority: hasSignificantChange ? 'HIGH' : 'MODERATE',
+              patientName: `${patient.first_name} ${patient.last_name}`,
+              mrn: patient.medical_record_number
+            });
+
+            console.log(`✓ Lab update email notification sent`);
+          } else {
+            console.log(`[Patient Update] No email sent (preferences: notify_lab_updates=${emailConfig.notify_lab_updates}, notify_significant_changes=${emailConfig.notify_significant_changes}, has_significant_change=${hasSignificantChange})`);
+          }
+        }
+      } catch (emailError) {
+        console.error('[Patient Update] Error sending lab update email:', emailError);
+        // Don't fail the update if email fails
+      }
+    }
+
+    // =================================================================================
+    // PHASE 5: CLINICAL ALERTS & EMAIL NOTIFICATIONS
+    // =================================================================================
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`[Patient Update] 📧 PHASE 5: CHECKING CLINICAL ALERTS`);
     console.log(`${'='.repeat(80)}\n`);
 
     try {

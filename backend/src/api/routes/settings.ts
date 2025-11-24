@@ -54,7 +54,20 @@ export function createSettingsRouter(pool: Pool): express.Router {
    */
   router.post('/email', async (req: Request, res: Response): Promise<any> => {
     try {
-      const { doctor_email, enabled, smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name } = req.body;
+      const {
+        doctor_email,
+        enabled,
+        smtp_host,
+        smtp_port,
+        smtp_user,
+        smtp_password,
+        from_email,
+        from_name,
+        notify_ckd_transitions,
+        notify_lab_updates,
+        notify_significant_changes,
+        notify_clinical_alerts
+      } = req.body;
 
       // Validate doctor email
       if (!doctor_email || typeof doctor_email !== 'string') {
@@ -80,15 +93,19 @@ export function createSettingsRouter(pool: Pool): express.Router {
         });
       }
 
-      // Prepare SMTP settings if provided
-      const smtpSettings = (smtp_host || smtp_port || smtp_user || smtp_password || from_email || from_name) ? {
+      // Prepare SMTP settings and notification preferences
+      const smtpSettings = {
         smtp_host: smtp_host || undefined,
         smtp_port: smtp_port ? parseInt(smtp_port) : undefined,
         smtp_user: smtp_user || undefined,
         smtp_password: smtp_password || undefined,
         from_email: from_email || undefined,
-        from_name: from_name || 'CKD Analyzer System'
-      } : undefined;
+        from_name: from_name || 'CKD Analyzer System',
+        notify_ckd_transitions: notify_ckd_transitions !== undefined ? notify_ckd_transitions : true,
+        notify_lab_updates: notify_lab_updates !== undefined ? notify_lab_updates : false,
+        notify_significant_changes: notify_significant_changes !== undefined ? notify_significant_changes : true,
+        notify_clinical_alerts: notify_clinical_alerts !== undefined ? notify_clinical_alerts : true
+      };
 
       await emailService.updateConfig(doctor_email, enabled, smtpSettings);
 
