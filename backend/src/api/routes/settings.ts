@@ -35,7 +35,11 @@ export function createSettingsRouter(pool: Pool): express.Router {
           configured: true,
           smtp_configured: !!config.smtp_host,
           from_email: config.from_email,
-          from_name: config.from_name
+          from_name: config.from_name,
+          notify_ckd_transitions: config.notify_ckd_transitions,
+          notify_lab_updates: config.notify_lab_updates,
+          notify_significant_changes: config.notify_significant_changes,
+          notify_clinical_alerts: config.notify_clinical_alerts
         }
       });
     } catch (error) {
