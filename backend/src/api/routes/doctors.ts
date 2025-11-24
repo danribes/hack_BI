@@ -215,7 +215,7 @@ router.post('/assign-by-category', async (req: Request, res: Response): Promise<
     const { assignments } = req.body;
     // assignments = [
     //   { category: 'non_ckd_low', doctor_email: 'dr.smith@hospital.com', doctor_name: 'Dr. Smith' },
-    //   { category: 'ckd_mild', doctor_email: 'dr.jones@hospital.com', doctor_name: 'Dr. Jones' }
+    //   { category: 'ckd_mild', doctor_email: '', doctor_name: '' } // Empty = remove assignment
     // ]
 
     if (!assignments || !Array.isArray(assignments)) {
@@ -231,7 +231,7 @@ router.post('/assign-by-category', async (req: Request, res: Response): Promise<
     for (const assignment of assignments) {
       const { category, doctor_email, doctor_name } = assignment;
 
-      if (!category || !doctor_email) {
+      if (!category) {
         continue; // Skip invalid assignments
       }
 
@@ -304,35 +304,55 @@ router.post('/assign-by-category', async (req: Request, res: Response): Promise<
       const patientResult = await pool.query(query, params);
       const patientIds = patientResult.rows.map(row => row.id);
 
-      // Assign doctor to all patients in this category
-      let assignedCount = 0;
-      for (const patientId of patientIds) {
-        // Remove existing primary assignments for this patient
-        await pool.query(`
-          UPDATE doctor_patient_assignments
-          SET is_primary = false
-          WHERE patient_id = $1 AND is_primary = true
-        `, [patientId]);
+      // If doctor_email is empty, REMOVE assignments for this category
+      if (!doctor_email) {
+        let removedCount = 0;
+        for (const patientId of patientIds) {
+          // Remove all primary assignments for this patient
+          await pool.query(`
+            UPDATE doctor_patient_assignments
+            SET is_primary = false
+            WHERE patient_id = $1 AND is_primary = true
+          `, [patientId]);
+          removedCount++;
+        }
 
-        // Insert or update the assignment
-        await pool.query(`
-          INSERT INTO doctor_patient_assignments (patient_id, doctor_email, doctor_name, is_primary)
-          VALUES ($1, $2, $3, true)
-          ON CONFLICT (patient_id, doctor_email)
-          DO UPDATE SET
-            doctor_name = EXCLUDED.doctor_name,
-            is_primary = EXCLUDED.is_primary,
-            updated_at = NOW()
-        `, [patientId, doctor_email, doctor_name]);
+        results.push({
+          category,
+          doctor_email: null,
+          patients_unassigned: removedCount
+        });
+      } else {
+        // Assign doctor to all patients in this category
+        let assignedCount = 0;
+        for (const patientId of patientIds) {
+          // Remove existing primary assignments for this patient
+          await pool.query(`
+            UPDATE doctor_patient_assignments
+            SET is_primary = false
+            WHERE patient_id = $1 AND is_primary = true
+          `, [patientId]);
 
-        assignedCount++;
+          // Insert or update the assignment
+          await pool.query(`
+            INSERT INTO doctor_patient_assignments (patient_id, doctor_email, doctor_name, is_primary)
+            VALUES ($1, $2, $3, true)
+            ON CONFLICT (patient_id, doctor_email)
+            DO UPDATE SET
+              doctor_name = EXCLUDED.doctor_name,
+              is_primary = EXCLUDED.is_primary,
+              updated_at = NOW()
+          `, [patientId, doctor_email, doctor_name]);
+
+          assignedCount++;
+        }
+
+        results.push({
+          category,
+          doctor_email,
+          patients_assigned: assignedCount
+        });
       }
-
-      results.push({
-        category,
-        doctor_email,
-        patients_assigned: assignedCount
-      });
     }
 
     return res.json({
