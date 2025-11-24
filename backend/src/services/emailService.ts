@@ -291,17 +291,14 @@ export class EmailService {
 
       // Log the failed message
       try {
-        const config = await this.getConfig();
-        if (config) {
-          await this.logMessage(
-            config.doctor_email || 'unknown',
-            messageData.subject,
-            messageData.message,
-            'failed',
-            null,
-            error instanceof Error ? error.message : 'Unknown error'
-          );
-        }
+        await this.logMessage(
+          messageData.to,
+          messageData.subject,
+          messageData.message,
+          'failed',
+          null,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
       } catch (logError) {
         console.error('❌ Error logging failed email:', logError);
       }
