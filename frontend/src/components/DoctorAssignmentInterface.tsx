@@ -5,6 +5,13 @@ interface Doctor {
   name: string;
   specialty?: string;
   phone?: string;
+  smtp_host?: string;
+  smtp_port?: number;
+  smtp_user?: string;
+  smtp_password?: string;
+  from_email?: string;
+  from_name?: string;
+  smtp_enabled?: boolean;
 }
 
 interface Category {
@@ -37,6 +44,16 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   const [editingDoctor, setEditingDoctor] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Doctor>({ email: '', name: '', specialty: '' });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [smtpConfigDoctor, setSmtpConfigDoctor] = useState<Doctor | null>(null);
+  const [smtpForm, setSmtpForm] = useState({
+    smtp_host: '',
+    smtp_port: 587,
+    smtp_user: '',
+    smtp_password: '',
+    from_email: '',
+    from_name: '',
+    smtp_enabled: false
+  });
 
   useEffect(() => {
     fetchDoctors();
@@ -256,6 +273,46 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
     }
   };
 
+  const handleOpenSmtpConfig = (doctor: Doctor) => {
+    setSmtpConfigDoctor(doctor);
+    setSmtpForm({
+      smtp_host: doctor.smtp_host || '',
+      smtp_port: doctor.smtp_port || 587,
+      smtp_user: doctor.smtp_user || '',
+      smtp_password: doctor.smtp_password || '',
+      from_email: doctor.from_email || doctor.email,
+      from_name: doctor.from_name || doctor.name,
+      smtp_enabled: doctor.smtp_enabled || false
+    });
+  };
+
+  const handleCloseSmtpConfig = () => {
+    setSmtpConfigDoctor(null);
+  };
+
+  const handleSaveSmtpConfig = async () => {
+    if (!smtpConfigDoctor) return;
+
+    try {
+      const response = await fetch(`${apiUrl}/api/doctors/${smtpConfigDoctor.email}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(smtpForm),
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setDoctors(doctors.map(d => d.email === smtpConfigDoctor.email ? data.doctor : d));
+        setMessage({ type: 'success', text: 'SMTP settings saved successfully!' });
+        handleCloseSmtpConfig();
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to save SMTP settings' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to save SMTP settings' });
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-auto">
@@ -388,18 +445,29 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
                       {doctor.specialty && (
                         <div className="text-xs text-gray-500 mt-1">{doctor.specialty}</div>
                       )}
-                      <div className="flex gap-2 mt-3">
+                      {doctor.smtp_enabled && (
+                        <div className="text-xs text-green-600 mt-1">✓ SMTP Configured</div>
+                      )}
+                      <div className="flex flex-col gap-2 mt-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditDoctor(doctor)}
+                            className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDoctor(doctor.email, doctor.name)}
+                            className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                         <button
-                          onClick={() => handleEditDoctor(doctor)}
-                          className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                          onClick={() => handleOpenSmtpConfig(doctor)}
+                          className="w-full px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
                         >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDoctor(doctor.email, doctor.name)}
-                          className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                        >
-                          Delete
+                          📧 SMTP Settings
                         </button>
                       </div>
                     </>
@@ -565,6 +633,147 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
           </div>
         </div>
       </div>
+
+      {/* SMTP Configuration Modal */}
+      {smtpConfigDoctor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto m-4">
+            <div className="border-b px-6 py-4">
+              <h3 className="text-xl font-bold text-gray-800">
+                SMTP Settings for {smtpConfigDoctor.name}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Configure email server settings for this doctor
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Enable SMTP Toggle */}
+              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="smtp_enabled"
+                  checked={smtpForm.smtp_enabled}
+                  onChange={(e) => setSmtpForm({ ...smtpForm, smtp_enabled: e.target.checked })}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <label htmlFor="smtp_enabled" className="flex-1 cursor-pointer">
+                  <div className="font-medium text-gray-800">Enable Custom SMTP</div>
+                  <div className="text-sm text-gray-600">
+                    Use custom email server for this doctor's notifications
+                  </div>
+                </label>
+              </div>
+
+              {smtpForm.smtp_enabled && (
+                <>
+                  {/* SMTP Host */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SMTP Host *
+                    </label>
+                    <input
+                      type="text"
+                      value={smtpForm.smtp_host}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_host: e.target.value })}
+                      placeholder="smtp.gmail.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* SMTP Port */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SMTP Port *
+                    </label>
+                    <input
+                      type="number"
+                      value={smtpForm.smtp_port}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_port: parseInt(e.target.value) })}
+                      placeholder="587"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* SMTP User */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SMTP Username *
+                    </label>
+                    <input
+                      type="text"
+                      value={smtpForm.smtp_user}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_user: e.target.value })}
+                      placeholder="your-email@gmail.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* SMTP Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SMTP Password/App Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={smtpForm.smtp_password}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_password: e.target.value })}
+                      placeholder="Your app password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      For Gmail, create an App Password in your Google Account settings
+                    </p>
+                  </div>
+
+                  {/* From Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      From Email
+                    </label>
+                    <input
+                      type="email"
+                      value={smtpForm.from_email}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, from_email: e.target.value })}
+                      placeholder={smtpConfigDoctor.email}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* From Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      From Name
+                    </label>
+                    <input
+                      type="text"
+                      value={smtpForm.from_name}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, from_name: e.target.value })}
+                      placeholder={smtpConfigDoctor.name}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="border-t px-6 py-4 flex justify-end space-x-3">
+              <button
+                onClick={handleCloseSmtpConfig}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSmtpConfig}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Save SMTP Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -25,7 +25,14 @@ router.get('/', async (_req: Request, res: Response): Promise<any> => {
         phone,
         notification_preferences,
         is_active,
-        created_at
+        created_at,
+        smtp_host,
+        smtp_port,
+        smtp_user,
+        smtp_password,
+        from_email,
+        from_name,
+        smtp_enabled
       FROM doctors
       WHERE is_active = true
       ORDER BY name ASC
@@ -51,7 +58,20 @@ router.get('/', async (_req: Request, res: Response): Promise<any> => {
  */
 router.post('/', async (req: Request, res: Response): Promise<any> => {
   try {
-    const { email, name, specialty, phone, notification_preferences } = req.body;
+    const {
+      email,
+      name,
+      specialty,
+      phone,
+      notification_preferences,
+      smtp_host,
+      smtp_port,
+      smtp_user,
+      smtp_password,
+      from_email,
+      from_name,
+      smtp_enabled
+    } = req.body;
 
     if (!email || !name) {
       return res.status(400).json({
@@ -62,10 +82,19 @@ router.post('/', async (req: Request, res: Response): Promise<any> => {
 
     const pool = getPool();
     const result = await pool.query(`
-      INSERT INTO doctors (email, name, specialty, phone, notification_preferences)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, email, name, specialty, phone, notification_preferences, is_active, created_at
-    `, [email, name, specialty, phone, notification_preferences || null]);
+      INSERT INTO doctors (
+        email, name, specialty, phone, notification_preferences,
+        smtp_host, smtp_port, smtp_user, smtp_password,
+        from_email, from_name, smtp_enabled
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING id, email, name, specialty, phone, notification_preferences, is_active, created_at,
+                smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name, smtp_enabled
+    `, [
+      email, name, specialty, phone, notification_preferences || null,
+      smtp_host || null, smtp_port || null, smtp_user || null, smtp_password || null,
+      from_email || null, from_name || null, smtp_enabled || false
+    ]);
 
     return res.json({
       status: 'success',
@@ -330,31 +359,96 @@ router.get('/category-assignments', async (_req: Request, res: Response): Promis
   try {
     const pool = getPool();
 
-    // Query to find the most commonly assigned doctor for each category
+    // Query to find the most commonly assigned doctor for each granular category
     const result = await pool.query(`
       WITH category_assignments AS (
-        -- CKD patients
+        -- Non-CKD Low Risk
         SELECT
-          'ckd' as category,
-          dpa.doctor_email,
-          dpa.doctor_name,
-          COUNT(*) as patient_count
-        FROM doctor_patient_assignments dpa
-        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
-        WHERE dpa.is_primary = true
-        GROUP BY dpa.doctor_email, dpa.doctor_name
-
-        UNION ALL
-
-        -- Non-CKD patients
-        SELECT
-          'non_ckd' as category,
+          'non_ckd_low' as category,
           dpa.doctor_email,
           dpa.doctor_name,
           COUNT(*) as patient_count
         FROM doctor_patient_assignments dpa
         JOIN non_ckd_patient_data nckd ON dpa.patient_id = nckd.patient_id
-        WHERE dpa.is_primary = true
+        WHERE dpa.is_primary = true AND nckd.risk_level = 'low'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- Non-CKD Moderate Risk
+        SELECT
+          'non_ckd_moderate' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN non_ckd_patient_data nckd ON dpa.patient_id = nckd.patient_id
+        WHERE dpa.is_primary = true AND nckd.risk_level = 'moderate'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- Non-CKD High Risk
+        SELECT
+          'non_ckd_high' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN non_ckd_patient_data nckd ON dpa.patient_id = nckd.patient_id
+        WHERE dpa.is_primary = true AND nckd.risk_level = 'high'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- CKD Mild
+        SELECT
+          'ckd_mild' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
+        WHERE dpa.is_primary = true AND ckd.ckd_severity = 'mild'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- CKD Moderate
+        SELECT
+          'ckd_moderate' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
+        WHERE dpa.is_primary = true AND ckd.ckd_severity = 'moderate'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- CKD Severe
+        SELECT
+          'ckd_severe' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
+        WHERE dpa.is_primary = true AND ckd.ckd_severity = 'severe'
+        GROUP BY dpa.doctor_email, dpa.doctor_name
+
+        UNION ALL
+
+        -- CKD Kidney Failure
+        SELECT
+          'ckd_kidney_failure' as category,
+          dpa.doctor_email,
+          dpa.doctor_name,
+          COUNT(*) as patient_count
+        FROM doctor_patient_assignments dpa
+        JOIN ckd_patient_data ckd ON dpa.patient_id = ckd.patient_id
+        WHERE dpa.is_primary = true AND ckd.ckd_severity = 'kidney_failure'
         GROUP BY dpa.doctor_email, dpa.doctor_name
       ),
       ranked_assignments AS (
@@ -375,10 +469,15 @@ router.get('/category-assignments', async (_req: Request, res: Response): Promis
       WHERE rank = 1
     `);
 
-    // Format response
+    // Format response with all 7 categories
     const assignments: Record<string, { email: string; name: string; patientCount: number } | null> = {
-      ckd: null,
-      non_ckd: null
+      non_ckd_low: null,
+      non_ckd_moderate: null,
+      non_ckd_high: null,
+      ckd_mild: null,
+      ckd_moderate: null,
+      ckd_severe: null,
+      ckd_kidney_failure: null
     };
 
     for (const row of result.rows) {
@@ -458,7 +557,22 @@ router.get('/:email', async (req: Request, res: Response): Promise<any> => {
 router.put('/:email', async (req: Request, res: Response): Promise<any> => {
   try {
     const { email } = req.params;
-    const { name, specialty, phone, notification_preferences, email_signature, facility_name, is_active } = req.body;
+    const {
+      name,
+      specialty,
+      phone,
+      notification_preferences,
+      email_signature,
+      facility_name,
+      is_active,
+      smtp_host,
+      smtp_port,
+      smtp_user,
+      smtp_password,
+      from_email,
+      from_name,
+      smtp_enabled
+    } = req.body;
 
     const pool = getPool();
     const result = await pool.query(`
@@ -471,10 +585,22 @@ router.put('/:email', async (req: Request, res: Response): Promise<any> => {
         email_signature = COALESCE($5, email_signature),
         facility_name = COALESCE($6, facility_name),
         is_active = COALESCE($7, is_active),
+        smtp_host = COALESCE($8, smtp_host),
+        smtp_port = COALESCE($9, smtp_port),
+        smtp_user = COALESCE($10, smtp_user),
+        smtp_password = COALESCE($11, smtp_password),
+        from_email = COALESCE($12, from_email),
+        from_name = COALESCE($13, from_name),
+        smtp_enabled = COALESCE($14, smtp_enabled),
         updated_at = NOW()
-      WHERE email = $8
-      RETURNING id, email, name, specialty, phone, notification_preferences, email_signature, facility_name, is_active, updated_at
-    `, [name, specialty, phone, notification_preferences, email_signature, facility_name, is_active, email]);
+      WHERE email = $15
+      RETURNING id, email, name, specialty, phone, notification_preferences, email_signature, facility_name, is_active, updated_at,
+                smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name, smtp_enabled
+    `, [
+      name, specialty, phone, notification_preferences, email_signature, facility_name, is_active,
+      smtp_host, smtp_port, smtp_user, smtp_password, from_email, from_name, smtp_enabled,
+      email
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
