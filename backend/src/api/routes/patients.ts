@@ -1909,18 +1909,46 @@ Provide ONLY the JSON object, nothing else.`;
               `- uACR: ${generatedValues.uACR.toFixed(1)} mg/g\n\n` +
               `This indicates improvement in kidney function. Continue monitoring per guidelines.`;
 
-          await emailService.sendNotification({
-            to: '', // Will use doctor_email from config
-            subject: currentHasCKD
-              ? `🚨 CRITICAL: Patient Transitioned to CKD Status - ${patient.first_name} ${patient.last_name}`
-              : `✅ Patient Improved: Transitioned from CKD to Non-CKD - ${patient.first_name} ${patient.last_name}`,
-            message: transitionMessage,
-            priority: currentHasCKD ? 'CRITICAL' : 'MODERATE',
-            patientName: `${patient.first_name} ${patient.last_name}`,
-            mrn: patient.medical_record_number
-          });
+          // Get assigned doctor(s) for this patient
+          const transitionAssignedDoctors = await pool.query(
+            `SELECT doctor_email, doctor_name, is_primary
+             FROM doctor_patient_assignments
+             WHERE patient_id = $1 AND is_primary = true`,
+            [id]
+          );
 
-          console.log(`✓ Email notification sent for CKD status transition`);
+          const transitionEmailConfig = await emailService.getConfig();
+          const transitionRecipients = new Set<string>();
+
+          // Add assigned doctor's email if exists
+          if (transitionAssignedDoctors.rows.length > 0) {
+            for (const assignment of transitionAssignedDoctors.rows) {
+              transitionRecipients.add(assignment.doctor_email);
+              console.log(`[CKD Transition] Adding assigned doctor: ${assignment.doctor_email}`);
+            }
+          }
+
+          // Also add configured doctor email as fallback
+          if (transitionEmailConfig) {
+            transitionRecipients.add(transitionEmailConfig.doctor_email);
+          }
+
+          // Send to all recipients
+          for (const recipientEmail of transitionRecipients) {
+            await emailService.sendNotification({
+              to: recipientEmail,
+              subject: currentHasCKD
+                ? `🚨 CRITICAL: Patient Transitioned to CKD Status - ${patient.first_name} ${patient.last_name}`
+                : `✅ Patient Improved: Transitioned from CKD to Non-CKD - ${patient.first_name} ${patient.last_name}`,
+              message: transitionMessage,
+              priority: currentHasCKD ? 'CRITICAL' : 'MODERATE',
+              patientName: `${patient.first_name} ${patient.last_name}`,
+              mrn: patient.medical_record_number
+            });
+            console.log(`✓ CKD transition email sent to ${recipientEmail}`);
+          }
+
+          console.log(`✓ Email notification sent for CKD status transition to ${transitionRecipients.size} recipient(s)`);
         } catch (emailError) {
           console.error('[Patient Update] Error sending email notification:', emailError);
           // Don't fail the update if email fails
@@ -2036,18 +2064,43 @@ Provide ONLY the JSON object, nothing else.`;
               `Risk Level: ${newKdigoClassification.risk_level}\n\n` +
               `Please review the patient's record for detailed AI analysis and recommendations.`;
 
-            await emailService.sendNotification({
-              to: emailConfig.doctor_email,
-              subject: hasSignificantChange
-                ? `⚠️ Significant Lab Changes - ${patient.first_name} ${patient.last_name}`
-                : `📊 Lab Update - ${patient.first_name} ${patient.last_name}`,
-              message: emailMessage,
-              priority: hasSignificantChange ? 'HIGH' : 'MODERATE',
-              patientName: `${patient.first_name} ${patient.last_name}`,
-              mrn: patient.medical_record_number
-            });
+            // Get assigned doctor(s) for this patient
+            const assignedDoctorsResult = await pool.query(
+              `SELECT doctor_email, doctor_name, is_primary
+               FROM doctor_patient_assignments
+               WHERE patient_id = $1 AND is_primary = true`,
+              [id]
+            );
 
-            console.log(`✓ Lab update email notification sent`);
+            const emailRecipients = new Set<string>();
+
+            // Add assigned doctor's email if exists
+            if (assignedDoctorsResult.rows.length > 0) {
+              for (const assignment of assignedDoctorsResult.rows) {
+                emailRecipients.add(assignment.doctor_email);
+                console.log(`[Patient Update] Adding assigned doctor: ${assignment.doctor_email}`);
+              }
+            }
+
+            // Also add configured doctor email as fallback/backup
+            emailRecipients.add(emailConfig.doctor_email);
+
+            // Send email to all recipients
+            for (const recipientEmail of emailRecipients) {
+              await emailService.sendNotification({
+                to: recipientEmail,
+                subject: hasSignificantChange
+                  ? `⚠️ Significant Lab Changes - ${patient.first_name} ${patient.last_name}`
+                  : `📊 Lab Update - ${patient.first_name} ${patient.last_name}`,
+                message: emailMessage,
+                priority: hasSignificantChange ? 'HIGH' : 'MODERATE',
+                patientName: `${patient.first_name} ${patient.last_name}`,
+                mrn: patient.medical_record_number
+              });
+              console.log(`✓ Lab update email sent to ${recipientEmail}`);
+            }
+
+            console.log(`✓ Lab update email notification sent to ${emailRecipients.size} recipient(s)`);
           } else {
             console.log(`[Patient Update] No email sent (preferences: notify_lab_updates=${emailConfig.notify_lab_updates}, notify_significant_changes=${emailConfig.notify_significant_changes}, has_significant_change=${hasSignificantChange})`);
           }
