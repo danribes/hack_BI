@@ -220,7 +220,15 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   };
 
   const handleAssignmentChange = (category: string, doctorEmail: string) => {
-    setAssignments({ ...assignments, [category]: doctorEmail });
+    const newAssignments = { ...assignments };
+    if (doctorEmail) {
+      // Assign doctor
+      newAssignments[category] = doctorEmail;
+    } else {
+      // Remove assignment (user selected "Select Doctor...")
+      delete newAssignments[category];
+    }
+    setAssignments(newAssignments);
     setHasUnsavedChanges(true);
     // Clear any existing messages when making changes
     if (message) {
@@ -229,21 +237,16 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
   };
 
   const handleSaveAssignments = async () => {
-    const assignmentArray: Assignment[] = Object.entries(assignments)
-      .filter(([_, doctorEmail]) => doctorEmail) // Only include assigned categories
-      .map(([category, doctorEmail]) => {
-        const doctor = doctors.find(d => d.email === doctorEmail);
-        return {
-          category,
-          doctor_email: doctorEmail,
-          doctor_name: doctor?.name || '',
-        };
-      });
-
-    if (assignmentArray.length === 0) {
-      setMessage({ type: 'error', text: 'Please assign at least one doctor to a category' });
-      return;
-    }
+    // Build assignment array for ALL categories, including empty assignments (for removal)
+    const assignmentArray: Assignment[] = categories.map((cat) => {
+      const doctorEmail = assignments[cat.category] || '';
+      const doctor = doctorEmail ? doctors.find(d => d.email === doctorEmail) : null;
+      return {
+        category: cat.category,
+        doctor_email: doctorEmail,
+        doctor_name: doctor?.name || '',
+      };
+    });
 
     try {
       setSaving(true);
@@ -255,10 +258,29 @@ const DoctorAssignmentInterface: React.FC<DoctorAssignmentProps> = ({ apiUrl, on
 
       const data = await response.json();
       if (data.status === 'success') {
-        const totalAssigned = data.results.reduce((sum: number, r: any) => sum + r.patients_assigned, 0);
+        const totalAssigned = data.results.reduce(
+          (sum: number, r: any) => sum + (r.patients_assigned || 0),
+          0
+        );
+        const totalUnassigned = data.results.reduce(
+          (sum: number, r: any) => sum + (r.patients_unassigned || 0),
+          0
+        );
+
+        let message = '';
+        if (totalAssigned > 0 && totalUnassigned > 0) {
+          message = `Assigned ${totalAssigned} patients and unassigned ${totalUnassigned} patients!`;
+        } else if (totalAssigned > 0) {
+          message = `Successfully assigned ${totalAssigned} patients!`;
+        } else if (totalUnassigned > 0) {
+          message = `Successfully unassigned ${totalUnassigned} patients!`;
+        } else {
+          message = 'No changes made to assignments.';
+        }
+
         setMessage({
           type: 'success',
-          text: `Successfully assigned ${totalAssigned} patients to ${data.results.length} categories!`,
+          text: message,
         });
         setHasUnsavedChanges(false);
         // Reload assignments to show the updated selections
