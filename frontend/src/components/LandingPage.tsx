@@ -255,49 +255,61 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 transform -translate-y-1/2"></div>
 
             <div className="grid md:grid-cols-4 gap-8">
-              {[
-                {
-                  step: '1',
-                  title: 'Risk Identification',
-                  desc: 'SCORED model screens all non-CKD patients for hidden disease',
-                  icon: Target,
-                  color: 'emerald'
-                },
-                {
-                  step: '2',
-                  title: 'Lab Screening',
-                  desc: 'High-risk patients get immediate eGFR and uACR testing',
-                  icon: Activity,
-                  color: 'teal'
-                },
-                {
-                  step: '3',
-                  title: 'KDIGO Classification',
-                  desc: 'Automatic staging with GFR category and albuminuria level',
-                  icon: FileText,
-                  color: 'cyan'
-                },
-                {
-                  step: '4',
-                  title: 'Treatment Plan',
-                  desc: 'AI recommends RAS inhibitors, SGLT2i, monitoring frequency',
-                  icon: Pill,
-                  color: 'blue'
-                },
-              ].map((item, index) => (
-                <div key={index} className="relative">
-                  <div className={`bg-slate-900 rounded-xl p-6 border border-${item.color}-500/30 relative z-10`}>
-                    <div className={`w-12 h-12 bg-${item.color}-500/20 rounded-full flex items-center justify-center mb-4 mx-auto`}>
-                      <span className={`text-xl font-bold text-${item.color}-400`}>{item.step}</span>
-                    </div>
-                    <div className={`w-12 h-12 bg-${item.color}-500/10 rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                      <item.icon className={`w-6 h-6 text-${item.color}-400`} />
-                    </div>
-                    <h3 className="text-lg font-bold text-white text-center mb-2">{item.title}</h3>
-                    <p className="text-slate-400 text-center text-sm">{item.desc}</p>
+              {/* Step 1: Risk Identification */}
+              <div className="relative">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-emerald-500/50 dark:border-emerald-500/30 relative z-10 shadow-lg dark:shadow-none">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
+                    <span className="text-xl font-bold text-white">1</span>
                   </div>
+                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Risk Identification</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">SCORED model screens all non-CKD patients for hidden disease</p>
                 </div>
-              ))}
+              </div>
+
+              {/* Step 2: Lab Screening */}
+              <div className="relative">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-teal-500/50 dark:border-teal-500/30 relative z-10 shadow-lg dark:shadow-none">
+                  <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
+                    <span className="text-xl font-bold text-white">2</span>
+                  </div>
+                  <div className="w-12 h-12 bg-teal-100 dark:bg-teal-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Activity className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Lab Screening</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">High-risk patients get immediate eGFR and uACR testing</p>
+                </div>
+              </div>
+
+              {/* Step 3: KDIGO Classification */}
+              <div className="relative">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-cyan-500/50 dark:border-cyan-500/30 relative z-10 shadow-lg dark:shadow-none">
+                  <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
+                    <span className="text-xl font-bold text-white">3</span>
+                  </div>
+                  <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">KDIGO Classification</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Automatic staging with GFR category and albuminuria level</p>
+                </div>
+              </div>
+
+              {/* Step 4: Treatment Plan */}
+              <div className="relative">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-blue-500/50 dark:border-blue-500/30 relative z-10 shadow-lg dark:shadow-none">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
+                    <span className="text-xl font-bold text-white">4</span>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Pill className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Treatment Plan</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">AI recommends RAS inhibitors, SGLT2i, monitoring frequency</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
