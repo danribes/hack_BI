@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getPool } from '../../config/database';
-import { classifyKDIGO, getCKDSeverity, getMonitoringFrequencyCategory } from '../../utils/kdigo';
+import { classifyKDIGO, classifyKDIGOWithSCORED, getCKDSeverity, getMonitoringFrequencyCategory, getNonCKDRiskLevel, calculateSCORED, PatientDemographics } from '../../utils/kdigo';
 
 const router = Router();
 
@@ -341,6 +341,7 @@ router.post('/clear-patients', async (_req: Request, res: Response): Promise<any
 /**
  * POST /api/init/populate-tracking-tables
  * Populate CKD and non-CKD patient tracking tables with risk factors and treatments
+ * Uses SCORED model for non-CKD patient risk calculation
  */
 router.post('/populate-tracking-tables', async (_req: Request, res: Response): Promise<any> => {
   try {
@@ -348,10 +349,14 @@ router.post('/populate-tracking-tables', async (_req: Request, res: Response): P
 
     console.log('Populating patient tracking tables...');
 
-    // Get all patients with their latest observations
+    // Get all patients with their latest observations and demographics for SCORED
     const patientsResult = await pool.query(`
       SELECT
         p.id,
+        p.date_of_birth,
+        p.gender,
+        p.weight,
+        p.height,
         p.cvd_history,
         p.smoking_status,
         p.family_history_esrd,
@@ -366,8 +371,15 @@ router.post('/populate-tracking-tables', async (_req: Request, res: Response): P
          ORDER BY observation_date DESC LIMIT 1) as latest_bmi,
         (SELECT value_numeric FROM observations
          WHERE patient_id = p.id AND observation_type = 'HbA1c'
-         ORDER BY observation_date DESC LIMIT 1) as latest_hba1c
+         ORDER BY observation_date DESC LIMIT 1) as latest_hba1c,
+        -- Risk factors from patient_risk_factors table (if exists)
+        prf.has_diabetes,
+        prf.has_hypertension,
+        prf.has_cvd,
+        prf.has_peripheral_vascular_disease as has_pvd,
+        prf.current_bmi as risk_factor_bmi
       FROM patients p
+      LEFT JOIN patient_risk_factors prf ON p.id = prf.patient_id
     `);
 
     const treatments = [
@@ -385,7 +397,43 @@ router.post('/populate-tracking-tables', async (_req: Request, res: Response): P
       const egfr = patient.latest_egfr || 90;
       const uacr = patient.latest_uacr || 15;
 
-      const kdigo = classifyKDIGO(egfr, uacr);
+      // Calculate age from date_of_birth
+      const birthDate = new Date(patient.date_of_birth);
+      const age = Math.floor((new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+      // Calculate BMI if not available from risk factors
+      let bmi = patient.risk_factor_bmi || patient.latest_bmi;
+      if (!bmi && patient.weight && patient.height) {
+        const heightInMeters = patient.height / 100;
+        bmi = patient.weight / (heightInMeters * heightInMeters);
+      }
+
+      // Normalize smoking status
+      let smoking_status: 'never' | 'former' | 'current' | undefined;
+      if (patient.smoking_status) {
+        const status = patient.smoking_status.toLowerCase();
+        if (status === 'never') smoking_status = 'never';
+        else if (status === 'former' || status === 'ex-smoker') smoking_status = 'former';
+        else if (status === 'current' || status === 'smoker') smoking_status = 'current';
+      }
+
+      // Determine diabetes status from HbA1c or risk factors
+      const hasDiabetes = patient.has_diabetes || (patient.latest_hba1c && patient.latest_hba1c >= 6.5);
+
+      // Build demographics for SCORED/Framingham assessment
+      const demographics: PatientDemographics = {
+        age,
+        gender: (patient.gender?.toLowerCase() || 'male') as 'male' | 'female',
+        has_hypertension: patient.has_hypertension || false,
+        has_diabetes: hasDiabetes || false,
+        has_cvd: patient.has_cvd || patient.cvd_history || false,
+        has_pvd: patient.has_pvd || false,
+        smoking_status,
+        bmi
+      };
+
+      // Use SCORED-based classification for proper risk assessment
+      const kdigo = classifyKDIGOWithSCORED(egfr, uacr, demographics);
       const monitoringFreq = getMonitoringFrequencyCategory(kdigo);
 
       if (kdigo.has_ckd) {
@@ -438,6 +486,7 @@ router.post('/populate-tracking-tables', async (_req: Request, res: Response): P
 
       } else {
         // Non-CKD Patient - Insert into non_ckd_patient_data
+        // Use the correctly calculated risk level from SCORED model
         const riskLevel = kdigo.risk_level === 'very_high' ? 'high' : kdigo.risk_level;
         const isMonitored = kdigo.risk_level === 'high' || kdigo.risk_level === 'very_high';
 
@@ -466,7 +515,7 @@ router.post('/populate-tracking-tables', async (_req: Request, res: Response): P
         // Add risk factors
         const riskFactors: Array<{ type: string; value: string; severity: string }> = [];
 
-        if (patient.cvd_history) {
+        if (patient.cvd_history || patient.has_cvd) {
           riskFactors.push({ type: 'cardiovascular_disease', value: 'History of CVD', severity: 'moderate' });
         }
 
@@ -1895,6 +1944,143 @@ router.post('/deduplicate-observations', async (_req: Request, res: Response): P
     res.status(500).json({
       status: 'error',
       message: 'Failed to deduplicate observations',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/init/recalculate-non-ckd-risk
+ * Recalculate risk levels for all non-CKD patients using SCORED model
+ * This fixes the inconsistency between patient list and patient profile risk displays
+ */
+router.post('/recalculate-non-ckd-risk', async (_req: Request, res: Response): Promise<any> => {
+  try {
+    const pool = getPool();
+
+    console.log('[Init] Recalculating non-CKD patient risk levels using SCORED model...');
+
+    // Get all non-CKD patients with their demographics and lab values
+    const patientsResult = await pool.query(`
+      SELECT
+        npd.id as non_ckd_data_id,
+        npd.patient_id,
+        npd.risk_level as old_risk_level,
+        p.date_of_birth,
+        p.gender,
+        p.weight,
+        p.height,
+        p.smoking_status,
+        -- Lab values
+        (SELECT value_numeric FROM observations
+         WHERE patient_id = p.id AND observation_type = 'eGFR'
+         ORDER BY observation_date DESC LIMIT 1) as latest_egfr,
+        (SELECT value_numeric FROM observations
+         WHERE patient_id = p.id AND observation_type = 'uACR'
+         ORDER BY observation_date DESC LIMIT 1) as latest_uacr,
+        -- Risk factors from patient_risk_factors table
+        prf.has_diabetes,
+        prf.has_hypertension,
+        prf.has_cvd,
+        prf.has_peripheral_vascular_disease as has_pvd,
+        prf.current_bmi
+      FROM non_ckd_patient_data npd
+      INNER JOIN patients p ON npd.patient_id = p.id
+      LEFT JOIN patient_risk_factors prf ON p.id = prf.patient_id
+    `);
+
+    let updatedCount = 0;
+    let lowToModerate = 0;
+    let lowToHigh = 0;
+    let moderateToHigh = 0;
+    let unchanged = 0;
+
+    for (const patient of patientsResult.rows) {
+      const egfr = patient.latest_egfr || 90;
+      const uacr = patient.latest_uacr || 15;
+
+      // Calculate age from date_of_birth
+      const birthDate = new Date(patient.date_of_birth);
+      const age = Math.floor((new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+      // Calculate BMI if not available from risk factors
+      let bmi = patient.current_bmi;
+      if (!bmi && patient.weight && patient.height) {
+        const heightInMeters = patient.height / 100;
+        bmi = patient.weight / (heightInMeters * heightInMeters);
+      }
+
+      // Normalize smoking status
+      let smoking_status: 'never' | 'former' | 'current' | undefined;
+      if (patient.smoking_status) {
+        const status = patient.smoking_status.toLowerCase();
+        if (status === 'never') smoking_status = 'never';
+        else if (status === 'former' || status === 'ex-smoker') smoking_status = 'former';
+        else if (status === 'current' || status === 'smoker') smoking_status = 'current';
+      }
+
+      // Build demographics for SCORED assessment
+      const demographics: PatientDemographics = {
+        age,
+        gender: (patient.gender?.toLowerCase() || 'male') as 'male' | 'female',
+        has_hypertension: patient.has_hypertension || false,
+        has_diabetes: patient.has_diabetes || false,
+        has_cvd: patient.has_cvd || false,
+        has_pvd: patient.has_pvd || false,
+        smoking_status,
+        bmi
+      };
+
+      // Calculate SCORED score and get correct risk level
+      const scoredResult = calculateSCORED(demographics, uacr);
+      const nonCKDRisk = getNonCKDRiskLevel(egfr, uacr, scoredResult.points);
+      const newRiskLevel = nonCKDRisk.risk_level;
+
+      // Track changes
+      const oldRiskLevel = patient.old_risk_level;
+      if (oldRiskLevel !== newRiskLevel) {
+        if (oldRiskLevel === 'low' && newRiskLevel === 'moderate') lowToModerate++;
+        else if (oldRiskLevel === 'low' && newRiskLevel === 'high') lowToHigh++;
+        else if (oldRiskLevel === 'moderate' && newRiskLevel === 'high') moderateToHigh++;
+
+        // Update the risk level in the database
+        await pool.query(`
+          UPDATE non_ckd_patient_data
+          SET risk_level = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2
+        `, [newRiskLevel, patient.non_ckd_data_id]);
+
+        updatedCount++;
+      } else {
+        unchanged++;
+      }
+    }
+
+    console.log(`✓ Recalculated risk levels for ${patientsResult.rows.length} non-CKD patients`);
+    console.log(`  - Updated: ${updatedCount} patients`);
+    console.log(`  - Low → Moderate: ${lowToModerate}`);
+    console.log(`  - Low → High: ${lowToHigh}`);
+    console.log(`  - Moderate → High: ${moderateToHigh}`);
+    console.log(`  - Unchanged: ${unchanged}`);
+
+    res.json({
+      status: 'success',
+      message: 'Non-CKD patient risk levels recalculated using SCORED model',
+      total_patients: patientsResult.rows.length,
+      updated: updatedCount,
+      unchanged: unchanged,
+      changes: {
+        low_to_moderate: lowToModerate,
+        low_to_high: lowToHigh,
+        moderate_to_high: moderateToHigh
+      }
+    });
+
+  } catch (error) {
+    console.error('[Init API] Error recalculating non-CKD risk levels:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to recalculate non-CKD risk levels',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
