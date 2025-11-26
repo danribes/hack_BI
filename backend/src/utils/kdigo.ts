@@ -226,15 +226,17 @@ export function calculateFramingham(demographics: PatientDemographics, uacr?: nu
   }
 
   // BMI/Obesity (BMI >30 increases risk ~30-50%)
-  if (demographics.bmi && demographics.bmi >= 35) {
+  // Ensure BMI is a number (may come as string from database)
+  const bmiValue = demographics.bmi ? Number(demographics.bmi) : undefined;
+  if (bmiValue && !isNaN(bmiValue) && bmiValue >= 35) {
     riskMultiplier *= 1.5;
-    components.push(`BMI ${demographics.bmi.toFixed(1)} (Class II/III Obesity): +50% risk`);
-  } else if (demographics.bmi && demographics.bmi >= 30) {
+    components.push(`BMI ${bmiValue.toFixed(1)} (Class II/III Obesity): +50% risk`);
+  } else if (bmiValue && !isNaN(bmiValue) && bmiValue >= 30) {
     riskMultiplier *= 1.3;
-    components.push(`BMI ${demographics.bmi.toFixed(1)} (Obesity): +30% risk`);
-  } else if (demographics.bmi && demographics.bmi >= 25) {
+    components.push(`BMI ${bmiValue.toFixed(1)} (Obesity): +30% risk`);
+  } else if (bmiValue && !isNaN(bmiValue) && bmiValue >= 25) {
     riskMultiplier *= 1.1;
-    components.push(`BMI ${demographics.bmi.toFixed(1)} (Overweight): +10% risk`);
+    components.push(`BMI ${bmiValue.toFixed(1)} (Overweight): +10% risk`);
   }
 
   // Albuminuria (if available - VERY strong predictor, can triple risk)
