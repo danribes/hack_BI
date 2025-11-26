@@ -4,6 +4,7 @@ import { DoctorChatBar } from './components/DoctorChatBar';
 import { PatientTrendGraphs } from './components/PatientTrendGraphs';
 import { AdherenceCard, AdherenceData } from './components/AdherenceCard';
 import DoctorAssignmentInterface from './components/DoctorAssignmentInterface';
+import { LandingPage } from './components/LandingPage';
 
 interface KDIGOClassification {
   gfr_category: string;
@@ -231,6 +232,7 @@ function App() {
 
   const [statistics, setStatistics] = useState<any>(null);
   const [showDoctorAssignment, setShowDoctorAssignment] = useState(false);
+  const [showLandingPage, setShowLandingPage] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -1033,15 +1035,26 @@ function App() {
         <div className="container mx-auto px-4 py-8">
           {/* Header with Back Button and Update Button */}
           <div className="max-w-6xl mx-auto mb-6 flex justify-between items-center">
-            <button
-              onClick={() => setSelectedPatient(null)}
-              className="flex items-center text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
-            >
-              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Patient List
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowLandingPage(true)}
+                className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium transition-colors shadow-md flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Home</span>
+              </button>
+              <button
+                onClick={() => setSelectedPatient(null)}
+                className="flex items-center text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+              >
+                <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Patient List
+              </button>
+            </div>
 
             <div className="flex gap-4">
               <button
@@ -2672,6 +2685,11 @@ function App() {
     );
   }
 
+  // Show landing page if enabled
+  if (showLandingPage) {
+    return <LandingPage onEnterApp={() => setShowLandingPage(false)} />;
+  }
+
   // Main patient list view
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -2679,7 +2697,17 @@ function App() {
         {/* Header */}
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex-1"></div>
+            <div className="flex-1">
+              <button
+                onClick={() => setShowLandingPage(true)}
+                className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium transition-colors shadow-md flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Home</span>
+              </button>
+            </div>
             <div className="flex-1 text-center">
               <h1 className="text-5xl font-bold text-gray-900 mb-2">
                 RenalGuard AI
