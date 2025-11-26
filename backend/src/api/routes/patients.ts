@@ -54,6 +54,9 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
         p.gender,
         p.email,
         p.phone,
+        p.weight,
+        p.height,
+        p.smoking_status,
         p.last_visit_date,
         p.created_at,
         -- Legacy fields (for backward compatibility)
@@ -82,6 +85,12 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
         npd.is_monitored as non_ckd_is_monitored,
         npd.monitoring_device as non_ckd_monitoring_device,
         npd.monitoring_frequency as non_ckd_monitoring_frequency,
+        -- Risk factors for SCORED/Framingham calculation
+        prf.has_diabetes,
+        prf.has_hypertension,
+        prf.has_cvd,
+        prf.has_peripheral_vascular_disease as has_pvd,
+        prf.current_bmi,
         -- Latest health state comment (for patient list summary)
         (SELECT comment_text FROM patient_health_state_comments
          WHERE patient_id = p.id AND visibility = 'visible'
@@ -106,7 +115,7 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
          ORDER BY created_at DESC LIMIT 1) as latest_comment_recommended_actions
     `;
 
-    let fromClause = ' FROM patients p LEFT JOIN ckd_patient_data cpd ON p.id = cpd.patient_id LEFT JOIN non_ckd_patient_data npd ON p.id = npd.patient_id';
+    let fromClause = ' FROM patients p LEFT JOIN ckd_patient_data cpd ON p.id = cpd.patient_id LEFT JOIN non_ckd_patient_data npd ON p.id = npd.patient_id LEFT JOIN patient_risk_factors prf ON p.id = prf.patient_id';
     let whereConditions: string[] = [];
     let queryParams: any[] = [];
     let paramCounter = 1;
@@ -198,12 +207,45 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
     // Execute query
     const result = await pool.query(finalQuery, queryParams);
 
-    // Calculate KDIGO classification for each patient (same as main patient list endpoint)
+    // Calculate KDIGO classification for each patient with SCORED/Framingham for non-CKD
     const patientsWithRisk = result.rows.map(patient => {
       const egfr = patient.latest_egfr || 90;
       const uacr = patient.latest_uacr || 15;
 
-      const kdigo = classifyKDIGO(egfr, uacr);
+      // Calculate age from date_of_birth
+      const birthDate = new Date(patient.date_of_birth);
+      const age = Math.floor((new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+      // Calculate BMI if not available from risk factors
+      let bmi = patient.current_bmi;
+      if (!bmi && patient.weight && patient.height) {
+        const heightInMeters = patient.height / 100;
+        bmi = patient.weight / (heightInMeters * heightInMeters);
+      }
+
+      // Normalize smoking status
+      let smoking_status: 'never' | 'former' | 'current' | undefined;
+      if (patient.smoking_status) {
+        const status = patient.smoking_status.toLowerCase();
+        if (status === 'never') smoking_status = 'never';
+        else if (status === 'former' || status === 'ex-smoker') smoking_status = 'former';
+        else if (status === 'current' || status === 'smoker') smoking_status = 'current';
+      }
+
+      // Build demographics for SCORED/Framingham assessment
+      const demographics = {
+        age,
+        gender: (patient.gender?.toLowerCase() || 'male') as 'male' | 'female',
+        has_hypertension: patient.has_hypertension || false,
+        has_diabetes: patient.has_diabetes || false,
+        has_cvd: patient.has_cvd || false,
+        has_pvd: patient.has_pvd || false,
+        smoking_status,
+        bmi
+      };
+
+      // Use SCORED-based classification for proper non-CKD risk assessment
+      const kdigo = classifyKDIGOWithSCORED(egfr, uacr, demographics);
       const risk_category = getRiskCategoryLabel(kdigo);
 
       // Use data from tracking tables if available, otherwise fall back to legacy fields
@@ -522,6 +564,9 @@ router.get('/', async (_req: Request, res: Response): Promise<any> => {
         p.gender,
         p.email,
         p.phone,
+        p.weight,
+        p.height,
+        p.smoking_status,
         p.last_visit_date,
         p.created_at,
         -- Legacy fields (for backward compatibility)
@@ -550,6 +595,12 @@ router.get('/', async (_req: Request, res: Response): Promise<any> => {
         npd.is_monitored as non_ckd_is_monitored,
         npd.monitoring_device as non_ckd_monitoring_device,
         npd.monitoring_frequency as non_ckd_monitoring_frequency,
+        -- Risk factors for SCORED/Framingham calculation
+        prf.has_diabetes,
+        prf.has_hypertension,
+        prf.has_cvd,
+        prf.has_peripheral_vascular_disease as has_pvd,
+        prf.current_bmi,
         -- Latest health state comment (for patient list summary)
         (SELECT comment_text FROM patient_health_state_comments
          WHERE patient_id = p.id AND visibility = 'visible'
@@ -575,15 +626,49 @@ router.get('/', async (_req: Request, res: Response): Promise<any> => {
       FROM patients p
       LEFT JOIN ckd_patient_data cpd ON p.id = cpd.patient_id
       LEFT JOIN non_ckd_patient_data npd ON p.id = npd.patient_id
+      LEFT JOIN patient_risk_factors prf ON p.id = prf.patient_id
       ORDER BY p.last_name ASC, p.first_name ASC
     `);
 
-    // Calculate KDIGO classification for each patient
+    // Calculate KDIGO classification for each patient with SCORED/Framingham for non-CKD
     const patientsWithRisk = result.rows.map(patient => {
       const egfr = patient.latest_egfr || 90;
       const uacr = patient.latest_uacr || 15;
 
-      const kdigo = classifyKDIGO(egfr, uacr);
+      // Calculate age from date_of_birth
+      const birthDate = new Date(patient.date_of_birth);
+      const age = Math.floor((new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+      // Calculate BMI if not available from risk factors
+      let bmi = patient.current_bmi;
+      if (!bmi && patient.weight && patient.height) {
+        const heightInMeters = patient.height / 100;
+        bmi = patient.weight / (heightInMeters * heightInMeters);
+      }
+
+      // Normalize smoking status
+      let smoking_status: 'never' | 'former' | 'current' | undefined;
+      if (patient.smoking_status) {
+        const status = patient.smoking_status.toLowerCase();
+        if (status === 'never') smoking_status = 'never';
+        else if (status === 'former' || status === 'ex-smoker') smoking_status = 'former';
+        else if (status === 'current' || status === 'smoker') smoking_status = 'current';
+      }
+
+      // Build demographics for SCORED/Framingham assessment
+      const demographics = {
+        age,
+        gender: (patient.gender?.toLowerCase() || 'male') as 'male' | 'female',
+        has_hypertension: patient.has_hypertension || false,
+        has_diabetes: patient.has_diabetes || false,
+        has_cvd: patient.has_cvd || false,
+        has_pvd: patient.has_pvd || false,
+        smoking_status,
+        bmi
+      };
+
+      // Use SCORED-based classification for proper non-CKD risk assessment
+      const kdigo = classifyKDIGOWithSCORED(egfr, uacr, demographics);
       const risk_category = getRiskCategoryLabel(kdigo);
 
       // Use data from tracking tables if available, otherwise fall back to legacy fields
