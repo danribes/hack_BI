@@ -89,6 +89,7 @@ interface GCUARiskCardProps {
   onCalculate?: () => void;
   isEligible?: boolean;
   eligibilityReason?: string;
+  error?: string | null;
 }
 
 // ============================================
@@ -179,7 +180,8 @@ export const GCUARiskCard: React.FC<GCUARiskCardProps> = ({
   loading,
   onCalculate,
   isEligible,
-  eligibilityReason
+  eligibilityReason,
+  error
 }) => {
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [showAllStrategies, setShowAllStrategies] = useState(false);
@@ -198,6 +200,32 @@ export const GCUARiskCard: React.FC<GCUARiskCardProps> = ({
           <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
         </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !assessment) {
+    return (
+      <div className="bg-red-50 rounded-lg shadow p-6 mb-6 border border-red-200">
+        <div className="flex items-center gap-3 mb-3">
+          <AlertTriangle className="h-6 w-6 text-red-500" />
+          <h3 className="text-lg font-semibold text-red-700">GCUA Risk Assessment</h3>
+        </div>
+        <p className="text-sm text-red-700 mb-2">
+          {error}
+        </p>
+        <p className="text-xs text-gray-500 mb-4">
+          Please ensure the patient has age and eGFR data available, and that the backend is running.
+        </p>
+        {onCalculate && (
+          <button
+            onClick={onCalculate}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+          >
+            Retry Calculation
+          </button>
+        )}
       </div>
     );
   }
