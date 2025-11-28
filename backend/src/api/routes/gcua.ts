@@ -11,6 +11,61 @@ import {
 const router = Router();
 
 /**
+ * Helper function to transform database snake_case to camelCase for frontend
+ */
+function transformDatabaseAssessment(dbRow: any): any {
+  if (!dbRow) return null;
+
+  return {
+    isEligible: dbRow.is_eligible,
+    phenotype: {
+      type: dbRow.phenotype_type,
+      name: dbRow.phenotype_name,
+      tag: dbRow.phenotype_tag,
+      color: dbRow.phenotype_color
+    },
+    module1: {
+      fiveYearRisk: parseFloat(dbRow.renal_risk) || 0,
+      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.renal_risk) || 0, 'renal')
+    },
+    module2: {
+      tenYearRisk: parseFloat(dbRow.cvd_risk) || 0,
+      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.cvd_risk) || 0, 'cvd')
+    },
+    module3: {
+      fiveYearMortalityRisk: parseFloat(dbRow.mortality_risk) || 0,
+      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.mortality_risk) || 0, 'mortality')
+    },
+    benefitRatio: parseFloat(dbRow.benefit_ratio) || 0,
+    confidenceLevel: dbRow.confidence_level,
+    treatmentRecommendations: dbRow.treatment_recommendations,
+    assessedAt: dbRow.assessed_at
+  };
+}
+
+/**
+ * Helper to determine risk category from numeric value
+ */
+function getRiskCategoryFromValue(value: number, type: 'renal' | 'cvd' | 'mortality'): string {
+  if (type === 'renal') {
+    if (value >= 30) return 'very_high';
+    if (value >= 15) return 'high';
+    if (value >= 5) return 'moderate';
+    return 'low';
+  } else if (type === 'cvd') {
+    if (value >= 20) return 'high';
+    if (value >= 7.5) return 'intermediate';
+    if (value >= 5) return 'borderline';
+    return 'low';
+  } else {
+    if (value >= 30) return 'very_high';
+    if (value >= 15) return 'high';
+    if (value >= 5) return 'moderate';
+    return 'low';
+  }
+}
+
+/**
  * Helper function to gather patient input for GCUA from database
  */
 async function getPatientGCUAInput(patientId: string): Promise<GCUAPatientInput | null> {
@@ -310,8 +365,8 @@ router.get('/assessment/:patientId', async (req: Request, res: Response): Promis
           status: 'success',
           isEligible: false,
           reason: patientInput.age < 60
-            ? 'Patient is under 60 years old. GCUA is designed for adults 60+.'
-            : 'Patient eGFR is ≤60. Use KDIGO staging for established CKD.'
+            ? `Patient age (${patientInput.age}) is under 60. GCUA is designed for adults 60+.`
+            : `Patient eGFR (${patientInput.eGFR}) is ≤60. Use KDIGO staging for established CKD.`
         });
       }
 
@@ -322,9 +377,12 @@ router.get('/assessment/:patientId', async (req: Request, res: Response): Promis
       });
     }
 
+    // Transform snake_case database result to camelCase for frontend
+    const transformedAssessment = transformDatabaseAssessment(result.rows[0]);
+
     res.json({
       status: 'success',
-      assessment: result.rows[0]
+      assessment: transformedAssessment
     });
 
   } catch (error) {
