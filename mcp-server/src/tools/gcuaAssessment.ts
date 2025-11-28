@@ -255,6 +255,7 @@ export async function assessGCUA(input: GCUAInput): Promise<GCUAOutput> {
     eGFR,
     uACR,
     hasDiabetes: Boolean(patient.has_diabetes),
+    hasHypertension: Boolean(patient.has_hypertension),
     hasCVD: Boolean(hasCVD),
     hasHeartFailure: Boolean(hasHeartFailure),
     hasAtrialFibrillation,
