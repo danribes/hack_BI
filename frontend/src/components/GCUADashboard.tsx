@@ -10,10 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
-  Filter,
-  TrendingUp,
-  BarChart3,
-  Target
+  BarChart3
 } from 'lucide-react';
 
 // ============================================
