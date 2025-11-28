@@ -48,27 +48,20 @@ async function getPatientGCUAInput(patientId: string): Promise<GCUAPatientInput 
 
   const patient = patientResult.rows[0];
 
-  // Get latest lab values if not in risk factors
-  let eGFR = patient.current_egfr;
-  let uACR = patient.current_uacr;
+  // ALWAYS get latest lab values from observations (more current than risk_factors)
+  const egfrResult = await pool.query(`
+    SELECT value_numeric FROM observations
+    WHERE patient_id = $1 AND observation_type = 'eGFR'
+    ORDER BY observation_date DESC LIMIT 1
+  `, [patientId]);
+  let eGFR = egfrResult.rows[0]?.value_numeric ?? patient.current_egfr;
 
-  if (!eGFR) {
-    const egfrResult = await pool.query(`
-      SELECT value_numeric FROM observations
-      WHERE patient_id = $1 AND observation_type = 'eGFR'
-      ORDER BY observation_date DESC LIMIT 1
-    `, [patientId]);
-    eGFR = egfrResult.rows[0]?.value_numeric;
-  }
-
-  if (!uACR) {
-    const uacrResult = await pool.query(`
-      SELECT value_numeric FROM observations
-      WHERE patient_id = $1 AND observation_type = 'uACR'
-      ORDER BY observation_date DESC LIMIT 1
-    `, [patientId]);
-    uACR = uacrResult.rows[0]?.value_numeric;
-  }
+  const uacrResult = await pool.query(`
+    SELECT value_numeric FROM observations
+    WHERE patient_id = $1 AND observation_type = 'uACR'
+    ORDER BY observation_date DESC LIMIT 1
+  `, [patientId]);
+  let uACR = uacrResult.rows[0]?.value_numeric ?? patient.current_uacr;
 
   // Get additional comorbidities from conditions table
   const conditionsResult = await pool.query(`
