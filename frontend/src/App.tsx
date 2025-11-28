@@ -3,6 +3,7 @@ import PatientFilters from './components/PatientFilters';
 import { DoctorChatBar } from './components/DoctorChatBar';
 import { PatientTrendGraphs } from './components/PatientTrendGraphs';
 import { AdherenceCard, AdherenceData } from './components/AdherenceCard';
+import { GCUARiskCard, GCUAAssessmentData } from './components/GCUARiskCard';
 import DoctorAssignmentInterface from './components/DoctorAssignmentInterface';
 import { LandingPage } from './components/LandingPage';
 
@@ -196,6 +197,9 @@ function App() {
   const [selectedPatient, setSelectedPatient] = useState<PatientDetail | null>(null);
   const [adherenceData, setAdherenceData] = useState<AdherenceData | null>(null);
   const [loadingAdherence, setLoadingAdherence] = useState(false);
+  const [gcuaAssessment, setGcuaAssessment] = useState<GCUAAssessmentData | null>(null);
+  const [loadingGCUA, setLoadingGCUA] = useState(false);
+  const [gcuaEligible, setGcuaEligible] = useState<boolean | null>(null);
   const [healthStateComments, setHealthStateComments] = useState<HealthStateComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -556,10 +560,93 @@ function App() {
     }
   };
 
+  const fetchGCUAAssessment = async (patientId: string) => {
+    try {
+      setLoadingGCUA(true);
+      setGcuaAssessment(null);
+      setGcuaEligible(null);
+
+      const response = await fetch(`${API_URL}/api/gcua/assessment/${patientId}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('[FETCH_GCUA] No GCUA data available for patient');
+          setGcuaEligible(false);
+          return;
+        }
+        throw new Error(`Failed to fetch GCUA assessment: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        if (data.isEligible === false) {
+          setGcuaEligible(false);
+          console.log('[FETCH_GCUA] Patient not eligible for GCUA:', data.reason);
+          return;
+        }
+
+        if (data.assessment) {
+          setGcuaAssessment(data.assessment);
+          setGcuaEligible(true);
+          console.log('[FETCH_GCUA] Loaded GCUA assessment:', data.assessment.phenotype?.name);
+        } else {
+          // No assessment yet but patient is eligible
+          setGcuaEligible(true);
+          console.log('[FETCH_GCUA] Patient eligible but no assessment yet');
+        }
+      }
+
+    } catch (err) {
+      console.error('[FETCH_GCUA] Error fetching GCUA assessment:', err);
+      setGcuaAssessment(null);
+    } finally {
+      setLoadingGCUA(false);
+    }
+  };
+
+  const calculateGCUA = async () => {
+    if (!selectedPatient) return;
+
+    try {
+      setLoadingGCUA(true);
+
+      const response = await fetch(`${API_URL}/api/gcua/calculate/${selectedPatient.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to calculate GCUA: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'success' && data.assessment) {
+        if (data.assessment.isEligible) {
+          setGcuaAssessment(data.assessment);
+          setGcuaEligible(true);
+          console.log('[CALC_GCUA] Calculated GCUA:', data.assessment.phenotype?.name);
+        } else {
+          setGcuaEligible(false);
+          console.log('[CALC_GCUA] Patient not eligible:', data.assessment.eligibilityReason);
+        }
+      }
+
+    } catch (err) {
+      console.error('[CALC_GCUA] Error calculating GCUA:', err);
+    } finally {
+      setLoadingGCUA(false);
+    }
+  };
+
   const handlePatientClick = async (patientId: string) => {
     await fetchPatientDetail(patientId);
     await fetchHealthStateComments(patientId);
     await fetchAdherenceData(patientId);
+    await fetchGCUAAssessment(patientId);
   };
 
   const updatePatientRecords = async () => {
@@ -597,6 +684,10 @@ function App() {
       // Refresh adherence data to reflect new lab trends
       console.log('[UPDATE] Refreshing adherence data...');
       await fetchAdherenceData(selectedPatient.id);
+
+      // Refresh GCUA assessment to reflect updated risk
+      console.log('[UPDATE] Refreshing GCUA assessment...');
+      await fetchGCUAAssessment(selectedPatient.id);
 
       // Refresh patient list to show updated risk level in main list
       console.log('[UPDATE] Refreshing patient list...');
@@ -1558,6 +1649,44 @@ function App() {
                       <AdherenceCard adherenceData={adherenceData} loading={loadingAdherence} />
                     </div>
                   )}
+
+                  {/* GCUA Risk Assessment Card - for non-CKD patients 60+ */}
+                  {(() => {
+                    // Calculate age from date_of_birth
+                    const birthDate = new Date(selectedPatient.date_of_birth);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                      age--;
+                    }
+
+                    // Get latest eGFR from observations
+                    const egfrObs = selectedPatient.observations?.filter(o => o.observation_type === 'eGFR')
+                      .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())[0];
+                    const latestEgfr = egfrObs?.value_numeric;
+
+                    // Show GCUA card for patients 60+ (regardless of CKD status, we'll handle eligibility in the component)
+                    const showGCUA = age >= 60;
+
+                    if (!showGCUA) return null;
+
+                    return (
+                      <div className="mt-6">
+                        <GCUARiskCard
+                          assessment={gcuaAssessment}
+                          loading={loadingGCUA}
+                          onCalculate={calculateGCUA}
+                          isEligible={gcuaEligible ?? undefined}
+                          eligibilityReason={
+                            latestEgfr && latestEgfr <= 60
+                              ? `Patient eGFR (${latestEgfr}) is <= 60. GCUA is designed for pre-CKD patients. Use KDIGO staging for established CKD.`
+                              : undefined
+                          }
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

@@ -22,6 +22,9 @@ import { comprehensiveCKDAnalysis } from './tools/comprehensiveCKDAnalysis.js';
 // Import Clinical Calculation Tools (CKD-EPI 2021, KFRE)
 import { calculateEGFR } from './tools/calculateEGFR.js';
 import { predictKidneyFailureRisk } from './tools/predictKidneyFailureRisk.js';
+
+// Import GCUA (Geriatric Cardiorenal Unified Assessment)
+import { assessGCUA } from './tools/gcuaAssessment.js';
 import { checkScreeningProtocol } from './tools/checkScreeningProtocol.js';
 import { assessMedicationSafety } from './tools/assessMedicationSafety.js';
 import { analyzeAdherence } from './tools/analyzeAdherence.js';
@@ -203,6 +206,23 @@ const TOOLS: Tool[] = [
           type: 'number',
           enum: [2, 5],
           description: 'Prediction timeframe in years (default: 5)',
+        },
+      },
+      required: ['patient_id'],
+    },
+  },
+
+  // ==================== GCUA: GERIATRIC CARDIORENAL UNIFIED ASSESSMENT ====================
+  {
+    name: 'assess_gcua',
+    description:
+      'GCUA (Geriatric Cardiorenal Unified Assessment): Comprehensive risk stratification for adults 60+ with eGFR > 60. Integrates three validated models: (1) Nelson/CKD-PC 2019 for 5-year incident CKD risk (C-stat 0.845), (2) AHA PREVENT 2024 for 10-year CVD risk with CKM integration, (3) Bansal 2015 for 5-year mortality (competing risk). Assigns patients to one of four phenotypes: I. Accelerated Ager (high renal + CVD), II. Silent Renal (high renal, low CVD - often MISSED by Framingham), III. Vascular Dominant (low renal, high CVD), IV. Senescent (high mortality). Returns treatment recommendations including SGLT2i, RAS inhibitors, statins, BP targets, and monitoring frequency. Use for non-CKD elderly patients to catch silent kidney disease before Framingham misses it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        patient_id: {
+          type: 'string',
+          description: 'Patient identifier (UUID)',
         },
       },
       required: ['patient_id'],
@@ -499,6 +519,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'assess_gcua': {
+        const result = await assessGCUA(args as any);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
       case 'check_screening_protocol': {
         const result = await checkScreeningProtocol(args as any);
         return {
@@ -640,7 +672,7 @@ async function main() {
   console.error('  PHASE 2: classify_kdigo');
   console.error('  PHASE 3: assess_treatment_options');
   console.error('  PHASE 4: monitor_adherence, monitor_composite_adherence (ENHANCED)');
-  console.error('  CLINICAL: calculate_egfr, predict_kidney_failure_risk, check_screening_protocol, assess_medication_safety, analyze_adherence');
+  console.error('  CLINICAL: calculate_egfr, predict_kidney_failure_risk, assess_gcua, check_screening_protocol, assess_medication_safety, analyze_adherence');
   console.error('  LEGACY: get_patient_data, query_lab_results, get_population_stats, search_guidelines');
   console.error('\n========================================\n');
 }
