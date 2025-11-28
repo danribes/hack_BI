@@ -200,6 +200,8 @@ function App() {
   const [gcuaAssessment, setGcuaAssessment] = useState<GCUAAssessmentData | null>(null);
   const [loadingGCUA, setLoadingGCUA] = useState(false);
   const [gcuaEligible, setGcuaEligible] = useState<boolean | null>(null);
+  const [gcuaError, setGcuaError] = useState<string | null>(null);
+  const [gcuaEligibilityReason, setGcuaEligibilityReason] = useState<string | null>(null);
   const [healthStateComments, setHealthStateComments] = useState<HealthStateComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -565,12 +567,17 @@ function App() {
       setLoadingGCUA(true);
       setGcuaAssessment(null);
       setGcuaEligible(null);
+      setGcuaError(null);
+      setGcuaEligibilityReason(null);
 
       const response = await fetch(`${API_URL}/api/gcua/assessment/${patientId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
           console.log('[FETCH_GCUA] No GCUA data available for patient');
+          // 404 means patient missing required data - set error
+          const errorData = await response.json().catch(() => ({}));
+          setGcuaError(errorData.message || 'Patient missing required data (age, eGFR) for GCUA assessment');
           setGcuaEligible(false);
           return;
         }
@@ -582,6 +589,7 @@ function App() {
       if (data.status === 'success') {
         if (data.isEligible === false) {
           setGcuaEligible(false);
+          setGcuaEligibilityReason(data.reason || null);
           console.log('[FETCH_GCUA] Patient not eligible for GCUA:', data.reason);
           return;
         }
@@ -600,6 +608,7 @@ function App() {
     } catch (err) {
       console.error('[FETCH_GCUA] Error fetching GCUA assessment:', err);
       setGcuaAssessment(null);
+      setGcuaError(err instanceof Error ? err.message : 'Failed to fetch GCUA assessment');
     } finally {
       setLoadingGCUA(false);
     }
@@ -610,6 +619,7 @@ function App() {
 
     try {
       setLoadingGCUA(true);
+      setGcuaError(null);
 
       const response = await fetch(`${API_URL}/api/gcua/calculate/${selectedPatient.id}`, {
         method: 'POST',
@@ -619,7 +629,12 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to calculate GCUA: ${response.status}`);
+        // Try to get error message from response
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `Failed to calculate GCUA: ${response.status}`;
+        setGcuaError(errorMessage);
+        console.error('[CALC_GCUA] API Error:', errorMessage);
+        return;
       }
 
       const data = await response.json();
@@ -628,15 +643,22 @@ function App() {
         if (data.assessment.isEligible) {
           setGcuaAssessment(data.assessment);
           setGcuaEligible(true);
+          setGcuaEligibilityReason(null);
+          setGcuaError(null);
           console.log('[CALC_GCUA] Calculated GCUA:', data.assessment.phenotype?.name);
         } else {
           setGcuaEligible(false);
+          setGcuaEligibilityReason(data.assessment.eligibilityReason || null);
+          setGcuaAssessment(null);
           console.log('[CALC_GCUA] Patient not eligible:', data.assessment.eligibilityReason);
         }
+      } else if (data.status === 'error') {
+        setGcuaError(data.message || 'Failed to calculate GCUA assessment');
       }
 
     } catch (err) {
       console.error('[CALC_GCUA] Error calculating GCUA:', err);
+      setGcuaError(err instanceof Error ? err.message : 'Failed to calculate GCUA assessment. Please check if the backend is running.');
     } finally {
       setLoadingGCUA(false);
     }
@@ -1679,10 +1701,13 @@ function App() {
                           onCalculate={calculateGCUA}
                           isEligible={gcuaEligible ?? undefined}
                           eligibilityReason={
-                            latestEgfr && latestEgfr <= 60
-                              ? `Patient eGFR (${latestEgfr}) is <= 60. GCUA is designed for pre-CKD patients. Use KDIGO staging for established CKD.`
-                              : undefined
+                            gcuaEligibilityReason || (
+                              latestEgfr && latestEgfr <= 60
+                                ? `Patient eGFR (${latestEgfr}) is <= 60. GCUA is designed for pre-CKD patients. Use KDIGO staging for established CKD.`
+                                : undefined
+                            )
                           }
+                          error={gcuaError}
                         />
                       </div>
                     );
