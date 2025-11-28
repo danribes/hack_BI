@@ -1,7 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { DoctorAgentService } from './doctorAgent';
 import { EmailService } from './emailService';
-import { getPrimaryDoctor } from '../utils/doctorLookup.js';
+import { getPrimaryDoctor } from '../utils/doctorLookup';
 
 interface PatientChangeEvent {
   patient_id: string;

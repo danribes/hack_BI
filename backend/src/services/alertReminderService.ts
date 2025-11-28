@@ -4,7 +4,7 @@
  */
 
 import { Pool } from 'pg';
-import { EmailService } from './emailService.js';
+import { EmailService } from './emailService';
 
 export class AlertReminderService {
   private db: Pool;

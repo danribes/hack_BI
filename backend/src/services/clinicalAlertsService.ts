@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
-import { EmailService } from './emailService.js';
-import { getAllDoctorsForPatient, isInQuietHours } from '../utils/doctorLookup.js';
+import { EmailService } from './emailService';
+import { getAllDoctorsForPatient, isInQuietHours } from '../utils/doctorLookup';
 
 interface PatientData {
   id: string;

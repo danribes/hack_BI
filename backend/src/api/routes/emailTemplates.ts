@@ -4,7 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { getPool } from '../../config/database.js';
+import { getPool } from '../../config/database';
 
 const router = Router();
 

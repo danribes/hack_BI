@@ -4,8 +4,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { getPool } from '../../config/database.js';
-import { getPrimaryDoctor } from '../../utils/doctorLookup.js';
+import { getPool } from '../../config/database';
+import { getPrimaryDoctor } from '../../utils/doctorLookup';
 
 const router = Router();
 
