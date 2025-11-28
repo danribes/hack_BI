@@ -202,6 +202,7 @@ function App() {
   const [gcuaEligible, setGcuaEligible] = useState<boolean | null>(null);
   const [gcuaError, setGcuaError] = useState<string | null>(null);
   const [gcuaEligibilityReason, setGcuaEligibilityReason] = useState<string | null>(null);
+  const [showCVAssessment, setShowCVAssessment] = useState(false);
   const [healthStateComments, setHealthStateComments] = useState<HealthStateComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1407,148 +1408,231 @@ function App() {
                     </>
                   )}
 
-                  {/* For Non-CKD Patients: Dual Risk Assessment (SCORED + Framingham) */}
+                  {/* For Non-CKD Patients: GCUA First, then Collapsible CV Assessment */}
                   {!selectedPatient.kdigo_classification.has_ckd && (
                     <div className="mb-6">
-                      {/* Explanation Banner */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                        <div className="flex items-start space-x-2">
-                          <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      {/* GCUA Risk Assessment Card - FIRST for non-CKD patients 60+ */}
+                      {(() => {
+                        const birthDate = new Date(selectedPatient.date_of_birth);
+                        const today = new Date();
+                        let age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                          age--;
+                        }
+                        const egfrObs = selectedPatient.observations?.filter(o => o.observation_type === 'eGFR')
+                          .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())[0];
+                        const latestEgfr = egfrObs?.value_numeric;
+                        const showGCUA = age >= 60;
+
+                        if (!showGCUA) return null;
+
+                        return (
+                          <div className="mb-4">
+                            <GCUARiskCard
+                              assessment={gcuaAssessment}
+                              loading={loadingGCUA}
+                              onCalculate={calculateGCUA}
+                              isEligible={gcuaEligible ?? undefined}
+                              eligibilityReason={
+                                gcuaEligibilityReason || (
+                                  latestEgfr && latestEgfr <= 60
+                                    ? `Patient eGFR (${latestEgfr}) is <= 60. GCUA is designed for pre-CKD patients. Use KDIGO staging for established CKD.`
+                                    : undefined
+                                )
+                              }
+                              error={gcuaError}
+                            />
+                          </div>
+                        );
+                      })()}
+
+                      {/* AI Commentary on Cardiovascular-Renal Relationship */}
+                      {(selectedPatient.kdigo_classification.framingham_risk_level === 'high' ||
+                        selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ||
+                        selectedPatient.kdigo_classification.scored_risk_level === 'high') && (
+                        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+                          <div className="flex items-start space-x-3">
+                            <svg className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <div>
+                              <h4 className="font-semibold text-amber-900 mb-1">Cardiorenal Risk Alert</h4>
+                              <p className="text-sm text-amber-800">
+                                {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
+                                  <>
+                                    <span className="font-semibold">Elevated cardiovascular risk detected.</span> Cardiovascular disease and kidney disease share common pathophysiological pathways.
+                                    High CV risk increases the likelihood of kidney function decline. Consider comprehensive cardiorenal protection with SGLT2 inhibitors,
+                                    which provide dual cardio and renal benefits. Close monitoring of both cardiac and renal markers is recommended.
+                                  </>
+                                ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
+                                  <>
+                                    <span className="font-semibold">Moderate cardiovascular risk identified.</span> The heart and kidneys are closely interconnected -
+                                    cardiovascular stress can accelerate kidney damage and vice versa. Early intervention to modify CV risk factors
+                                    (hypertension, diabetes, dyslipidemia) can help protect both organs. Regular renal function monitoring is advised.
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="font-semibold">Screening indicates potential hidden disease.</span> Early detection of cardiovascular or renal
+                                    dysfunction allows for timely intervention. The cardiorenal axis suggests that protecting one organ benefits the other.
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Collapsible Cardiovascular Assessment Section */}
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setShowCVAssessment(!showCVAssessment)}
+                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span className="font-semibold text-gray-900">Cardiovascular Risk Assessment</span>
+                            <span className="text-xs text-gray-500">(SCORED + Framingham)</span>
+                          </div>
+                          <svg className={`h-5 w-5 text-gray-500 transform transition-transform ${showCVAssessment ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
-                          <div className="text-sm text-blue-900">
-                            <span className="font-semibold">Comprehensive Risk Assessment:</span> Non-CKD patients require dual assessment for complete clinical picture.
-                          </div>
-                        </div>
-                      </div>
+                        </button>
 
-                      {/* Side-by-Side: SCORED and Framingham */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {/* SCORED Model (Left) */}
-                        <div className="border-2 border-blue-300 rounded-lg overflow-hidden">
-                          <div className="bg-blue-100 px-4 py-3 border-b-2 border-blue-300">
-                            <h4 className="text-sm font-bold text-blue-900 flex items-center">
-                              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                              </svg>
-                              SCORED (Screening)
-                            </h4>
-                            <p className="text-xs text-blue-800 mt-1">Detects Current Hidden Disease</p>
-                          </div>
+                        {showCVAssessment && (
                           <div className="p-4 bg-white">
-                            {selectedPatient.kdigo_classification.scored_points !== undefined ? (
-                              <>
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Score</div>
-                                  <div className="text-2xl font-bold text-blue-900">
-                                    {selectedPatient.kdigo_classification.scored_points} points
-                                  </div>
-                                  <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
-                                    selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                                  }`}>
-                                    {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'HIGH RISK' : 'LOW RISK'}
-                                  </div>
+                            {/* Side-by-Side: SCORED and Framingham */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* SCORED Model (Left) - CV Screening */}
+                              <div className="border-2 border-blue-300 rounded-lg overflow-hidden">
+                                <div className="bg-blue-100 px-4 py-3 border-b-2 border-blue-300">
+                                  <h4 className="text-sm font-bold text-blue-900 flex items-center">
+                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                    </svg>
+                                    SCORED (CV Screening)
+                                  </h4>
+                                  <p className="text-xs text-blue-800 mt-1">Detects Hidden Cardiovascular Disease</p>
                                 </div>
-
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
-                                  <div className="text-sm text-gray-700">
-                                    {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
-                                      <div className="bg-orange-50 border border-orange-200 rounded p-2">
-                                        <span className="font-semibold text-orange-900">~20% chance</span> this patient <span className="font-semibold">ALREADY has</span> undetected CKD
+                                <div className="p-4 bg-white">
+                                  {selectedPatient.kdigo_classification.scored_points !== undefined ? (
+                                    <>
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Score</div>
+                                        <div className="text-2xl font-bold text-blue-900">
+                                          {selectedPatient.kdigo_classification.scored_points} points
+                                        </div>
+                                        <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
+                                          selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                                        }`}>
+                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'HIGH RISK' : 'LOW RISK'}
+                                        </div>
                                       </div>
-                                    ) : (
-                                      <div className="bg-green-50 border border-green-200 rounded p-2">
-                                        <span className="font-semibold text-green-900">Low probability</span> of hidden kidney disease
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
 
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
-                                  <div className="text-sm text-gray-700">
-                                    {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
-                                      <span className="text-orange-900 font-medium">Order screening NOW (eGFR + uACR)</span>
-                                    ) : (
-                                      <span>Routine annual screening</span>
-                                    )}
-                                  </div>
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
+                                        <div className="text-sm text-gray-700">
+                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
+                                            <div className="bg-orange-50 border border-orange-200 rounded p-2">
+                                              <span className="font-semibold text-orange-900">Elevated CV risk markers</span> - patient may have undetected cardiovascular disease or risk factors
+                                            </div>
+                                          ) : (
+                                            <div className="bg-green-50 border border-green-200 rounded p-2">
+                                              <span className="font-semibold text-green-900">Low probability</span> of hidden cardiovascular disease
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
+                                        <div className="text-sm text-gray-700">
+                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
+                                            <span className="text-orange-900 font-medium">Order CV workup (lipid panel, ECG, consider stress test)</span>
+                                          ) : (
+                                            <span>Routine annual screening</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="text-sm text-gray-500 italic">SCORED data not available</div>
+                                  )}
                                 </div>
-                              </>
-                            ) : (
-                              <div className="text-sm text-gray-500 italic">SCORED data not available</div>
-                            )}
+                              </div>
+
+                              {/* Framingham Model (Right) - CV Prediction */}
+                              <div className="border-2 border-purple-300 rounded-lg overflow-hidden">
+                                <div className="bg-purple-100 px-4 py-3 border-b-2 border-purple-300">
+                                  <h4 className="text-sm font-bold text-purple-900 flex items-center">
+                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    Framingham (CV Prediction)
+                                  </h4>
+                                  <p className="text-xs text-purple-800 mt-1">10-Year Cardiovascular Event Risk</p>
+                                </div>
+                                <div className="p-4 bg-white">
+                                  {selectedPatient.kdigo_classification.framingham_risk_percentage !== undefined ? (
+                                    <>
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">10-Year CV Risk</div>
+                                        <div className="text-2xl font-bold text-purple-900">
+                                          {selectedPatient.kdigo_classification.framingham_risk_percentage.toFixed(1)}%
+                                        </div>
+                                        <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
+                                          selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'bg-red-100 text-red-800' :
+                                          selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-green-100 text-green-800'
+                                        }`}>
+                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'HIGH RISK' :
+                                           selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'MODERATE RISK' :
+                                           'LOW RISK'}
+                                        </div>
+                                      </div>
+
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
+                                        <div className="text-sm text-gray-700">
+                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
+                                            <div className="bg-red-50 border border-red-200 rounded p-2">
+                                              <span className="font-semibold text-red-900">High likelihood</span> of cardiovascular event (MI, stroke) within 10 years
+                                            </div>
+                                          ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                                              <span className="font-semibold text-yellow-900">Moderate CV risk</span> - requires lifestyle modification and monitoring
+                                            </div>
+                                          ) : (
+                                            <div className="bg-green-50 border border-green-200 rounded p-2">
+                                              <span className="font-semibold text-green-900">Low probability</span> of cardiovascular events
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
+                                        <div className="text-sm text-gray-700">
+                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
+                                            <span className="text-red-900 font-medium">Statin therapy, strict BP control (&lt;130/80), consider aspirin</span>
+                                          ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
+                                            <span className="text-yellow-900 font-medium">Lifestyle modification, consider statin if LDL elevated</span>
+                                          ) : (
+                                            <span>Maintain healthy lifestyle, periodic reassessment</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="text-sm text-gray-500 italic">Framingham data not available</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Framingham Model (Right) */}
-                        <div className="border-2 border-purple-300 rounded-lg overflow-hidden">
-                          <div className="bg-purple-100 px-4 py-3 border-b-2 border-purple-300">
-                            <h4 className="text-sm font-bold text-purple-900 flex items-center">
-                              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                              </svg>
-                              Framingham (Prediction)
-                            </h4>
-                            <p className="text-xs text-purple-800 mt-1">Predicts Future 10-Year Risk</p>
-                          </div>
-                          <div className="p-4 bg-white">
-                            {selectedPatient.kdigo_classification.framingham_risk_percentage !== undefined ? (
-                              <>
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">10-Year Risk</div>
-                                  <div className="text-2xl font-bold text-purple-900">
-                                    {selectedPatient.kdigo_classification.framingham_risk_percentage.toFixed(1)}%
-                                  </div>
-                                  <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
-                                    selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'bg-red-100 text-red-800' :
-                                    selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-green-100 text-green-800'
-                                  }`}>
-                                    {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'HIGH RISK' :
-                                     selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'MODERATE RISK' :
-                                     'LOW RISK'}
-                                  </div>
-                                </div>
-
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
-                                  <div className="text-sm text-gray-700">
-                                    {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
-                                      <div className="bg-red-50 border border-red-200 rounded p-2">
-                                        <span className="font-semibold text-red-900">High likelihood</span> of developing CKD within 10 years
-                                      </div>
-                                    ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
-                                      <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
-                                        <span className="font-semibold text-yellow-900">Moderate risk</span> requires enhanced monitoring
-                                      </div>
-                                    ) : (
-                                      <div className="bg-green-50 border border-green-200 rounded p-2">
-                                        <span className="font-semibold text-green-900">Low probability</span> of future CKD
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mb-3">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
-                                  <div className="text-sm text-gray-700">
-                                    {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
-                                      <span className="text-red-900 font-medium">Aggressive prevention NOW (SGLT2i, strict BP control)</span>
-                                    ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
-                                      <span className="text-yellow-900 font-medium">Strict risk factor modification</span>
-                                    ) : (
-                                      <span>Standard preventive care</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-sm text-gray-500 italic">Framingham data not available</div>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1672,46 +1756,6 @@ function App() {
                     </div>
                   )}
 
-                  {/* GCUA Risk Assessment Card - for non-CKD patients 60+ */}
-                  {(() => {
-                    // Calculate age from date_of_birth
-                    const birthDate = new Date(selectedPatient.date_of_birth);
-                    const today = new Date();
-                    let age = today.getFullYear() - birthDate.getFullYear();
-                    const monthDiff = today.getMonth() - birthDate.getMonth();
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                      age--;
-                    }
-
-                    // Get latest eGFR from observations
-                    const egfrObs = selectedPatient.observations?.filter(o => o.observation_type === 'eGFR')
-                      .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())[0];
-                    const latestEgfr = egfrObs?.value_numeric;
-
-                    // Show GCUA card for patients 60+ (regardless of CKD status, we'll handle eligibility in the component)
-                    const showGCUA = age >= 60;
-
-                    if (!showGCUA) return null;
-
-                    return (
-                      <div className="mt-6">
-                        <GCUARiskCard
-                          assessment={gcuaAssessment}
-                          loading={loadingGCUA}
-                          onCalculate={calculateGCUA}
-                          isEligible={gcuaEligible ?? undefined}
-                          eligibilityReason={
-                            gcuaEligibilityReason || (
-                              latestEgfr && latestEgfr <= 60
-                                ? `Patient eGFR (${latestEgfr}) is <= 60. GCUA is designed for pre-CKD patients. Use KDIGO staging for established CKD.`
-                                : undefined
-                            )
-                          }
-                          error={gcuaError}
-                        />
-                      </div>
-                    );
-                  })()}
                 </div>
               </div>
 
