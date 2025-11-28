@@ -6,8 +6,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  TrendingUp,
-  TrendingDown,
   Info,
   ChevronDown,
   ChevronUp,
