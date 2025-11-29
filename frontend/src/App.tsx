@@ -1560,13 +1560,28 @@ function App() {
                                 <div className="mt-3 pt-3 border-t border-blue-200">
                                   <p className="text-sm">
                                     <span className="font-semibold text-blue-800">Integrated Recommendation:</span>{' '}
-                                    {gcuaAssessment.phenotype?.type === 'I'
-                                      ? 'This patient requires comprehensive cardiorenal protection. The high-risk profile across both organ systems suggests maximum benefit from SGLT2 inhibitors, which provide simultaneous cardiac and renal protection. Close multidisciplinary follow-up recommended.'
-                                      : gcuaAssessment.phenotype?.type === 'II'
-                                        ? 'Renal-dominant risk profile. Prioritize nephroprotection with ACE/ARB therapy and consider SGLT2 inhibitors. Monitor cardiovascular markers while focusing on slowing kidney function decline.'
-                                        : gcuaAssessment.phenotype?.type === 'III'
-                                          ? 'Cardiovascular-dominant risk profile. Optimize lipid-lowering therapy and blood pressure control. The preserved kidney function allows for aggressive CV prevention strategies.'
-                                          : 'Lower overall risk allows for preventive-focused care. Maintain current therapies, emphasize lifestyle optimization, and schedule regular comprehensive assessments to detect any risk progression early.'}
+                                    {(() => {
+                                      const phenotypeName = gcuaAssessment.phenotype?.name?.toLowerCase() || '';
+                                      const phenotypeType = gcuaAssessment.phenotype?.type;
+
+                                      if (phenotypeType === 'I' || phenotypeName.includes('accelerated')) {
+                                        return 'This patient requires comprehensive cardiorenal protection. The high-risk profile across both organ systems suggests maximum benefit from SGLT2 inhibitors, which provide simultaneous cardiac and renal protection. Close multidisciplinary follow-up recommended.';
+                                      } else if (phenotypeName.includes('cardiorenal moderate')) {
+                                        return 'Elevated cardiovascular risk with moderate renal risk requires balanced intervention. Prioritize CV risk reduction with statin therapy and BP control while monitoring kidney function closely. Consider SGLT2 inhibitor for dual cardio-renal benefit.';
+                                      } else if (phenotypeName.includes('renal watch')) {
+                                        return 'Moderate renal risk warrants proactive kidney monitoring. Focus on preserving kidney function through lifestyle modifications and addressing modifiable risk factors. Consider nephrology referral if decline is observed.';
+                                      } else if (phenotypeType === 'II' || phenotypeName.includes('silent renal')) {
+                                        return 'Renal-dominant risk profile. Prioritize nephroprotection with ACE/ARB therapy and consider SGLT2 inhibitors. Monitor cardiovascular markers while focusing on slowing kidney function decline.';
+                                      } else if (phenotypeType === 'III' && phenotypeName.includes('vascular')) {
+                                        return 'Cardiovascular-dominant risk profile. Optimize lipid-lowering therapy and blood pressure control. The preserved kidney function allows for aggressive CV prevention strategies.';
+                                      } else if (phenotypeType === 'IV' || phenotypeName.includes('senescent')) {
+                                        return 'High competing mortality risk. Focus on quality of life, symptom management, and shared decision-making about treatment intensity. Aggressive interventions may not provide meaningful benefit.';
+                                      } else if (phenotypeName.includes('low risk')) {
+                                        return 'Lower overall risk allows for preventive-focused care. Maintain current therapies, emphasize lifestyle optimization, and schedule regular comprehensive assessments to detect any risk progression early.';
+                                      } else {
+                                        return 'Continue current management with regular monitoring. Reassess risk factors periodically and adjust treatment as indicated by clinical status.';
+                                      }
+                                    })()}
                                   </p>
                                 </div>
                               </div>
