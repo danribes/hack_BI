@@ -90,10 +90,10 @@ export interface GCUAModule3Result {
 }
 
 export interface GCUAPhenotype {
-  type: 'I' | 'II' | 'III' | 'IV';
+  type: 'I' | 'II' | 'III' | 'IV' | 'Moderate' | 'Low';
   name: string;
   tag: string;
-  color: 'red' | 'orange' | 'yellow' | 'gray';
+  color: 'red' | 'orange' | 'yellow' | 'gray' | 'green';
   description: string;
   clinicalStrategy: string[];
   treatmentRecommendations: {
@@ -1151,6 +1151,8 @@ export function getPhenotypeColor(phenotype: GCUAPhenotype): {
       return { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-300' };
     case 'yellow':
       return { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' };
+    case 'green':
+      return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-300' };
     case 'gray':
       return { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' };
     default:
@@ -1164,13 +1166,17 @@ export function getPhenotypeColor(phenotype: GCUAPhenotype): {
 export function getPhenotypeIcon(phenotype: GCUAPhenotype): string {
   switch (phenotype.type) {
     case 'I':
-      return '🔴'; // Accelerated Ager - urgent
+      return '🔴'; // Accelerated Ager / Cardiorenal High - urgent
     case 'II':
       return '🟠'; // Silent Renal - warning
     case 'III':
       return '🟡'; // Vascular Dominant - caution
     case 'IV':
       return '⚪'; // Senescent - conservative
+    case 'Moderate':
+      return '🟡'; // Cardiorenal Moderate / Renal Watch - caution
+    case 'Low':
+      return '🟢'; // CV Intermediate / Low Risk - routine
     default:
       return '⚪';
   }
