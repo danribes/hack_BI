@@ -405,13 +405,14 @@ COMMENT ON FUNCTION create_doctor_notification IS 'Creates a notification for th
 -- 10. Grant permissions (if needed)
 -- ============================================
 
--- Grant permissions to the application user (only if role exists)
+-- Grant permissions to the application user (skip if role doesn't exist)
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'healthcare_user') THEN
-        GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user;
-    END IF;
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user';
+EXCEPTION WHEN undefined_object THEN
+    -- Role doesn't exist, skip grants (OK for Render deployment)
+    NULL;
 END $$;
 
 -- ============================================

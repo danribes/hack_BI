@@ -553,16 +553,16 @@ COMMENT ON FUNCTION create_ckd_diagnosis_action IS 'Creates doctor action for di
 COMMENT ON FUNCTION generate_early_treatment_protocol IS 'Generates evidence-based early treatment protocol';
 
 -- ============================================
--- 9. Grant permissions (only if role exists)
+-- 9. Grant permissions (skip if role doesn't exist)
 -- ============================================
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'healthcare_user') THEN
-        GRANT SELECT, INSERT, UPDATE ON ckd_diagnosis_events TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE ON ckd_treatment_protocols TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON doctor_action_queue TO healthcare_user;
-    END IF;
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON ckd_diagnosis_events TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON ckd_treatment_protocols TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON doctor_action_queue TO healthcare_user';
+EXCEPTION WHEN undefined_object THEN
+    NULL;
 END $$;
 
 -- ============================================

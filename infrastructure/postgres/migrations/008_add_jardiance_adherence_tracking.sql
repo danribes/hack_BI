@@ -424,18 +424,18 @@ WHERE jp.id IS NOT NULL OR p.on_sglt2i = true;
 COMMENT ON VIEW patient_jardiance_summary IS 'Complete summary of patient Jardiance prescriptions and adherence metrics';
 
 -- ============================================
--- 9. Grant Permissions (only if role exists)
+-- 9. Grant Permissions (skip if role doesn't exist)
 -- ============================================
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'healthcare_user') THEN
-        GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_prescriptions TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_refills TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_adherence TO healthcare_user;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON adherence_barriers TO healthcare_user;
-        GRANT SELECT ON patient_jardiance_summary TO healthcare_user;
-    END IF;
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_prescriptions TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_refills TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_adherence TO healthcare_user';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON adherence_barriers TO healthcare_user';
+    EXECUTE 'GRANT SELECT ON patient_jardiance_summary TO healthcare_user';
+EXCEPTION WHEN undefined_object THEN
+    NULL;
 END $$;
 
 -- ============================================
