@@ -45,6 +45,7 @@ interface Patient {
   created_at: string;
   kdigo_classification?: KDIGOClassification;
   risk_category?: string;
+  non_ckd_risk_level?: 'low' | 'moderate' | 'high';  // Risk level from non_ckd_patient_data table
   // New tracking data from separate tables
   is_monitored?: boolean;
   monitoring_device?: string | null;
@@ -3116,11 +3117,20 @@ function App() {
                               {patient.kdigo_classification?.has_ckd ? 'CKD' : 'No CKD'}
                             </span>
                           )}
-                          {patient.risk_category && (
+                          {/* Risk Category Badge - Use non_ckd_risk_level for non-CKD patients to match filter */}
+                          {patient.kdigo_classification && !patient.kdigo_classification?.has_ckd && patient.non_ckd_risk_level ? (
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRiskCategoryBadgeColor(
+                              patient.non_ckd_risk_level === 'low' ? 'Low Risk' :
+                              patient.non_ckd_risk_level === 'moderate' ? 'Moderate Risk' : 'High Risk'
+                            )}`}>
+                              {patient.non_ckd_risk_level === 'low' ? 'Low Risk' :
+                               patient.non_ckd_risk_level === 'moderate' ? 'Moderate Risk' : 'High Risk'}
+                            </span>
+                          ) : patient.risk_category ? (
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRiskCategoryBadgeColor(patient.risk_category)}`}>
                               {patient.risk_category}
                             </span>
-                          )}
+                          ) : null}
                           {/* Monitoring/Treatment Status Badge */}
                           {patient.kdigo_classification && !patient.kdigo_classification?.has_ckd && (
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
