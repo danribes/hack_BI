@@ -102,6 +102,7 @@ export interface GCUAPhenotype {
     statin: boolean;
     bpTarget: string;
     monitoringFrequency: string;
+    homeMonitoringRecommended: boolean;  // Minuteful Kidney home uACR monitoring
   };
 }
 
@@ -778,7 +779,8 @@ function assignPhenotype(
         rasInhibitor: false,
         statin: false,
         bpTarget: '<150/90 mmHg (lenient)',
-        monitoringFrequency: 'As clinically indicated'
+        monitoringFrequency: 'As clinically indicated',
+        homeMonitoringRecommended: false  // Focus on quality of life, not aggressive monitoring
       }
     };
   }
@@ -807,7 +809,8 @@ function assignPhenotype(
         rasInhibitor: true,
         statin: true,
         bpTarget: '<120/80 mmHg (aggressive)',
-        monitoringFrequency: 'Every 3 months'
+        monitoringFrequency: 'Every 3 months',
+        homeMonitoringRecommended: true  // High renal risk - home uACR monitoring essential
       }
     };
   }
@@ -832,7 +835,8 @@ function assignPhenotype(
         rasInhibitor: true,
         statin: true,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 3 months'
+        monitoringFrequency: 'Every 3 months',
+        homeMonitoringRecommended: true  // High renal risk - home uACR monitoring essential
       }
     };
   }
@@ -857,7 +861,8 @@ function assignPhenotype(
         rasInhibitor: true,
         statin: false,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 6 months'
+        monitoringFrequency: 'Every 6 months',
+        homeMonitoringRecommended: true  // CRITICAL - these patients are often MISSED, home monitoring essential
       }
     };
   }
@@ -887,7 +892,8 @@ function assignPhenotype(
         rasInhibitor: false,
         statin: true,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 6 months'
+        monitoringFrequency: 'Every 6 months',
+        homeMonitoringRecommended: false  // CV priority, moderate renal risk
       }
     };
   }
@@ -912,7 +918,8 @@ function assignPhenotype(
         rasInhibitor: false,
         statin: false,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 6-12 months'
+        monitoringFrequency: 'Every 6-12 months',
+        homeMonitoringRecommended: true  // Moderate renal risk - home monitoring recommended
       }
     };
   }
@@ -941,7 +948,8 @@ function assignPhenotype(
         rasInhibitor: false,
         statin: true,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 6 months'
+        monitoringFrequency: 'Every 6 months',
+        homeMonitoringRecommended: false  // Low renal risk - standard clinic monitoring
       }
     };
   }
@@ -966,7 +974,8 @@ function assignPhenotype(
         rasInhibitor: false,
         statin: true,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Annually'
+        monitoringFrequency: 'Annually',
+        homeMonitoringRecommended: false  // Low renal risk - standard clinic monitoring
       }
     };
   }
@@ -989,7 +998,8 @@ function assignPhenotype(
       rasInhibitor: false,
       statin: false,
       bpTarget: '<140/90 mmHg',
-      monitoringFrequency: 'Every 2-3 years'
+      monitoringFrequency: 'Every 2-3 years',
+      homeMonitoringRecommended: false  // Low risk - not required
     }
   };
 }

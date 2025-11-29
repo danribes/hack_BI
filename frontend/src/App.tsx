@@ -1663,11 +1663,13 @@ function App() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Device:</span>
                           <span className="text-sm font-semibold text-gray-900">
-                            {selectedPatient.kdigo_classification?.has_ckd && selectedPatient.home_monitoring_device
+                            {selectedPatient.home_monitoring_device
                               ? selectedPatient.home_monitoring_device
                               : selectedPatient.kdigo_classification?.has_ckd
                                 ? 'Minuteful Kidney Kit (Recommended)'
-                                : 'Not Required'}
+                                : gcuaAssessment?.phenotype?.treatmentRecommendations?.homeMonitoringRecommended
+                                  ? 'Minuteful Kidney Kit (Recommended)'
+                                  : 'Not Required'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -1676,9 +1678,18 @@ function App() {
                             {selectedPatient.home_monitoring_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
+                        {/* Warning for CKD patients not on home monitoring */}
                         {selectedPatient.kdigo_classification?.has_ckd && !selectedPatient.home_monitoring_active && (
                           <div className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
                             ⚠️ Home uACR monitoring recommended for CKD patients
+                          </div>
+                        )}
+                        {/* Warning for high-risk non-CKD patients (Phenotype I/II) not on home monitoring */}
+                        {!selectedPatient.kdigo_classification?.has_ckd &&
+                         gcuaAssessment?.phenotype?.treatmentRecommendations?.homeMonitoringRecommended &&
+                         !selectedPatient.home_monitoring_active && (
+                          <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                            🚨 <strong>High Renal Risk:</strong> Home uACR monitoring strongly recommended for early CKD detection
                           </div>
                         )}
                       </div>
