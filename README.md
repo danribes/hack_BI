@@ -99,14 +99,34 @@ GCUA is a comprehensive risk stratification system integrating three validated p
 
 ### 3. Model Context Protocol (MCP) Clinical Tools
 
-A suite of specialized clinical decision support tools:
+A comprehensive suite of 16+ specialized clinical decision support tools:
+
+**Phase-Based Assessment:**
+- `phase1_pre_diagnosis_risk`: 3-tier risk stratification for non-CKD patients
+- `phase2_kdigo_classification`: KDIGO staging with trajectory analysis (RAPID/MODERATE/SLOW/STABLE)
+- `phase3_treatment_decision`: Treatment eligibility and contraindication checking
+- `phase4_adherence_monitoring`: MPR/PDC metrics and barrier identification
+
+**Risk Prediction:**
 - `comprehensive_ckd_analysis`: Master orchestrator for complete patient assessment
-- `assess_gcua_risk`: GCUA cardiorenal risk assessment (Nelson, AHA PREVENT, Bansal)
-- `classify_kdigo`: KDIGO staging and classification
-- `assess_treatment_options`: Jardiance, RAS inhibitor eligibility
-- `monitor_adherence`: Medication Possession Ratio (MPR) tracking
-- `predict_kidney_failure_risk`: KFRE 2-year and 5-year predictions
-- `assess_medication_safety`: Dose adjustments and contraindications
+- `assess_gcua_risk`: GCUA cardiorenal assessment (Nelson, AHA PREVENT, Bansal)
+- `predict_kidney_failure_risk`: KFRE 2-year and 5-year kidney failure predictions
+- `calculate_egfr`: CKD-EPI equation with cystatin C alternative
+
+**Medication & Safety:**
+- `assess_treatment_options`: Jardiance, RAS inhibitor, statin eligibility
+- `assess_medication_safety`: Dose adjustments, drug interactions, contraindications
+- `composite_adherence_monitoring`: Multi-medication adherence tracking
+
+**Monitoring & Compliance:**
+- `analyze_adherence`: Medication and screening adherence patterns
+- `check_screening_protocol`: Screening guideline compliance and gap detection
+
+**Data & Reference:**
+- `lab_results`: Historical lab value retrieval with trend analysis
+- `patient_data`: Demographics, medications, comorbidity aggregation
+- `population_stats`: Cohort analytics and outcome tracking
+- `guidelines`: KDIGO guideline lookup and best practice protocols
 
 ---
 
@@ -545,6 +565,75 @@ AI: PATIENT SUMMARY:
 - Prevents alert fatigue
 - Uses evidence-based clinical thresholds
 
+### Doctor Management & Assignment
+
+**7-Category Patient Segmentation:**
+| Category | Description |
+|----------|-------------|
+| Non-CKD Low Risk | GCUA Low phenotype, minimal intervention needed |
+| Non-CKD Moderate Risk | GCUA Moderate phenotype, preventive strategies |
+| Non-CKD High Risk | GCUA Phenotype I/II/III, active intervention required |
+| CKD Mild | Stage 1-2, early CKD management |
+| CKD Moderate | Stage 3a-3b, active nephroprotection |
+| CKD Severe | Stage 4, pre-dialysis care |
+| Kidney Failure | Stage 5, dialysis/transplant planning |
+
+**Doctor Assignment Features:**
+- Bulk assignment of doctors to patient categories
+- Primary and secondary doctor relationships
+- External notification email lists for care coordination
+- Per-doctor SMTP configuration for notifications
+- Quiet hours enforcement for non-urgent alerts
+
+### Analytics & Performance Tracking
+
+**Doctor Performance Metrics:**
+- Alert acknowledgment rate and response times
+- Resolution rate and escalation tracking
+- Percentile-based response time distribution (P50, P75, P95)
+
+**Population Analytics:**
+- Alert trends over configurable time periods (1-365 days)
+- Most common alert types and frequencies
+- Risk distribution across patient population
+- Treatment pattern analysis
+
+**Alert Lifecycle Tracking:**
+- Creation → Viewed → Acknowledged → Resolved
+- Time-to-acknowledge and time-to-resolve metrics
+- Escalation rate monitoring for SLA compliance
+
+### Email & Notification System
+
+**Configurable Email Templates:**
+- Per-doctor customizable notification templates
+- Variable substitution: `{patient_name}`, `{mrn}`, `{value}`, `{unit}`, `{time_period}`
+- HTML and plain-text formats
+- Test email functionality with preview URLs
+
+**Notification Types:**
+- CKD transition alerts (non-CKD → CKD)
+- Significant lab value changes
+- Treatment adherence concerns
+- Clinical alerts requiring action
+
+**SMTP Configuration:**
+- Per-doctor SMTP settings (host, port, credentials)
+- Fallback to system default for unconfigured doctors
+- Ethereal test accounts for development
+
+### Silent Hunter Feature
+
+**Identifying Data Gaps:**
+- Detects patients eligible for GCUA but missing uACR data
+- uACR is critical for accurate renal risk calculation
+- Prompts for uACR testing to unlock full risk profile
+
+**Clinical Value:**
+- Many patients have eGFR but no albuminuria testing
+- uACR can reveal "silent" kidney damage before eGFR decline
+- Completing GCUA enables phenotype classification and treatment recommendations
+
 ---
 
 ## Technical Architecture
@@ -566,14 +655,43 @@ AI: PATIENT SUMMARY:
 - **Model Context Protocol (MCP)** - Standardized clinical decision support tool integration
 - **KDIGO 2024 Guidelines** - Latest evidence-based CKD management protocols
 
-### Database Schema
-- **Patients Table**: Demographics, medical history, comorbidities, medications
-- **Observations Table**: Lab results with timestamps and trend analysis
-- **CKD Patient Data**: KDIGO classification, stage, severity, treatment status
-- **Non-CKD Patient Data**: Risk level, KDIGO health state, monitoring status
-- **Patient GCUA Assessments**: GCUA phenotype, Nelson/AHA PREVENT/Bansal scores, treatment recommendations
-- **Health State Comments**: AI-generated analysis timeline
-- **Jardiance Prescriptions**: SGLT2 inhibitor treatment tracking
+### Database Schema (31 Migrations)
+
+**Core Patient Data:**
+- **patients**: Demographics, insurance, contact info, vitals
+- **patient_risk_factors**: Clinical risk metrics, GCUA phenotype cache
+- **observations**: Lab values with temporal tracking and triggers
+- **conditions**: Active conditions with clinical status
+
+**CKD Classification:**
+- **ckd_patient_data**: KDIGO stage, severity, health state, treatment flags
+- **non_ckd_patient_data**: Pre-CKD risk stratification, monitoring status
+- **patient_gcua_assessments**: 3-module scores, phenotype, treatment recommendations
+
+**Medication Tracking:**
+- **jardiance_prescriptions**: Dosage (10mg/25mg), prescriber, start/end dates
+- **jardiance_refills**: Refill history with gap analysis (expected vs actual)
+- **jardiance_adherence**: MPR/PDC metrics by period
+- **adherence_barriers**: Identified barriers with severity and resolution
+
+**Doctor Management:**
+- **doctors**: Profiles with specialty, contact, SMTP settings
+- **doctor_patient_assignments**: Primary/secondary relationships
+- **doctor_notifications**: Notification queue with priority levels
+
+**Analytics & Communication:**
+- **alert_analytics**: Alert lifecycle (create/view/acknowledge/resolve)
+- **patient_health_state_comments**: Clinical notes with visibility control
+- **email_templates**: Customizable per-doctor notification templates
+
+**Database Views:**
+- `gcua_population_statistics`: Phenotype distribution analytics
+- `gcua_high_risk_patients`: Phenotype I and II patients
+- `gcua_missing_uacr_patients`: Silent Hunter candidates
+
+**Database Functions:**
+- `get_latest_gcua_assessment()`: Retrieves most recent assessment
+- Auto-update triggers for cascading risk factor updates
 
 ---
 
@@ -581,46 +699,79 @@ AI: PATIENT SUMMARY:
 
 ```
 /home/user/hack_BI/
-├── backend/                      # Express + TypeScript API
+├── backend/                           # Express + TypeScript API
 │   ├── src/
 │   │   ├── api/routes/
-│   │   │   ├── patients.ts       # Patient management API
-│   │   │   ├── agent.ts          # Doctor Assistant API
-│   │   │   ├── gcua.ts           # GCUA assessment API
-│   │   │   ├── jardiance.ts      # Medication tracking
-│   │   │   ├── risk.ts           # Risk assessment
-│   │   │   └── analytics.ts      # Alert analytics
+│   │   │   ├── patients.ts            # Patient management & filtering
+│   │   │   ├── agent.ts               # AI Doctor Assistant chat
+│   │   │   ├── gcua.ts                # GCUA risk assessment
+│   │   │   ├── jardiance.ts           # Prescription, refill, adherence
+│   │   │   ├── risk.ts                # Risk calculation & statistics
+│   │   │   ├── doctors.ts             # Doctor profiles & assignments
+│   │   │   ├── notifications.ts       # Alert notifications
+│   │   │   ├── analytics.ts           # Performance metrics
+│   │   │   ├── settings.ts            # Email & system configuration
+│   │   │   └── init.ts                # Data seeding
 │   │   ├── services/
-│   │   │   ├── aiUpdateAnalysisService.ts  # AI lab analysis (GCUA-aware)
-│   │   │   ├── doctorAgent.ts    # AI chat service (GCUA phenotype context)
+│   │   │   ├── doctorAgent.ts         # Claude AI integration
+│   │   │   ├── aiUpdateAnalysisService.ts  # AI lab analysis
 │   │   │   ├── clinicalAlertsService.ts    # Alert generation
-│   │   │   └── patientMonitor.ts # Real-time monitoring
+│   │   │   ├── patientMonitor.ts      # Real-time monitoring
+│   │   │   ├── emailService.ts        # SMTP & notifications
+│   │   │   ├── analyticsService.ts    # Alert lifecycle tracking
+│   │   │   ├── healthStateCommentService.ts # Clinical notes
+│   │   │   └── mcpClient.ts           # MCP tool integration
 │   │   └── utils/
-│   │       ├── kdigo.ts          # KDIGO classification
-│   │       └── gcua.ts           # Nelson, AHA PREVENT, Bansal models
+│   │       ├── kdigo.ts               # KDIGO 2024 classification
+│   │       └── gcua.ts                # Nelson, AHA PREVENT, Bansal
 │
-├── frontend/                     # React + Vite + Tailwind
+├── frontend/                          # React + Vite + Tailwind
 │   ├── src/
+│   │   ├── App.tsx                    # Main application
 │   │   ├── components/
 │   │   │   ├── DoctorChatBar.tsx      # AI chat interface
 │   │   │   ├── GCUARiskCard.tsx       # GCUA phenotype display
-│   │   │   ├── GCUADashboard.tsx      # GCUA assessment dashboard
-│   │   │   ├── PatientFilters.tsx     # Advanced filtering
-│   │   │   ├── AdherenceCard.tsx      # Medication tracking
-│   │   │   └── PatientTrendGraphs.tsx # Visualization
+│   │   │   ├── GCUADashboard.tsx      # Population GCUA analytics
+│   │   │   ├── PatientFilters.tsx     # Advanced filtering UI
+│   │   │   ├── PatientTrendGraphs.tsx # eGFR/uACR visualization
+│   │   │   ├── AdherenceCard.tsx      # MPR/PDC metrics display
+│   │   │   ├── DoctorAssignmentInterface.tsx  # Bulk assignment UI
+│   │   │   ├── Settings.tsx           # Email configuration
+│   │   │   ├── EmailTemplateEditor.tsx # Template management
+│   │   │   └── LandingPage.tsx        # System overview
 │
-├── mcp-server/                   # Clinical Decision Support Server
+├── mcp-server/                        # Clinical Decision Support
 │   └── src/tools/
-│       ├── comprehensiveCKDAnalysis.ts
-│       ├── phase3TreatmentDecision.ts
-│       ├── phase4AdherenceMonitoring.ts
-│       └── compositeAdherenceMonitoring.ts
+│       ├── comprehensiveCKDAnalysis.ts    # Master orchestrator
+│       ├── phase1PreDiagnosisRisk.ts      # Pre-CKD screening
+│       ├── phase2KDIGOClassification.ts   # KDIGO staging
+│       ├── phase3TreatmentDecision.ts     # Treatment eligibility
+│       ├── phase4AdherenceMonitoring.ts   # Adherence tracking
+│       ├── gcuaAssessment.ts              # GCUA 3-module assessment
+│       ├── predictKidneyFailureRisk.ts    # KFRE prediction
+│       ├── assessMedicationSafety.ts      # Drug safety checking
+│       ├── calculateEGFR.ts               # eGFR calculation
+│       ├── compositeAdherenceMonitoring.ts # Multi-drug adherence
+│       ├── checkScreeningProtocol.ts      # Protocol compliance
+│       ├── labResults.ts                  # Lab data queries
+│       ├── patientData.ts                 # Patient data aggregation
+│       ├── populationStats.ts             # Cohort analytics
+│       └── guidelines.ts                  # Clinical guidelines
 │
-└── infrastructure/
-    └── postgres/
-        └── migrations/           # Database migrations
-            ├── 030_add_gcua_risk_assessment.sql
-            └── 031_generate_gcua_eligible_patients_60plus.sql
+├── infrastructure/
+│   └── postgres/
+│       ├── migrations/                # 31 ordered migrations
+│       │   ├── 001-009                # Core patient data
+│       │   ├── 014-020                # Communication & tracking
+│       │   ├── 021-029                # Doctor management
+│       │   └── 030-031                # GCUA assessment
+│       └── RENDER_DATABASE_INIT.sql   # Full schema initialization
+│
+├── data/                              # Mock data & seed files
+├── docs/                              # 40+ documentation files
+├── docker-compose.yml                 # Production deployment
+├── docker-compose.dev.yml             # Development setup
+└── Dockerfile                         # Multi-stage container build
 ```
 
 ---
@@ -680,10 +831,13 @@ curl -X POST http://localhost:3000/api/init/populate
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/patients` | GET | List all patients with KDIGO classification |
-| `/api/patients/filter` | GET | Filter by CKD status, severity, treatment |
-| `/api/patients/:id` | GET | Full patient detail |
+| `/api/patients/filter` | GET | Filter by CKD status, severity, treatment, monitoring |
+| `/api/patients/:id` | GET | Full patient detail with risk assessment |
 | `/api/patients/:id/update-records` | POST | Simulate new lab results |
 | `/api/patients/:id/comments` | GET | Health state evolution timeline |
+| `/api/patients/:id/assign-doctor` | POST | Assign doctor (primary/secondary) |
+| `/api/patients/:id/doctors` | GET | Get assigned doctors |
+| `/api/patients/:id/primary-doctor` | GET | Get primary doctor |
 
 ### Risk Assessment Endpoints
 
@@ -691,6 +845,7 @@ curl -X POST http://localhost:3000/api/init/populate
 |----------|--------|-------------|
 | `/api/risk/assessment/:patientId` | GET | Get risk evaluation |
 | `/api/risk/calculate/:patientId` | POST | Recalculate risk |
+| `/api/risk/bulk-calculate` | POST | Bulk risk calculation |
 | `/api/risk/patients/high-risk` | GET | High-risk population |
 | `/api/risk/statistics` | GET | Population statistics |
 
@@ -703,16 +858,75 @@ curl -X POST http://localhost:3000/api/init/populate
 | `/api/gcua/bulk-calculate` | POST | Recalculate all eligible patients |
 | `/api/gcua/eligible-patients` | GET | List patients eligible for GCUA (60+, eGFR >60) |
 | `/api/gcua/high-risk` | GET | Get Phenotype I and II patients |
+| `/api/gcua/missing-uacr` | GET | Silent Hunter - patients needing uACR |
 | `/api/gcua/statistics` | GET | Population statistics by phenotype |
 | `/api/gcua/history/:patientId` | GET | Assessment history for patient |
 
-### Treatment Tracking Endpoints
+### Jardiance & Adherence Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/jardiance/prescriptions/:patientId` | GET | Get prescriptions |
-| `/api/jardiance/prescriptions` | POST | Create prescription |
+| `/api/jardiance/prescriptions` | POST | Create prescription (10mg/25mg) |
 | `/api/jardiance/prescriptions/:id/discontinue` | PUT | Stop treatment |
+| `/api/jardiance/refills/:prescriptionId` | GET | Get refill history |
+| `/api/jardiance/refills` | POST | Record refill with gap analysis |
+| `/api/jardiance/adherence/:prescriptionId` | GET | Get adherence history |
+| `/api/jardiance/adherence/calculate` | POST | Calculate MPR/PDC |
+| `/api/jardiance/barriers/:prescriptionId` | GET | Get adherence barriers |
+| `/api/jardiance/barriers` | POST | Record new barrier |
+| `/api/jardiance/barriers/:id/resolve` | PUT | Resolve barrier |
+| `/api/jardiance/summary/:patientId` | GET | Complete prescription summary |
+
+### Doctor Management Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/doctors` | GET | List all doctors |
+| `/api/doctors` | POST | Create doctor profile |
+| `/api/doctors/:email` | GET | Get doctor details |
+| `/api/doctors/:email` | PUT | Update doctor profile |
+| `/api/doctors/:email` | DELETE | Delete doctor |
+| `/api/doctors/assign-by-category` | POST | Bulk assign by category |
+| `/api/doctors/category-assignments` | GET | Get category assignments |
+| `/api/doctors/category-stats` | GET | Patient counts by category |
+| `/api/doctors/external-notifications` | GET/POST | External email management |
+
+### Notification Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/notifications` | GET | Get notifications (paginated) |
+| `/api/notifications/unread` | GET | Get unread notifications |
+| `/api/notifications/:id/read` | POST | Mark as read |
+| `/api/notifications/:id/acknowledge` | POST | Acknowledge notification |
+| `/api/notifications/stats` | GET | Notification statistics |
+| `/api/notifications/monitor/status` | GET | Monitoring service status |
+
+### Analytics Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/summary` | GET | System-wide summary |
+| `/api/analytics/doctor/:email` | GET | Doctor performance metrics |
+| `/api/analytics/doctors/all` | GET | All doctors performance |
+| `/api/analytics/trends` | GET | Alert trends over time |
+| `/api/analytics/common-alerts` | GET | Most common alert types |
+| `/api/analytics/patient/:id` | GET | Patient alert history |
+| `/api/analytics/response-times` | GET | Response time distribution |
+| `/api/analytics/track/viewed/:id` | POST | Track alert view |
+| `/api/analytics/track/acknowledged/:id` | POST | Track acknowledgment |
+| `/api/analytics/track/resolved/:id` | POST | Track resolution |
+
+### Settings & Email Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/settings/email` | GET | Get email configuration |
+| `/api/settings/email` | POST | Update email settings |
+| `/api/settings/email/test` | POST | Send test email |
+| `/api/settings/email/messages` | GET | Email message history |
+| `/api/email-templates` | CRUD | Template management |
 
 ### AI Assistant Endpoints
 
@@ -722,6 +936,14 @@ curl -X POST http://localhost:3000/api/init/populate
 | `/api/agent/analyze-patient/:id` | POST | Patient analysis |
 | `/api/agent/quick-question` | POST | General questions |
 | `/api/agent/health` | GET | Service health |
+
+### System Initialization
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/init/seed-data` | POST | Generate test patients |
+| `/api/init/load-mock-patients` | POST | Load from seed files |
+| `/api/init/clear-all` | POST | Clear all data (dev only) |
 
 ---
 
