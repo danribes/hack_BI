@@ -200,7 +200,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
                   <Target className="w-6 h-6 text-amber-400" />
                 </div>
-                <h4 className="text-lg font-bold text-white mb-2">Nelson / CKD-PC</h4>
+                <h4 className="text-lg font-bold text-white mb-1">Nelson / CKD-PC</h4>
+                <p className="text-amber-400 text-sm font-medium italic mb-3">"Will this patient's kidneys fail?"</p>
                 <p className="text-slate-400 text-sm mb-3">5-year renal risk prediction</p>
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-slate-300">
@@ -218,7 +219,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
                   <Heart className="w-6 h-6 text-red-400" />
                 </div>
-                <h4 className="text-lg font-bold text-white mb-2">AHA PREVENT</h4>
+                <h4 className="text-lg font-bold text-white mb-1">AHA PREVENT</h4>
+                <p className="text-red-400 text-sm font-medium italic mb-3">"Will this patient have a heart attack or stroke?"</p>
                 <p className="text-slate-400 text-sm mb-3">10-year cardiovascular risk</p>
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-slate-300">
@@ -236,7 +238,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 <div className="w-12 h-12 bg-slate-500/20 rounded-xl flex items-center justify-center mb-4">
                   <Clock className="w-6 h-6 text-slate-400" />
                 </div>
-                <h4 className="text-lg font-bold text-white mb-2">Bansal Geriatric</h4>
+                <h4 className="text-lg font-bold text-white mb-1">Bansal Geriatric</h4>
+                <p className="text-slate-300 text-sm font-medium italic mb-3">"Will this patient benefit from aggressive treatment?"</p>
                 <p className="text-slate-400 text-sm mb-3">5-year mortality index</p>
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-slate-300">
