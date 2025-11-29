@@ -728,10 +728,12 @@ export function calculateBansalMortalityScore(input: GCUAPatientInput): GCUAModu
  * Assign GCUA Phenotype based on Module 1-3 results
  *
  * Phenotypes:
- * I. Accelerated Ager: High renal (>15%) AND High CVD (>10%), Low/Mod mortality
- * II. Silent Renal: High renal (>15%) AND Low CVD (<5%), Low mortality
- * III. Vascular Dominant: Low renal (<5%) AND High CVD (>10%), Low mortality
- * IV. The Senescent: High mortality (>50%) regardless of other factors
+ * I. Accelerated Ager: High renal (>=15%) AND High CVD (>=10%), Low/Mod mortality
+ * II. Silent Renal: High renal (>=15%) AND Low CVD (<10%), Low mortality
+ * III. Vascular Dominant: Low renal (<15%) AND High CVD (>=10%), Low mortality
+ * IV. The Senescent: High mortality (>=50%) regardless of other factors
+ *
+ * NEW: Proper handling of moderate risk ranges
  */
 function assignPhenotype(
   module1: GCUAModule1Result,
@@ -767,7 +769,7 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype I: Accelerated Ager
+  // Phenotype I: Accelerated Ager - High renal AND High CVD
   if (renalRisk >= 15 && cvdRisk >= 10) {
     return {
       type: 'I',
@@ -792,7 +794,7 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype II: Silent Renal
+  // Phenotype II: Silent Renal - High renal AND Low CVD
   if (renalRisk >= 15 && cvdRisk < 10) {
     return {
       type: 'II',
@@ -817,7 +819,34 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype III: Vascular Dominant
+  // NEW: Phenotype III variant - Moderate renal AND High CVD (Cardiorenal Moderate)
+  // This catches patients like Ralph Gomez (11.2% renal, 16.5% CVD)
+  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk >= 10) {
+    return {
+      type: 'III',
+      name: 'Cardiorenal Moderate',
+      tag: 'CV Priority',
+      color: 'yellow',
+      description: 'Elevated cardiovascular risk with moderate renal risk. Prioritize cardiovascular protection while monitoring kidney function. The moderate renal risk warrants attention but CV risk is the primary driver.',
+      clinicalStrategy: [
+        'Cardiovascular risk reduction priority',
+        'Statin therapy optimization',
+        'Blood pressure targets (<130/80)',
+        'Consider SGLT2 inhibitor for CV protection',
+        'Monitor eGFR and uACR every 6-12 months',
+        'Lifestyle modifications emphasized'
+      ],
+      treatmentRecommendations: {
+        sglt2i: true, // Consider for CV benefit
+        rasInhibitor: false,
+        statin: true,
+        bpTarget: '<130/80 mmHg',
+        monitoringFrequency: 'Every 6 months'
+      }
+    };
+  }
+
+  // Phenotype III: Vascular Dominant - Low renal AND High CVD
   if (renalRisk < 5 && cvdRisk >= 10) {
     return {
       type: 'III',
@@ -842,12 +871,37 @@ function assignPhenotype(
     };
   }
 
-  // Default: Low risk for all (no specific phenotype)
+  // NEW: Moderate renal with low CVD - Renal Watch
+  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk < 10) {
+    return {
+      type: 'II',
+      name: 'Renal Watch',
+      tag: 'Monitor Kidneys',
+      color: 'orange',
+      description: 'Moderate renal risk requires proactive monitoring. While not yet high risk, these patients may progress. Early intervention can prevent CKD development.',
+      clinicalStrategy: [
+        'Monitor eGFR and uACR every 6-12 months',
+        'Address modifiable risk factors (BP, glucose)',
+        'Consider SGLT2 inhibitor if diabetes present',
+        'Nephrology referral if worsening trend',
+        'Lifestyle modifications'
+      ],
+      treatmentRecommendations: {
+        sglt2i: false, // Consider if diabetic
+        rasInhibitor: false,
+        statin: false,
+        bpTarget: '<130/80 mmHg',
+        monitoringFrequency: 'Every 6-12 months'
+      }
+    };
+  }
+
+  // Default: Low risk for all (truly low risk)
   return {
-    type: 'III', // Use Vascular Dominant as default for low-risk
+    type: 'III',
     name: 'Low Risk',
-    tag: 'Monitor',
-    color: 'yellow',
+    tag: 'Routine Care',
+    color: 'gray',
     description: 'Low risk across all domains. Continue routine preventive care and periodic reassessment.',
     clinicalStrategy: [
       'Maintain healthy lifestyle',
