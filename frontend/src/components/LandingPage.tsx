@@ -258,79 +258,153 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
           {/* GCUA Phenotypes */}
           <div className="bg-slate-900/50 rounded-2xl p-8 border border-slate-700 mb-8">
             <h3 className="text-xl font-bold text-white mb-2 text-center">GCUA Phenotype Classification</h3>
-            <p className="text-slate-400 text-center mb-8">Each phenotype answers: "What treatment approach fits this patient's combined risk profile?"</p>
+            <p className="text-slate-400 text-center mb-6">Phenotype is assigned based on the combination of Renal Risk and CVD Risk scores</p>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Phenotype I */}
-              <div className="bg-emerald-500/10 rounded-xl p-5 border border-emerald-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-emerald-400 mr-3">I</div>
-                  <div className="text-white font-medium">The Resilient</div>
+            {/* Mortality Override Notice */}
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+              <p className="text-red-300 text-sm text-center">
+                <span className="font-bold">Important:</span> If Bansal Mortality ≥50%, patient is automatically assigned <span className="font-bold">Phenotype IV (Senescent)</span> regardless of other scores
+              </p>
+            </div>
+
+            {/* Phenotype Matrix */}
+            <div className="overflow-x-auto mb-8">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="p-2"></th>
+                    <th className="p-2" colSpan={3}>
+                      <div className="text-center text-slate-300 font-medium mb-2">CVD Risk (AHA PREVENT 10-year)</div>
+                    </th>
+                  </tr>
+                  <tr>
+                    <th className="p-2 text-left text-slate-400">Renal Risk<br/><span className="text-xs">(Nelson 5-year)</span></th>
+                    <th className="p-2 text-center text-emerald-400">Low<br/><span className="text-xs text-slate-500">&lt;7.5%</span></th>
+                    <th className="p-2 text-center text-amber-400">Intermediate<br/><span className="text-xs text-slate-500">7.5-19.9%</span></th>
+                    <th className="p-2 text-center text-red-400">High<br/><span className="text-xs text-slate-500">≥20%</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-2 text-red-400 font-medium">High <span className="text-xs text-slate-500">≥15%</span></td>
+                    <td className="p-2">
+                      <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-2 text-center">
+                        <div className="text-orange-400 font-bold">II</div>
+                        <div className="text-white text-xs">Silent Renal</div>
+                        <div className="text-slate-400 text-xs mt-1">Kidney-specific</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-2 text-center">
+                        <div className="text-red-400 font-bold">I</div>
+                        <div className="text-white text-xs">Cardiorenal High</div>
+                        <div className="text-slate-400 text-xs mt-1">Aggressive Tx</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-red-500/30 border border-red-500/40 rounded-lg p-2 text-center">
+                        <div className="text-red-400 font-bold">I</div>
+                        <div className="text-white text-xs">Accelerated Ager</div>
+                        <div className="text-slate-400 text-xs mt-1">Full aggressive</div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 text-amber-400 font-medium">Moderate <span className="text-xs text-slate-500">5-14.9%</span></td>
+                    <td className="p-2">
+                      <div className="bg-orange-500/15 border border-orange-500/25 rounded-lg p-2 text-center">
+                        <div className="text-orange-400 font-bold">Mod</div>
+                        <div className="text-white text-xs">Renal Watch</div>
+                        <div className="text-slate-400 text-xs mt-1">Monitor kidneys</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-2 text-center">
+                        <div className="text-purple-400 font-bold">Mod</div>
+                        <div className="text-white text-xs">Cardiorenal Mod</div>
+                        <div className="text-slate-400 text-xs mt-1">Dual-benefit meds</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-purple-500/25 border border-purple-500/35 rounded-lg p-2 text-center">
+                        <div className="text-purple-400 font-bold">Mod</div>
+                        <div className="text-white text-xs">Cardiorenal Mod</div>
+                        <div className="text-slate-400 text-xs mt-1">CV priority</div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 text-emerald-400 font-medium">Low <span className="text-xs text-slate-500">&lt;5%</span></td>
+                    <td className="p-2">
+                      <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-2 text-center">
+                        <div className="text-emerald-400 font-bold">Low</div>
+                        <div className="text-white text-xs">Low Risk</div>
+                        <div className="text-slate-400 text-xs mt-1">Preventive care</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-teal-500/20 border border-teal-500/30 rounded-lg p-2 text-center">
+                        <div className="text-teal-400 font-bold">Low</div>
+                        <div className="text-white text-xs">CV Intermediate</div>
+                        <div className="text-slate-400 text-xs mt-1">CV monitoring</div>
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="bg-amber-500/20 border border-amber-500/30 rounded-lg p-2 text-center">
+                        <div className="text-amber-400 font-bold">III</div>
+                        <div className="text-white text-xs">Vascular Dominant</div>
+                        <div className="text-slate-400 text-xs mt-1">CVD prevention</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Phenotype Actions Summary */}
+            <h4 className="text-lg font-bold text-white mb-4 text-center">Treatment Actions by Phenotype</h4>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-red-400 font-bold mr-2">I</span>
+                  <span className="text-white text-sm">High Priority</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">Low mortality, low renal risk, low CVD risk</p>
-                <div className="bg-emerald-500/20 rounded-lg p-3">
-                  <p className="text-emerald-300 text-sm font-medium">→ Full aggressive treatment - patient will benefit from all interventions</p>
-                </div>
+                <p className="text-slate-400 text-xs">SGLT2i + RAS inhibitor + Statin. BP &lt;120/80. Monitor every 3 months.</p>
               </div>
-
-              {/* Phenotype II */}
-              <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-blue-400 mr-3">II</div>
-                  <div className="text-white font-medium">The Watcher</div>
+              <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-orange-400 font-bold mr-2">II</span>
+                  <span className="text-white text-sm">Kidney Specific</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">Low mortality, but moderate renal OR CVD risk</p>
-                <div className="bg-blue-500/20 rounded-lg p-3">
-                  <p className="text-blue-300 text-sm font-medium">→ Active treatment + close monitoring to prevent progression</p>
-                </div>
+                <p className="text-slate-400 text-xs">SGLT2i + RAS inhibitor. Focus on renal protection. Nephrology referral.</p>
               </div>
-
-              {/* Phenotype III */}
-              <div className="bg-amber-500/10 rounded-xl p-5 border border-amber-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-amber-400 mr-3">III</div>
-                  <div className="text-white font-medium">The Fighter</div>
+              <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-amber-400 font-bold mr-2">III</span>
+                  <span className="text-white text-sm">Heart Specific</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">Moderate mortality with HIGH cardiovascular risk</p>
-                <div className="bg-amber-500/20 rounded-lg p-3">
-                  <p className="text-amber-300 text-sm font-medium">→ Prioritize CVD protection - statins, BP control, SGLT2i</p>
-                </div>
+                <p className="text-slate-400 text-xs">High-intensity statin + SGLT2i for HF prevention. Annual renal screening.</p>
               </div>
-
-              {/* Phenotype IV */}
-              <div className="bg-red-500/10 rounded-xl p-5 border border-red-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-red-400 mr-3">IV</div>
-                  <div className="text-white font-medium">The Senescent</div>
+              <div className="bg-slate-500/10 rounded-lg p-3 border border-slate-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-slate-400 font-bold mr-2">IV</span>
+                  <span className="text-white text-sm">De-escalate</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">High mortality risk (≥50% 5-year)</p>
-                <div className="bg-red-500/20 rounded-lg p-3">
-                  <p className="text-red-300 text-sm font-medium">→ Goals-of-care conversation - focus on quality of life</p>
-                </div>
+                <p className="text-slate-400 text-xs">Goals-of-care discussion. Consider deprescribing. Focus on QoL.</p>
               </div>
-
-              {/* Cardiorenal Moderate */}
-              <div className="bg-purple-500/10 rounded-xl p-5 border border-purple-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-purple-400 mr-3">Mod</div>
-                  <div className="text-white font-medium">Cardiorenal Moderate</div>
+              <div className="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-purple-400 font-bold mr-2">Mod</span>
+                  <span className="text-white text-sm">Balanced</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">Moderate risks in BOTH renal AND CVD</p>
-                <div className="bg-purple-500/20 rounded-lg p-3">
-                  <p className="text-purple-300 text-sm font-medium">→ Dual-benefit medications - SGLT2i, finerenone</p>
-                </div>
+                <p className="text-slate-400 text-xs">SGLT2i + Statin. BP &lt;130/80. Monitor every 6 months.</p>
               </div>
-
-              {/* Cardiorenal Low */}
-              <div className="bg-teal-500/10 rounded-xl p-5 border border-teal-500/20">
-                <div className="flex items-center mb-3">
-                  <div className="text-2xl font-bold text-teal-400 mr-3">Low</div>
-                  <div className="text-white font-medium">Cardiorenal Low</div>
+              <div className="bg-emerald-500/10 rounded-lg p-3 border border-emerald-500/20">
+                <div className="flex items-center mb-2">
+                  <span className="text-emerald-400 font-bold mr-2">Low</span>
+                  <span className="text-white text-sm">Routine</span>
                 </div>
-                <p className="text-slate-400 text-sm mb-3">Low combined renal and CVD risks</p>
-                <div className="bg-teal-500/20 rounded-lg p-3">
-                  <p className="text-teal-300 text-sm font-medium">→ Preventive care - lifestyle, monitoring, minimal meds</p>
-                </div>
+                <p className="text-slate-400 text-xs">Lifestyle focus. Monitor every 1-3 years. Minimal pharmacotherapy.</p>
               </div>
             </div>
           </div>
