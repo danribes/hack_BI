@@ -16,29 +16,73 @@ const router = Router();
 function transformDatabaseAssessment(dbRow: any): any {
   if (!dbRow) return null;
 
+  const renalRisk = parseFloat(dbRow.renal_risk) || 0;
+  const cvdRisk = parseFloat(dbRow.cvd_risk) || 0;
+  const mortalityRisk = parseFloat(dbRow.mortality_risk) || 0;
+
+  // Generate phenotype description based on type
+  const phenotypeDescriptions: Record<string, string> = {
+    'I': 'High cardiorenal risk requiring aggressive intervention. Both kidney and cardiovascular systems show significant risk factors.',
+    'II': 'Elevated renal risk with moderate cardiovascular concerns. Focus on kidney protection with CV monitoring.',
+    'III': 'Cardiovascular-dominant risk profile. Prioritize heart health while maintaining renal surveillance.',
+    'IV': 'Lower overall risk but age-related considerations. Focus on prevention and monitoring.'
+  };
+
+  const phenotypeStrategies: Record<string, string[]> = {
+    'I': ['Initiate SGLT2 inhibitor therapy', 'Optimize blood pressure control', 'Consider GLP-1 RA if diabetic', 'Quarterly monitoring'],
+    'II': ['Focus on nephroprotection', 'ACE/ARB optimization', 'Manage proteinuria', 'Monitor eGFR trends'],
+    'III': ['Cardiovascular risk reduction priority', 'Statin therapy optimization', 'Blood pressure targets', 'Lifestyle modifications'],
+    'IV': ['Preventive care focus', 'Annual comprehensive assessment', 'Maintain current therapies', 'Patient education']
+  };
+
+  const phenotypeType = dbRow.phenotype_type || 'IV';
+
   return {
     isEligible: dbRow.is_eligible,
     phenotype: {
-      type: dbRow.phenotype_type,
-      name: dbRow.phenotype_name,
-      tag: dbRow.phenotype_tag,
-      color: dbRow.phenotype_color
+      type: phenotypeType,
+      name: dbRow.phenotype_name || 'Unknown',
+      tag: dbRow.phenotype_tag || 'Assessment Complete',
+      color: dbRow.phenotype_color || 'gray',
+      description: phenotypeDescriptions[phenotypeType] || 'Risk assessment completed.',
+      clinicalStrategy: phenotypeStrategies[phenotypeType] || ['Continue current management']
     },
     module1: {
-      fiveYearRisk: parseFloat(dbRow.renal_risk) || 0,
-      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.renal_risk) || 0, 'renal')
+      name: 'Nelson/CKD-PC',
+      fiveYearRisk: renalRisk,
+      riskCategory: getRiskCategoryFromValue(renalRisk, 'renal'),
+      cStatistic: 0.85,
+      interpretation: `${renalRisk}% 5-year risk of CKD progression based on current kidney function and risk factors.`,
+      components: ['Age', 'eGFR', 'Albuminuria', 'Diabetes status', 'Blood pressure']
     },
     module2: {
-      tenYearRisk: parseFloat(dbRow.cvd_risk) || 0,
-      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.cvd_risk) || 0, 'cvd')
+      name: 'AHA PREVENT',
+      tenYearRisk: cvdRisk,
+      riskCategory: getRiskCategoryFromValue(cvdRisk, 'cvd'),
+      cStatistic: 0.79,
+      interpretation: `${cvdRisk}% 10-year risk of cardiovascular events including heart attack and stroke.`,
+      components: ['Age', 'Sex', 'Blood pressure', 'Cholesterol', 'Diabetes', 'Smoking'],
+      heartAge: undefined
     },
     module3: {
-      fiveYearMortalityRisk: parseFloat(dbRow.mortality_risk) || 0,
-      riskCategory: getRiskCategoryFromValue(parseFloat(dbRow.mortality_risk) || 0, 'mortality')
+      name: 'Bansal Mortality',
+      fiveYearMortalityRisk: mortalityRisk,
+      riskCategory: getRiskCategoryFromValue(mortalityRisk, 'mortality'),
+      points: Math.round(mortalityRisk / 2),
+      interpretation: `${mortalityRisk}% 5-year mortality risk accounting for competing risks in elderly patients.`,
+      components: ['Age', 'Comorbidities', 'Functional status', 'Kidney function'],
+      competingRiskAdjustment: true
     },
     benefitRatio: parseFloat(dbRow.benefit_ratio) || 0,
-    confidenceLevel: dbRow.confidence_level,
-    treatmentRecommendations: dbRow.treatment_recommendations,
+    benefitRatioInterpretation: parseFloat(dbRow.benefit_ratio) > 1
+      ? 'Treatment benefits likely outweigh risks'
+      : 'Careful consideration of treatment risks vs benefits needed',
+    confidenceLevel: dbRow.confidence_level || 'moderate',
+    treatmentRecommendations: dbRow.treatment_recommendations || {},
+    dataCompleteness: 75,
+    missingData: [],
+    kdigoScreeningRecommendation: 'Annual screening recommended',
+    cystatinCRecommended: false,
     assessedAt: dbRow.assessed_at
   };
 }

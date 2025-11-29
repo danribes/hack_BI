@@ -202,7 +202,6 @@ function App() {
   const [gcuaEligible, setGcuaEligible] = useState<boolean | null>(null);
   const [gcuaError, setGcuaError] = useState<string | null>(null);
   const [gcuaEligibilityReason, setGcuaEligibilityReason] = useState<string | null>(null);
-  const [showCVAssessment, setShowCVAssessment] = useState(false);
   const [healthStateComments, setHealthStateComments] = useState<HealthStateComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1411,10 +1410,10 @@ function App() {
                     </>
                   )}
 
-                  {/* For Non-CKD Patients: GCUA First, then Collapsible CV Assessment */}
+                  {/* For Non-CKD Patients: GCUA Assessment with AI Commentary */}
                   {!selectedPatient.kdigo_classification.has_ckd && (
                     <div className="mb-6">
-                      {/* GCUA Risk Assessment Card - FIRST for non-CKD patients 60+ */}
+                      {/* GCUA Risk Assessment Card - for non-CKD patients 60+ */}
                       {(() => {
                         const birthDate = new Date(selectedPatient.date_of_birth);
                         const today = new Date();
@@ -1450,193 +1449,119 @@ function App() {
                         );
                       })()}
 
-                      {/* AI Commentary on Cardiovascular-Renal Relationship */}
-                      {(selectedPatient.kdigo_classification.framingham_risk_level === 'high' ||
-                        selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ||
-                        selectedPatient.kdigo_classification.scored_risk_level === 'high') && (
-                        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+                      {/* AI-Generated Personalized Cardiorenal Commentary based on GCUA */}
+                      {gcuaAssessment && gcuaAssessment.isEligible && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5 mb-4">
                           <div className="flex items-start space-x-3">
-                            <svg className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                            <div>
-                              <h4 className="font-semibold text-amber-900 mb-1">Cardiorenal Risk Alert</h4>
-                              <p className="text-sm text-amber-800">
-                                {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
-                                  <>
-                                    <span className="font-semibold">Elevated cardiovascular risk detected.</span> Cardiovascular disease and kidney disease share common pathophysiological pathways.
-                                    High CV risk increases the likelihood of kidney function decline. Consider comprehensive cardiorenal protection with SGLT2 inhibitors,
-                                    which provide dual cardio and renal benefits. Close monitoring of both cardiac and renal markers is recommended.
-                                  </>
-                                ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
-                                  <>
-                                    <span className="font-semibold">Moderate cardiovascular risk identified.</span> The heart and kidneys are closely interconnected -
-                                    cardiovascular stress can accelerate kidney damage and vice versa. Early intervention to modify CV risk factors
-                                    (hypertension, diabetes, dyslipidemia) can help protect both organs. Regular renal function monitoring is advised.
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="font-semibold">Screening indicates potential hidden disease.</span> Early detection of cardiovascular or renal
-                                    dysfunction allows for timely intervention. The cardiorenal axis suggests that protecting one organ benefits the other.
-                                  </>
-                                )}
-                              </p>
+                            <div className="flex-shrink-0">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-blue-900 mb-2 flex items-center">
+                                <span>AI Cardiorenal Assessment</span>
+                                <span className="ml-2 text-xs font-normal bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                  Personalized Analysis
+                                </span>
+                              </h4>
+                              <div className="text-sm text-gray-700 space-y-3">
+                                {/* Personalized commentary based on the three GCUA modules */}
+                                <p>
+                                  <span className="font-semibold text-gray-900">
+                                    {selectedPatient.first_name} {selectedPatient.last_name}
+                                  </span> presents with a <span className="font-semibold text-blue-700">Phenotype {gcuaAssessment.phenotype.type}</span> ({gcuaAssessment.phenotype.name}) cardiorenal profile based on integrated risk assessment:
+                                </p>
+
+                                {/* Nelson/CKD-PC Analysis */}
+                                <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                                  <div className="flex items-center mb-1">
+                                    <span className="font-semibold text-purple-700">Renal Risk (Nelson/CKD-PC):</span>
+                                    <span className={`ml-2 text-sm font-bold ${
+                                      gcuaAssessment.module1.riskCategory === 'very_high' || gcuaAssessment.module1.riskCategory === 'high'
+                                        ? 'text-red-600'
+                                        : gcuaAssessment.module1.riskCategory === 'moderate'
+                                          ? 'text-yellow-600'
+                                          : 'text-green-600'
+                                    }`}>
+                                      {gcuaAssessment.module1.fiveYearRisk}% 5-year risk
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600">
+                                    {gcuaAssessment.module1.riskCategory === 'very_high' || gcuaAssessment.module1.riskCategory === 'high'
+                                      ? 'Significant risk of kidney function decline. Nephroprotective strategies are essential - consider SGLT2 inhibitors and ACE/ARB optimization.'
+                                      : gcuaAssessment.module1.riskCategory === 'moderate'
+                                        ? 'Moderate renal risk warrants proactive monitoring. Regular eGFR and uACR tracking recommended with lifestyle modifications.'
+                                        : 'Current kidney function is stable. Continue preventive measures and annual screening to maintain renal health.'}
+                                  </p>
+                                </div>
+
+                                {/* AHA PREVENT Analysis */}
+                                <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                                  <div className="flex items-center mb-1">
+                                    <span className="font-semibold text-red-700">Cardiovascular Risk (AHA PREVENT):</span>
+                                    <span className={`ml-2 text-sm font-bold ${
+                                      gcuaAssessment.module2.riskCategory === 'high'
+                                        ? 'text-red-600'
+                                        : gcuaAssessment.module2.riskCategory === 'intermediate'
+                                          ? 'text-yellow-600'
+                                          : 'text-green-600'
+                                    }`}>
+                                      {gcuaAssessment.module2.tenYearRisk}% 10-year risk
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600">
+                                    {gcuaAssessment.module2.riskCategory === 'high'
+                                      ? 'Elevated cardiovascular event risk. Aggressive lipid management, strict BP control (<130/80), and consideration of antiplatelet therapy recommended.'
+                                      : gcuaAssessment.module2.riskCategory === 'intermediate'
+                                        ? 'Intermediate CV risk requires attention to modifiable factors. Optimize lipid profile, manage hypertension, and encourage lifestyle changes.'
+                                        : 'Favorable cardiovascular profile. Maintain heart-healthy habits and continue periodic risk reassessment.'}
+                                  </p>
+                                </div>
+
+                                {/* Bansal Mortality Analysis */}
+                                <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                                  <div className="flex items-center mb-1">
+                                    <span className="font-semibold text-gray-700">Competing Mortality Risk (Bansal):</span>
+                                    <span className={`ml-2 text-sm font-bold ${
+                                      gcuaAssessment.module3.riskCategory === 'very_high' || gcuaAssessment.module3.riskCategory === 'high'
+                                        ? 'text-red-600'
+                                        : gcuaAssessment.module3.riskCategory === 'moderate'
+                                          ? 'text-yellow-600'
+                                          : 'text-green-600'
+                                    }`}>
+                                      {gcuaAssessment.module3.fiveYearMortalityRisk}% 5-year mortality
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600">
+                                    {gcuaAssessment.module3.riskCategory === 'very_high' || gcuaAssessment.module3.riskCategory === 'high'
+                                      ? 'High competing mortality risk influences treatment intensity decisions. Focus on quality of life, symptom management, and shared decision-making about aggressive interventions.'
+                                      : gcuaAssessment.module3.riskCategory === 'moderate'
+                                        ? 'Moderate mortality considerations - balance preventive treatments with patient preferences and functional goals.'
+                                        : 'Favorable longevity outlook supports investment in long-term preventive strategies and disease-modifying therapies.'}
+                                  </p>
+                                </div>
+
+                                {/* Integrated Recommendation */}
+                                <div className="mt-3 pt-3 border-t border-blue-200">
+                                  <p className="text-sm">
+                                    <span className="font-semibold text-blue-800">Integrated Recommendation:</span>{' '}
+                                    {gcuaAssessment.phenotype.type === 'I'
+                                      ? 'This patient requires comprehensive cardiorenal protection. The high-risk profile across both organ systems suggests maximum benefit from SGLT2 inhibitors, which provide simultaneous cardiac and renal protection. Close multidisciplinary follow-up recommended.'
+                                      : gcuaAssessment.phenotype.type === 'II'
+                                        ? 'Renal-dominant risk profile. Prioritize nephroprotection with ACE/ARB therapy and consider SGLT2 inhibitors. Monitor cardiovascular markers while focusing on slowing kidney function decline.'
+                                        : gcuaAssessment.phenotype.type === 'III'
+                                          ? 'Cardiovascular-dominant risk profile. Optimize lipid-lowering therapy and blood pressure control. The preserved kidney function allows for aggressive CV prevention strategies.'
+                                          : 'Lower overall risk allows for preventive-focused care. Maintain current therapies, emphasize lifestyle optimization, and schedule regular comprehensive assessments to detect any risk progression early.'}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       )}
-
-                      {/* Collapsible Cardiovascular Assessment Section */}
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => setShowCVAssessment(!showCVAssessment)}
-                          className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            <span className="font-semibold text-gray-900">Cardiovascular Risk Assessment</span>
-                            <span className="text-xs text-gray-500">(SCORED + Framingham)</span>
-                          </div>
-                          <svg className={`h-5 w-5 text-gray-500 transform transition-transform ${showCVAssessment ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-
-                        {showCVAssessment && (
-                          <div className="p-4 bg-white">
-                            {/* Side-by-Side: SCORED and Framingham */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                              {/* SCORED Model (Left) - CV Screening */}
-                              <div className="border-2 border-blue-300 rounded-lg overflow-hidden">
-                                <div className="bg-blue-100 px-4 py-3 border-b-2 border-blue-300">
-                                  <h4 className="text-sm font-bold text-blue-900 flex items-center">
-                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                    SCORED (CV Screening)
-                                  </h4>
-                                  <p className="text-xs text-blue-800 mt-1">Detects Hidden Cardiovascular Disease</p>
-                                </div>
-                                <div className="p-4 bg-white">
-                                  {selectedPatient.kdigo_classification.scored_points !== undefined ? (
-                                    <>
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Score</div>
-                                        <div className="text-2xl font-bold text-blue-900">
-                                          {selectedPatient.kdigo_classification.scored_points} points
-                                        </div>
-                                        <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
-                                          selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                                        }`}>
-                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? 'HIGH RISK' : 'LOW RISK'}
-                                        </div>
-                                      </div>
-
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
-                                        <div className="text-sm text-gray-700">
-                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
-                                            <div className="bg-orange-50 border border-orange-200 rounded p-2">
-                                              <span className="font-semibold text-orange-900">Elevated CV risk markers</span> - patient may have undetected cardiovascular disease or risk factors
-                                            </div>
-                                          ) : (
-                                            <div className="bg-green-50 border border-green-200 rounded p-2">
-                                              <span className="font-semibold text-green-900">Low probability</span> of hidden cardiovascular disease
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
-                                        <div className="text-sm text-gray-700">
-                                          {selectedPatient.kdigo_classification.scored_risk_level === 'high' ? (
-                                            <span className="text-orange-900 font-medium">Order CV workup (lipid panel, ECG, consider stress test)</span>
-                                          ) : (
-                                            <span>Routine annual screening</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <div className="text-sm text-gray-500 italic">SCORED data not available</div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Framingham Model (Right) - CV Prediction */}
-                              <div className="border-2 border-purple-300 rounded-lg overflow-hidden">
-                                <div className="bg-purple-100 px-4 py-3 border-b-2 border-purple-300">
-                                  <h4 className="text-sm font-bold text-purple-900 flex items-center">
-                                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                    </svg>
-                                    Framingham (CV Prediction)
-                                  </h4>
-                                  <p className="text-xs text-purple-800 mt-1">10-Year Cardiovascular Event Risk</p>
-                                </div>
-                                <div className="p-4 bg-white">
-                                  {selectedPatient.kdigo_classification.framingham_risk_percentage !== undefined ? (
-                                    <>
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-1">10-Year CV Risk</div>
-                                        <div className="text-2xl font-bold text-purple-900">
-                                          {selectedPatient.kdigo_classification.framingham_risk_percentage.toFixed(1)}%
-                                        </div>
-                                        <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold mt-1 ${
-                                          selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'bg-red-100 text-red-800' :
-                                          selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                                          'bg-green-100 text-green-800'
-                                        }`}>
-                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? 'HIGH RISK' :
-                                           selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? 'MODERATE RISK' :
-                                           'LOW RISK'}
-                                        </div>
-                                      </div>
-
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Clinical Meaning</div>
-                                        <div className="text-sm text-gray-700">
-                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
-                                            <div className="bg-red-50 border border-red-200 rounded p-2">
-                                              <span className="font-semibold text-red-900">High likelihood</span> of cardiovascular event (MI, stroke) within 10 years
-                                            </div>
-                                          ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
-                                            <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
-                                              <span className="font-semibold text-yellow-900">Moderate CV risk</span> - requires lifestyle modification and monitoring
-                                            </div>
-                                          ) : (
-                                            <div className="bg-green-50 border border-green-200 rounded p-2">
-                                              <span className="font-semibold text-green-900">Low probability</span> of cardiovascular events
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Action Required</div>
-                                        <div className="text-sm text-gray-700">
-                                          {selectedPatient.kdigo_classification.framingham_risk_level === 'high' ? (
-                                            <span className="text-red-900 font-medium">Statin therapy, strict BP control (&lt;130/80), consider aspirin</span>
-                                          ) : selectedPatient.kdigo_classification.framingham_risk_level === 'moderate' ? (
-                                            <span className="text-yellow-900 font-medium">Lifestyle modification, consider statin if LDL elevated</span>
-                                          ) : (
-                                            <span>Maintain healthy lifestyle, periodic reassessment</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <div className="text-sm text-gray-500 italic">Framingham data not available</div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   )}
 
