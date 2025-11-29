@@ -165,7 +165,9 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
       }
 
     } else if (has_ckd === 'false') {
+      // Non-CKD patients: must have non_ckd_patient_data AND must NOT have ckd_patient_data
       whereConditions.push('npd.patient_id IS NOT NULL');
+      whereConditions.push('cpd.patient_id IS NULL');  // Exclude patients who have developed CKD
 
       // Non-CKD specific filters
       if (risk_level) {
@@ -310,6 +312,16 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
       };
     });
 
+    // Post-processing filter: When filtering for non-CKD patients, exclude those whose
+    // computed KDIGO classification shows has_ckd = true (based on current lab values)
+    // This handles cases where patients' lab values have changed since initial classification
+    let filteredPatients = patientsWithRisk;
+    if (has_ckd === 'false') {
+      filteredPatients = patientsWithRisk.filter(p => !p.kdigo_classification?.has_ckd);
+    } else if (has_ckd === 'true') {
+      filteredPatients = patientsWithRisk.filter(p => p.kdigo_classification?.has_ckd);
+    }
+
     res.json({
       status: 'success',
       filters_applied: {
@@ -324,8 +336,8 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
         has_recent_updates: has_recent_updates || 'not_specified',
         update_days: update_days || 'not_specified'
       },
-      count: patientsWithRisk.length,
-      patients: patientsWithRisk
+      count: filteredPatients.length,
+      patients: filteredPatients
     });
 
   } catch (error) {
