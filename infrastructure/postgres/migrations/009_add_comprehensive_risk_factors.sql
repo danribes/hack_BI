@@ -508,11 +508,16 @@ CREATE TRIGGER trg_update_risk_factors_from_obs
     EXECUTE FUNCTION update_risk_factors_from_observations();
 
 -- ============================================
--- 8. Grant Permissions
+-- 8. Grant Permissions (only if role exists)
 -- ============================================
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON patient_risk_factors TO healthcare_user;
-GRANT SELECT ON patient_risk_assessment TO healthcare_user;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'healthcare_user') THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE ON patient_risk_factors TO healthcare_user;
+        GRANT SELECT ON patient_risk_assessment TO healthcare_user;
+    END IF;
+END $$;
 
 -- ============================================
 -- Migration Complete

@@ -405,9 +405,14 @@ COMMENT ON FUNCTION create_doctor_notification IS 'Creates a notification for th
 -- 10. Grant permissions (if needed)
 -- ============================================
 
--- Grant permissions to the application user
-GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user;
+-- Grant permissions to the application user (only if role exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'healthcare_user') THEN
+        GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user;
+        GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user;
+    END IF;
+END $$;
 
 -- ============================================
 -- End of Migration
