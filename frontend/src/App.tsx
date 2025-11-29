@@ -1415,16 +1415,28 @@ function App() {
                     <div className="mb-6">
                       {/* GCUA Risk Assessment Card - for non-CKD patients 60+ */}
                       {(() => {
+                        // Safely calculate age
+                        if (!selectedPatient.date_of_birth) return null;
+
                         const birthDate = new Date(selectedPatient.date_of_birth);
+                        if (isNaN(birthDate.getTime())) return null; // Invalid date
+
                         const today = new Date();
                         let age = today.getFullYear() - birthDate.getFullYear();
                         const monthDiff = today.getMonth() - birthDate.getMonth();
                         if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                           age--;
                         }
-                        const egfrObs = selectedPatient.observations?.filter(o => o.observation_type === 'eGFR')
-                          .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())[0];
-                        const latestEgfr = egfrObs?.value_numeric;
+
+                        // Safely get eGFR from observations
+                        let latestEgfr: number | undefined;
+                        if (selectedPatient.observations && Array.isArray(selectedPatient.observations)) {
+                          const egfrObs = selectedPatient.observations
+                            .filter(o => o && o.observation_type === 'eGFR')
+                            .sort((a, b) => new Date(b.observation_date).getTime() - new Date(a.observation_date).getTime())[0];
+                          latestEgfr = egfrObs?.value_numeric;
+                        }
+
                         const showGCUA = age >= 60;
 
                         if (!showGCUA) return null;
