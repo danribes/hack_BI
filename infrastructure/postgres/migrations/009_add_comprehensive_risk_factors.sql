@@ -508,16 +508,11 @@ CREATE TRIGGER trg_update_risk_factors_from_obs
     EXECUTE FUNCTION update_risk_factors_from_observations();
 
 -- ============================================
--- 8. Grant Permissions (skip if role doesn't exist)
+-- 8. Grant Permissions (commented out for Render compatibility)
 -- ============================================
-
-DO $$
-BEGIN
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON patient_risk_factors TO healthcare_user';
-    EXECUTE 'GRANT SELECT ON patient_risk_assessment TO healthcare_user';
-EXCEPTION WHEN undefined_object THEN
-    NULL;
-END $$;
+-- Note: On Render, the connection user has full access to tables it creates.
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON patient_risk_factors TO healthcare_user;
+-- GRANT SELECT ON patient_risk_assessment TO healthcare_user;
 
 -- ============================================
 -- Migration Complete

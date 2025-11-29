@@ -402,18 +402,12 @@ COMMENT ON FUNCTION record_risk_assessment IS 'Records a risk assessment and det
 COMMENT ON FUNCTION create_doctor_notification IS 'Creates a notification for the doctor about a patient state change';
 
 -- ============================================
--- 10. Grant permissions (if needed)
+-- 10. Grant permissions (commented out for Render compatibility)
 -- ============================================
-
--- Grant permissions to the application user (skip if role doesn't exist)
-DO $$
-BEGIN
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user';
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user';
-EXCEPTION WHEN undefined_object THEN
-    -- Role doesn't exist, skip grants (OK for Render deployment)
-    NULL;
-END $$;
+-- Note: On Render, the connection user has full access to tables it creates.
+-- These grants are only needed for local dev with separate healthcare_user role.
+-- GRANT SELECT, INSERT, UPDATE ON patient_risk_history TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE ON doctor_notifications TO healthcare_user;
 
 -- ============================================
 -- End of Migration

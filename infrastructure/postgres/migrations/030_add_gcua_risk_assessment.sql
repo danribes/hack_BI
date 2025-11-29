@@ -376,18 +376,13 @@ CREATE TRIGGER trg_update_risk_factors_from_gcua
     EXECUTE FUNCTION update_risk_factors_from_gcua();
 
 -- ============================================
--- 8. Grant Permissions (skip if role doesn't exist)
+-- 8. Grant Permissions (commented out for Render compatibility)
 -- ============================================
-
-DO $$
-BEGIN
-    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON patient_gcua_assessments TO healthcare_user';
-    EXECUTE 'GRANT SELECT ON gcua_population_statistics TO healthcare_user';
-    EXECUTE 'GRANT SELECT ON gcua_high_risk_patients TO healthcare_user';
-    EXECUTE 'GRANT SELECT ON gcua_missing_uacr_patients TO healthcare_user';
-EXCEPTION WHEN undefined_object THEN
-    NULL;
-END $$;
+-- Note: On Render, the connection user has full access to tables it creates.
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON patient_gcua_assessments TO healthcare_user;
+-- GRANT SELECT ON gcua_population_statistics TO healthcare_user;
+-- GRANT SELECT ON gcua_high_risk_patients TO healthcare_user;
+-- GRANT SELECT ON gcua_missing_uacr_patients TO healthcare_user;
 
 -- ============================================
 -- Migration Complete
