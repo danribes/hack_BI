@@ -89,6 +89,8 @@ function getPhenotypeIcon(type: string) {
     case 'II': return <Activity className="h-5 w-5 text-orange-500" />;
     case 'III': return <Heart className="h-5 w-5 text-yellow-500" />;
     case 'IV': return <Brain className="h-5 w-5 text-gray-500" />;
+    case 'Moderate': return <Activity className="h-5 w-5 text-yellow-500" />;
+    case 'Low': return <Shield className="h-5 w-5 text-green-500" />;
     default: return <Users className="h-5 w-5 text-gray-400" />;
   }
 }
@@ -99,6 +101,7 @@ function getPhenotypeColor(color: string) {
     case 'orange': return 'border-orange-300 bg-orange-50';
     case 'yellow': return 'border-yellow-300 bg-yellow-50';
     case 'gray': return 'border-gray-300 bg-gray-100';
+    case 'green': return 'border-green-300 bg-green-50';
     default: return 'border-gray-200 bg-gray-50';
   }
 }
