@@ -16,7 +16,11 @@ import {
   Target,
   Zap,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  Search,
+  Bell,
+  Mail,
+  UserCog
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -180,50 +184,105 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             </div>
           </div>
 
-          {/* Risk Models */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-6 border border-amber-500/20">
-              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
-                <Target className="w-6 h-6 text-amber-400" />
+          {/* GCUA - Geriatric Cardiorenal Unified Assessment */}
+          <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-2xl p-8 border border-purple-500/20 mb-8">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-4">
+                <Users className="w-4 h-4 text-purple-400 mr-2" />
+                <span className="text-purple-400 text-sm font-medium">For Patients 60+ Years</span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">SCORED Model</h3>
-              <p className="text-slate-400 mb-4">Detects hidden kidney disease in non-CKD patients</p>
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
-                  <span>Age, gender, comorbidity scoring</span>
+              <h3 className="text-2xl font-bold text-white mb-2">GCUA - Geriatric Cardiorenal Unified Assessment</h3>
+              <p className="text-slate-400">A specialized triple-risk assessment combining renal, cardiovascular, and mortality risk for elderly patients</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-slate-900/50 rounded-xl p-5 border border-amber-500/20">
+                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-amber-400" />
                 </div>
-                <div className="flex items-center text-sm text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
-                  <span>Score ≥4 = 20%+ chance of hidden CKD</span>
+                <h4 className="text-lg font-bold text-white mb-2">Nelson / CKD-PC</h4>
+                <p className="text-slate-400 text-sm mb-3">5-year renal risk prediction</p>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
+                    <span>Kidney failure progression</span>
+                  </div>
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
+                    <span>eGFR + uACR based model</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-xl p-5 border border-red-500/20">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
+                  <Heart className="w-6 h-6 text-red-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">AHA PREVENT</h4>
+                <p className="text-slate-400 text-sm mb-3">10-year cardiovascular risk</p>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-red-400 mr-2" />
+                    <span>Heart attack & stroke risk</span>
+                  </div>
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-red-400 mr-2" />
+                    <span>BP, cholesterol, diabetes factors</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-500/20">
+                <div className="w-12 h-12 bg-slate-500/20 rounded-xl flex items-center justify-center mb-4">
+                  <Clock className="w-6 h-6 text-slate-400" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">Bansal Geriatric</h4>
+                <p className="text-slate-400 text-sm mb-3">5-year mortality index</p>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-slate-400 mr-2" />
+                    <span>Frailty & comorbidity scoring</span>
+                  </div>
+                  <div className="flex items-center text-sm text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-slate-400 mr-2" />
+                    <span>Goals-of-care alignment</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl p-6 border border-blue-500/20">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Framingham Model</h3>
-              <p className="text-slate-400 mb-4">Predicts 10-year CKD development risk</p>
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-blue-400 mr-2" />
-                  <span>Age, BMI, diabetes, CVD factors</span>
+          {/* GCUA Phenotypes */}
+          <div className="bg-slate-900/50 rounded-2xl p-8 border border-slate-700 mb-8">
+            <h3 className="text-xl font-bold text-white mb-6 text-center">GCUA Phenotype Classification</h3>
+            <p className="text-slate-400 text-center mb-8">Patients are assigned a clinical phenotype based on their combined risk profile</p>
+
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[
+                { type: 'I', name: 'The Resilient', color: 'emerald', desc: 'Low mortality, all risks low' },
+                { type: 'II', name: 'The Watcher', color: 'blue', desc: 'Low mortality, moderate risks' },
+                { type: 'III', name: 'The Fighter', color: 'amber', desc: 'Moderate mortality, high CVD' },
+                { type: 'IV', name: 'The Senescent', color: 'red', desc: 'High mortality (50%+)' },
+                { type: 'Mod', name: 'Cardiorenal Moderate', color: 'purple', desc: 'Moderate combined risks' },
+                { type: 'Low', name: 'Cardiorenal Low', color: 'teal', desc: 'Low combined risks' },
+              ].map((phenotype, index) => (
+                <div key={index} className={`bg-${phenotype.color}-500/10 rounded-xl p-4 border border-${phenotype.color}-500/20 text-center`}>
+                  <div className={`text-2xl font-bold text-${phenotype.color}-400 mb-1`}>{phenotype.type}</div>
+                  <div className="text-white text-sm font-medium mb-2">{phenotype.name}</div>
+                  <div className="text-slate-400 text-xs">{phenotype.desc}</div>
                 </div>
-                <div className="flex items-center text-sm text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-blue-400 mr-2" />
-                  <span>Low/Moderate/High risk categories</span>
-                </div>
-              </div>
+              ))}
             </div>
+          </div>
 
+          {/* Standard Risk Models */}
+          <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20">
               <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
-                <Heart className="w-6 h-6 text-emerald-400" />
+                <BarChart3 className="w-6 h-6 text-emerald-400" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">KDIGO 2024</h3>
-              <p className="text-slate-400 mb-4">Evidence-based risk stratification</p>
+              <p className="text-slate-400 mb-4">Evidence-based CKD staging and risk stratification</p>
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-slate-300">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 mr-2" />
@@ -235,6 +294,24 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </div>
               </div>
             </div>
+
+            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-6 border border-amber-500/20">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Target className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">SCORED Model</h3>
+              <p className="text-slate-400 mb-4">Detects hidden CKD in non-CKD patients (all ages)</p>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
+                  <span>Age, gender, comorbidity scoring</span>
+                </div>
+                <div className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2" />
+                  <span>Score ≥4 = 20%+ chance of hidden CKD</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -243,47 +320,47 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-800/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Early Diagnosis Workflow</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Clinical Assessment Workflow</h2>
             <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              A systematic approach to detecting CKD before symptoms appear
+              Age-appropriate risk stratification and phenotype-based treatment planning
             </p>
           </div>
 
           {/* Workflow Steps */}
           <div className="relative">
             {/* Connection Line */}
-            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 transform -translate-y-1/2"></div>
+            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-purple-500 to-cyan-500 transform -translate-y-1/2"></div>
 
             <div className="grid md:grid-cols-4 gap-8">
-              {/* Step 1: Risk Identification */}
+              {/* Step 1: Patient Intake */}
               <div className="relative">
                 <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-emerald-500/50 dark:border-emerald-500/30 relative z-10 shadow-lg dark:shadow-none">
                   <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">1</span>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Risk Identification</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">SCORED model screens all non-CKD patients for hidden disease</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Patient Intake</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Age-based routing: 60+ triggers GCUA, others use SCORED screening</p>
                 </div>
               </div>
 
-              {/* Step 2: Lab Screening */}
+              {/* Step 2: Risk Assessment */}
               <div className="relative">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-teal-500/50 dark:border-teal-500/30 relative z-10 shadow-lg dark:shadow-none">
-                  <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-purple-500/50 dark:border-purple-500/30 relative z-10 shadow-lg dark:shadow-none">
+                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">2</span>
                   </div>
-                  <div className="w-12 h-12 bg-teal-100 dark:bg-teal-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Activity className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Lab Screening</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">High-risk patients get immediate eGFR and uACR testing</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">GCUA Assessment</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Triple-risk calculation: Renal, CVD, and Mortality scores</p>
                 </div>
               </div>
 
-              {/* Step 3: KDIGO Classification */}
+              {/* Step 3: Phenotype Assignment */}
               <div className="relative">
                 <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-cyan-500/50 dark:border-cyan-500/30 relative z-10 shadow-lg dark:shadow-none">
                   <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
@@ -292,8 +369,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">KDIGO Classification</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Automatic staging with GFR category and albuminuria level</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Phenotype Classification</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Assign clinical phenotype (I-IV, Moderate, Low) based on risk profile</p>
                 </div>
               </div>
 
@@ -306,8 +383,8 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <Pill className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Treatment Plan</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">AI recommends RAS inhibitors, SGLT2i, monitoring frequency</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Personalized Plan</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Phenotype-specific treatment, monitoring, and home testing recommendations</p>
                 </div>
               </div>
             </div>
@@ -547,6 +624,96 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Platform Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-800/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Complete Clinical Platform</h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Beyond risk assessment - a full suite of tools for managing your CKD patient population
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Doctor Management */}
+            <div className="bg-slate-900/50 rounded-xl p-6 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
+                <UserCog className="w-6 h-6 text-blue-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Doctor Management</h3>
+              <p className="text-slate-400 text-sm mb-4">Intelligent patient-to-doctor assignment with workload balancing</p>
+              <ul className="space-y-2">
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400 mr-2 flex-shrink-0" />
+                  <span>7-category patient segmentation</span>
+                </li>
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-blue-400 mr-2 flex-shrink-0" />
+                  <span>Doctor dashboard & statistics</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Alerts & Notifications */}
+            <div className="bg-slate-900/50 rounded-xl p-6 border border-amber-500/20 hover:border-amber-500/40 transition-colors">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Bell className="w-6 h-6 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Smart Alerts</h3>
+              <p className="text-slate-400 text-sm mb-4">Clinical alerts with full lifecycle tracking and priority management</p>
+              <ul className="space-y-2">
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2 flex-shrink-0" />
+                  <span>View → Acknowledge → Resolve</span>
+                </li>
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 mr-2 flex-shrink-0" />
+                  <span>Priority-based filtering</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Silent Hunter */}
+            <div className="bg-slate-900/50 rounded-xl p-6 border border-pink-500/20 hover:border-pink-500/40 transition-colors">
+              <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Search className="w-6 h-6 text-pink-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Silent Hunter</h3>
+              <p className="text-slate-400 text-sm mb-4">Proactive uACR gap detection to find patients needing testing</p>
+              <ul className="space-y-2">
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-pink-400 mr-2 flex-shrink-0" />
+                  <span>Automated gap analysis</span>
+                </li>
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-pink-400 mr-2 flex-shrink-0" />
+                  <span>Prioritized outreach lists</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Email Notifications */}
+            <div className="bg-slate-900/50 rounded-xl p-6 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Mail className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Email System</h3>
+              <p className="text-slate-400 text-sm mb-4">Automated notifications keep care teams informed</p>
+              <ul className="space-y-2">
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mr-2 flex-shrink-0" />
+                  <span>Daily digest reports</span>
+                </li>
+                <li className="flex items-center text-sm text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mr-2 flex-shrink-0" />
+                  <span>Critical alert notifications</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Impact Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-500/10 to-teal-500/10">
         <div className="max-w-7xl mx-auto">
@@ -670,7 +837,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <span>KDIGO 2024 Guidelines</span>
           </div>
           <div className="text-slate-500 text-sm mt-4 md:mt-0">
-            Version 1.1.0 | November 2025
+            Version 2.0.0 | November 2025
           </div>
         </div>
       </footer>
