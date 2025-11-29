@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getPool } from '../../config/database';
-import { classifyKDIGO, classifyKDIGOWithSCORED, calculateSCORED, calculateFramingham, getRiskCategoryLabel, getCKDSeverity } from '../../utils/kdigo';
+import { classifyKDIGO, classifyKDIGOWithSCORED, getRiskCategoryLabel, getCKDSeverity } from '../../utils/kdigo';
 import { HealthStateCommentService } from '../../services/healthStateCommentService';
 import { AIUpdateAnalysisService } from '../../services/aiUpdateAnalysisService';
 import { EmailService } from '../../services/emailService';
@@ -1832,7 +1832,35 @@ Provide ONLY the JSON object, nothing else.`;
       const birthDate = new Date(patient.date_of_birth);
       const age = Math.floor((new Date().getTime() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
-      // Prepare patient context with KDIGO clinical recommendations and SCORED data
+      // Fetch GCUA assessment data for patients 60+ (REPLACES SCORED/Framingham)
+      let gcuaData: any = null;
+      if (age >= 60) {
+        try {
+          const gcuaResult = await pool.query(`
+            SELECT
+              phenotype_type, phenotype_name, phenotype_tag, phenotype_color,
+              module1_renal_risk, module1_risk_category,
+              module2_cvd_risk, module2_risk_category,
+              module3_mortality_risk, module3_risk_category,
+              benefit_ratio, benefit_ratio_interpretation,
+              confidence_level, data_completeness,
+              home_monitoring_recommended
+            FROM patient_gcua_assessments
+            WHERE patient_id = $1
+            ORDER BY assessed_at DESC
+            LIMIT 1
+          `, [id]);
+          if (gcuaResult.rows.length > 0) {
+            gcuaData = gcuaResult.rows[0];
+            console.log(`[Patient Update] GCUA assessment found for patient ${id}: ${gcuaData.phenotype_type} - ${gcuaData.phenotype_name}`);
+          }
+        } catch (gcuaError) {
+          console.error('[Patient Update] Error fetching GCUA data:', gcuaError);
+          // Continue without GCUA data
+        }
+      }
+
+      // Prepare patient context with KDIGO clinical recommendations and GCUA data
       const patientContext = {
         patientId: id,
         firstName: patient.first_name,
@@ -1857,28 +1885,19 @@ Provide ONLY the JSON object, nothing else.`;
         riskLevel: newKdigoClassification.risk_level,
         gfrCategory: newKdigoClassification.gfr_category,
         albuminuriaCategory: newKdigoClassification.albuminuria_category,
-        // Include SCORED assessment data for non-CKD patients
-        // CRITICAL: For non-CKD → CKD transitions, preserve PREVIOUS risk data so AI can explain WHY patient was high-risk
-        scored_points: !currentHasCKD ? newKdigoClassification.scored_points
-          : (hasTransitioned && !previousHasCKD ? kdigoClassification.scored_points : undefined),
-        scored_risk_level: !currentHasCKD ? newKdigoClassification.scored_risk_level
-          : (hasTransitioned && !previousHasCKD ? kdigoClassification.scored_risk_level : undefined),
-        scored_components: !currentHasCKD && newKdigoClassification.scored_points !== undefined
-          ? calculateSCORED(demographics, generatedValues.uACR).components
-          : (hasTransitioned && !previousHasCKD && kdigoClassification.scored_points !== undefined
-            ? calculateSCORED(demographics, uacr).components  // Use PREVIOUS uACR
-            : undefined),
-        // Include Framingham assessment data for non-CKD patients
-        // CRITICAL: For non-CKD → CKD transitions, preserve PREVIOUS risk data
-        framingham_risk_percentage: !currentHasCKD ? newKdigoClassification.framingham_risk_percentage
-          : (hasTransitioned && !previousHasCKD ? kdigoClassification.framingham_risk_percentage : undefined),
-        framingham_risk_level: !currentHasCKD ? newKdigoClassification.framingham_risk_level
-          : (hasTransitioned && !previousHasCKD ? kdigoClassification.framingham_risk_level : undefined),
-        framingham_components: !currentHasCKD && newKdigoClassification.framingham_risk_percentage !== undefined
-          ? calculateFramingham(demographics, generatedValues.uACR).components
-          : (hasTransitioned && !previousHasCKD && kdigoClassification.framingham_risk_percentage !== undefined
-            ? calculateFramingham(demographics, uacr).components  // Use PREVIOUS uACR
-            : undefined),
+        // Include GCUA assessment data for patients 60+ (REPLACES SCORED/Framingham)
+        gcua_phenotype_type: gcuaData?.phenotype_type || undefined,
+        gcua_phenotype_name: gcuaData?.phenotype_name || undefined,
+        gcua_renal_risk: gcuaData?.module1_renal_risk || undefined,
+        gcua_renal_risk_category: gcuaData?.module1_risk_category || undefined,
+        gcua_cvd_risk: gcuaData?.module2_cvd_risk || undefined,
+        gcua_cvd_risk_category: gcuaData?.module2_risk_category || undefined,
+        gcua_mortality_risk: gcuaData?.module3_mortality_risk || undefined,
+        gcua_mortality_risk_category: gcuaData?.module3_risk_category || undefined,
+        gcua_benefit_ratio: gcuaData?.benefit_ratio || undefined,
+        gcua_benefit_ratio_interpretation: gcuaData?.benefit_ratio_interpretation || undefined,
+        gcua_confidence_level: gcuaData?.confidence_level || undefined,
+        gcua_home_monitoring_recommended: gcuaData?.home_monitoring_recommended || undefined,
         // Include demographics and comorbidities for context
         gender: patient.gender.toLowerCase() as 'male' | 'female',
         has_hypertension: comorbidities.has_hypertension,
