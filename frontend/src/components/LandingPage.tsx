@@ -257,24 +257,81 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
           {/* GCUA Phenotypes */}
           <div className="bg-slate-900/50 rounded-2xl p-8 border border-slate-700 mb-8">
-            <h3 className="text-xl font-bold text-white mb-6 text-center">GCUA Phenotype Classification</h3>
-            <p className="text-slate-400 text-center mb-8">Patients are assigned a clinical phenotype based on their combined risk profile</p>
+            <h3 className="text-xl font-bold text-white mb-2 text-center">GCUA Phenotype Classification</h3>
+            <p className="text-slate-400 text-center mb-8">Each phenotype answers: "What treatment approach fits this patient's combined risk profile?"</p>
 
-            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {[
-                { type: 'I', name: 'The Resilient', color: 'emerald', desc: 'Low mortality, all risks low' },
-                { type: 'II', name: 'The Watcher', color: 'blue', desc: 'Low mortality, moderate risks' },
-                { type: 'III', name: 'The Fighter', color: 'amber', desc: 'Moderate mortality, high CVD' },
-                { type: 'IV', name: 'The Senescent', color: 'red', desc: 'High mortality (50%+)' },
-                { type: 'Mod', name: 'Cardiorenal Moderate', color: 'purple', desc: 'Moderate combined risks' },
-                { type: 'Low', name: 'Cardiorenal Low', color: 'teal', desc: 'Low combined risks' },
-              ].map((phenotype, index) => (
-                <div key={index} className={`bg-${phenotype.color}-500/10 rounded-xl p-4 border border-${phenotype.color}-500/20 text-center`}>
-                  <div className={`text-2xl font-bold text-${phenotype.color}-400 mb-1`}>{phenotype.type}</div>
-                  <div className="text-white text-sm font-medium mb-2">{phenotype.name}</div>
-                  <div className="text-slate-400 text-xs">{phenotype.desc}</div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Phenotype I */}
+              <div className="bg-emerald-500/10 rounded-xl p-5 border border-emerald-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-emerald-400 mr-3">I</div>
+                  <div className="text-white font-medium">The Resilient</div>
                 </div>
-              ))}
+                <p className="text-slate-400 text-sm mb-3">Low mortality, low renal risk, low CVD risk</p>
+                <div className="bg-emerald-500/20 rounded-lg p-3">
+                  <p className="text-emerald-300 text-sm font-medium">→ Full aggressive treatment - patient will benefit from all interventions</p>
+                </div>
+              </div>
+
+              {/* Phenotype II */}
+              <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-blue-400 mr-3">II</div>
+                  <div className="text-white font-medium">The Watcher</div>
+                </div>
+                <p className="text-slate-400 text-sm mb-3">Low mortality, but moderate renal OR CVD risk</p>
+                <div className="bg-blue-500/20 rounded-lg p-3">
+                  <p className="text-blue-300 text-sm font-medium">→ Active treatment + close monitoring to prevent progression</p>
+                </div>
+              </div>
+
+              {/* Phenotype III */}
+              <div className="bg-amber-500/10 rounded-xl p-5 border border-amber-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-amber-400 mr-3">III</div>
+                  <div className="text-white font-medium">The Fighter</div>
+                </div>
+                <p className="text-slate-400 text-sm mb-3">Moderate mortality with HIGH cardiovascular risk</p>
+                <div className="bg-amber-500/20 rounded-lg p-3">
+                  <p className="text-amber-300 text-sm font-medium">→ Prioritize CVD protection - statins, BP control, SGLT2i</p>
+                </div>
+              </div>
+
+              {/* Phenotype IV */}
+              <div className="bg-red-500/10 rounded-xl p-5 border border-red-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-red-400 mr-3">IV</div>
+                  <div className="text-white font-medium">The Senescent</div>
+                </div>
+                <p className="text-slate-400 text-sm mb-3">High mortality risk (≥50% 5-year)</p>
+                <div className="bg-red-500/20 rounded-lg p-3">
+                  <p className="text-red-300 text-sm font-medium">→ Goals-of-care conversation - focus on quality of life</p>
+                </div>
+              </div>
+
+              {/* Cardiorenal Moderate */}
+              <div className="bg-purple-500/10 rounded-xl p-5 border border-purple-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-purple-400 mr-3">Mod</div>
+                  <div className="text-white font-medium">Cardiorenal Moderate</div>
+                </div>
+                <p className="text-slate-400 text-sm mb-3">Moderate risks in BOTH renal AND CVD</p>
+                <div className="bg-purple-500/20 rounded-lg p-3">
+                  <p className="text-purple-300 text-sm font-medium">→ Dual-benefit medications - SGLT2i, finerenone</p>
+                </div>
+              </div>
+
+              {/* Cardiorenal Low */}
+              <div className="bg-teal-500/10 rounded-xl p-5 border border-teal-500/20">
+                <div className="flex items-center mb-3">
+                  <div className="text-2xl font-bold text-teal-400 mr-3">Low</div>
+                  <div className="text-white font-medium">Cardiorenal Low</div>
+                </div>
+                <p className="text-slate-400 text-sm mb-3">Low combined renal and CVD risks</p>
+                <div className="bg-teal-500/20 rounded-lg p-3">
+                  <p className="text-teal-300 text-sm font-medium">→ Preventive care - lifestyle, monitoring, minimal meds</p>
+                </div>
+              </div>
             </div>
           </div>
 
