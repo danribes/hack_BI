@@ -39,7 +39,7 @@ RENALGUARD AI acts as an **intelligent co-pilot** for primary care physicians, e
 | Without RENALGUARD AI | With RENALGUARD AI |
 |----------------------|-------------------|
 | CKD often detected at Stage 3-4 | Early detection at Stage 1-2 through risk screening |
-| Manual risk calculation is time-consuming | Automated SCORED and Framingham risk assessment |
+| Manual risk calculation is time-consuming | Automated GCUA cardiorenal risk assessment (Nelson, AHA PREVENT, Bansal) |
 | Treatment decisions require guideline lookup | AI provides instant KDIGO 2024 recommendations |
 | Lab changes may go unnoticed | Smart alerts flag clinically significant changes only |
 | Patient monitoring is reactive | Proactive monitoring with trend detection |
@@ -61,17 +61,36 @@ RENALGUARD AI leverages artificial intelligence at multiple levels to provide co
 
 ### 2. Risk Prediction Models
 
-**SCORED Model (Screening for Occult Renal Disease)**
-- Detects "hidden" kidney disease in patients without diagnosed CKD
-- Points assigned for: age, gender, hypertension, diabetes, cardiovascular disease, proteinuria
-- **High Risk (score >= 4)**: ~20% chance of already having undetected CKD
-- Triggers recommendation for immediate lab screening
+**GCUA - Geriatric Cardiorenal Unified Assessment (For Patients 60+)**
 
-**Framingham CKD Risk Model**
-- Predicts 10-year probability of developing CKD
-- Considers: age, sex, diabetes, hypertension, CVD, smoking, BMI, albuminuria
-- Risk categories: Low (<10%), Moderate (10-20%), High (>20%)
-- Guides preventive interventions for at-risk patients
+GCUA is a comprehensive risk stratification system integrating three validated prediction models:
+
+**Module 1: Nelson/CKD-PC Incident CKD Equation (2019)**
+- Predicts 5-year probability of developing CKD (eGFR < 60)
+- Derived from 34 multinational cohorts with >5 million individuals
+- C-statistic: 0.845 (non-diabetic), 0.801 (diabetic)
+- Risk categories: Low (<5%), Moderate (5-14.9%), High (≥15%)
+
+**Module 2: AHA PREVENT CVD Risk Equation (2024)**
+- 10-year risk of total cardiovascular disease events
+- Integrates the Cardiovascular-Kidney-Metabolic (CKM) syndrome
+- Key advancement over PCE: Includes eGFR/uACR as core variables
+- Risk categories: Low (<5%), Borderline (5-7.4%), Intermediate (7.5-19.9%), High (≥20%)
+
+**Module 3: Bansal Geriatric Mortality Score (2015)**
+- Predicts 5-year all-cause mortality in older adults
+- Addresses the "competing risk" problem in geriatric patients
+- Risk categories: Low (<15%), Moderate (15-29.9%), High (30-49.9%), Very High (≥50%)
+
+**GCUA Phenotype Classification:**
+| Phenotype | Name | Criteria | Clinical Strategy |
+|-----------|------|----------|-------------------|
+| I | Accelerated Ager | High renal (≥15%) AND High CVD (≥20%) | Aggressive dual intervention |
+| II | Silent Renal | High renal (≥15%) AND Low CVD (<7.5%) | Nephroprotection priority |
+| III | Vascular Dominant | Low renal (<5%) AND High CVD (≥20%) | CVD prevention protocols |
+| IV | The Senescent | Mortality risk ≥50% | Quality of life focus, deprescribing |
+| Moderate | Cardiorenal Moderate | Moderate renal (5-14.9%) | Preventive strategies |
+| Low | Low Risk | Low across all domains | Routine care |
 
 **KDIGO 2024 Risk Stratification**
 - Automatic classification based on eGFR and uACR
@@ -80,14 +99,34 @@ RENALGUARD AI leverages artificial intelligence at multiple levels to provide co
 
 ### 3. Model Context Protocol (MCP) Clinical Tools
 
-A suite of specialized clinical decision support tools:
+A comprehensive suite of 16+ specialized clinical decision support tools:
+
+**Phase-Based Assessment:**
+- `phase1_pre_diagnosis_risk`: 3-tier risk stratification for non-CKD patients
+- `phase2_kdigo_classification`: KDIGO staging with trajectory analysis (RAPID/MODERATE/SLOW/STABLE)
+- `phase3_treatment_decision`: Treatment eligibility and contraindication checking
+- `phase4_adherence_monitoring`: MPR/PDC metrics and barrier identification
+
+**Risk Prediction:**
 - `comprehensive_ckd_analysis`: Master orchestrator for complete patient assessment
-- `assess_pre_diagnosis_risk`: SCORED and Framingham calculations
-- `classify_kdigo`: KDIGO staging and classification
-- `assess_treatment_options`: Jardiance, RAS inhibitor eligibility
-- `monitor_adherence`: Medication Possession Ratio (MPR) tracking
-- `predict_kidney_failure_risk`: KFRE 2-year and 5-year predictions
-- `assess_medication_safety`: Dose adjustments and contraindications
+- `assess_gcua_risk`: GCUA cardiorenal assessment (Nelson, AHA PREVENT, Bansal)
+- `predict_kidney_failure_risk`: KFRE 2-year and 5-year kidney failure predictions
+- `calculate_egfr`: CKD-EPI equation with cystatin C alternative
+
+**Medication & Safety:**
+- `assess_treatment_options`: Jardiance, RAS inhibitor, statin eligibility
+- `assess_medication_safety`: Dose adjustments, drug interactions, contraindications
+- `composite_adherence_monitoring`: Multi-medication adherence tracking
+
+**Monitoring & Compliance:**
+- `analyze_adherence`: Medication and screening adherence patterns
+- `check_screening_protocol`: Screening guideline compliance and gap detection
+
+**Data & Reference:**
+- `lab_results`: Historical lab value retrieval with trend analysis
+- `patient_data`: Demographics, medications, comorbidity aggregation
+- `population_stats`: Cohort analytics and outcome tracking
+- `guidelines`: KDIGO guideline lookup and best practice protocols
 
 ---
 
@@ -95,32 +134,36 @@ A suite of specialized clinical decision support tools:
 
 RENALGUARD AI implements a systematic approach to early CKD detection:
 
-### Step 1: Risk Identification in Non-CKD Patients
+### Step 1: Risk Identification in Non-CKD Patients (60+ years)
 
-For patients without diagnosed CKD, the system automatically calculates:
+For patients 60+ without diagnosed CKD, the system automatically performs **GCUA Assessment**:
 
-1. **SCORED Risk Score**: Identifies patients who may already have undetected CKD
-   - Age-based points (50-59: +2, 60-69: +3, 70+: +4)
-   - Female: +1, Hypertension: +1, Diabetes: +1
-   - Cardiovascular disease: +1, Peripheral vascular disease: +1
-   - Proteinuria (uACR >= 30): +1
+1. **Nelson/CKD-PC Renal Risk**: Identifies patients at risk of developing CKD
+   - Age, sex, eGFR, uACR, diabetes, hypertension, CVD, heart failure
+   - Protective factors: SGLT2 inhibitors (-35%), RAS inhibitors (-20%)
+   - High risk (≥15%): Immediate intervention recommended
 
-2. **Framingham 10-Year Risk**: Predicts future CKD development
-   - Baseline risk increases exponentially with age
-   - Diabetes nearly doubles the risk (+80%)
-   - CVD triples the risk (+180%)
-   - Albuminuria more than triples the risk (+120-250%)
+2. **AHA PREVENT CVD Risk**: Predicts cardiovascular events
+   - Integrates kidney function (eGFR, uACR) as core variables
+   - Considers CKM syndrome (Cardiovascular-Kidney-Metabolic)
+   - High risk (≥20%): Aggressive risk factor modification
 
-### Step 2: Screening Recommendations
+3. **Bansal Mortality Risk**: Assesses competing mortality risk
+   - Critical for treatment intensity decisions in elderly
+   - High risk (≥50%): Quality of life focus over aggressive intervention
 
-Based on risk assessment, the system recommends:
+### Step 2: Phenotype-Based Recommendations
 
-| Risk Level | Action |
-|-----------|--------|
-| SCORED >= 4 (High) | Immediate eGFR and uACR testing recommended |
-| SCORED < 4 (Low) | Annual routine screening |
-| Framingham High (>20%) | Enhanced monitoring, lifestyle interventions |
-| Framingham Moderate (10-20%) | Risk factor modification, regular follow-up |
+Based on GCUA phenotype, the system recommends:
+
+| Phenotype | Home Monitoring | Treatment Priority |
+|-----------|-----------------|-------------------|
+| I (Accelerated Ager) | Recommended | SGLT2i + RAS inhibitor + Statin |
+| II (Silent Renal) | Recommended | SGLT2i + RAS inhibitor (nephroprotection) |
+| III (Vascular Dominant) | If high renal risk | Statin + BP control |
+| IV (Senescent) | If renal ≥15% or CVD ≥20% | Quality of life focus, deprescribing |
+| Moderate | If high CVD risk | Preventive strategies |
+| Low | Not required | Routine care |
 
 ### Step 3: CKD Diagnosis and Classification
 
@@ -141,7 +184,7 @@ When lab results indicate CKD (eGFR < 60 OR uACR >= 30 for 3+ months):
 
 3. **Transition Detection**:
    - System automatically identifies when patients move from non-CKD to CKD
-   - Preserves SCORED and Framingham risk data for comprehensive analysis
+   - Preserves GCUA phenotype and risk data for comprehensive analysis
    - AI generates transition-focused analysis explaining clinical significance
 
 ---
@@ -160,6 +203,16 @@ RENALGUARD AI uses two complementary monitoring approaches:
 3. AI analyzes trends and detects concerning changes
 4. Alerts generated if uACR increases > 30%
 
+**Risk-Based Monitoring Recommendations**:
+Home monitoring is recommended based on actual risk levels, not just phenotype:
+
+| Patient Profile | Monitoring Recommendation |
+|-----------------|--------------------------|
+| Phenotype I/II (High renal risk ≥15%) | Recommended - essential for early detection |
+| Phenotype IV with renal ≥15% or CVD ≥20% | Recommended - low-burden, valuable for trends |
+| Moderate with CVD ≥20% | Recommended - cardiorenal syndrome risk |
+| Low risk patients | Not required - standard clinic monitoring |
+
 **Monitoring Frequencies**:
 - Weekly: For high-risk or newly treated patients
 - Biweekly: For moderate-risk patients
@@ -171,6 +224,7 @@ RENALGUARD AI uses two complementary monitoring approaches:
 - More frequent monitoring catches changes earlier
 - Patient engagement in their own care
 - Real-time trend detection
+- Low-burden even for elderly/senescent patients
 
 ### Blood Tests: Laboratory Monitoring
 
@@ -427,37 +481,45 @@ The system automatically evaluates treatment options:
 The AI Doctor Assistant is embedded directly in each patient's detail card, providing instant access to evidence-based recommendations.
 
 **Key Capabilities:**
-- **Patient-Context-Aware Conversations**: Automatically knows the patient's complete medical history, lab trends, current medications, and risk classification
-- **Treatment Guidance**: Answers questions like "Should I start an SGLT2 inhibitor?" or "When should I refer to nephrology?"
+- **Patient-Context-Aware Conversations**: Automatically knows the patient's complete medical history, lab trends, current medications, GCUA phenotype, and risk classification
+- **GCUA Phenotype Understanding**: Explains cardiorenal risk phenotypes including Senescent classification and treatment implications
+- **Treatment Guidance**: Answers questions like "Should I start an SGLT2 inhibitor?" or "Should I monitor this patient at home?"
 - **Clinical Guideline Integration**: Provides KDIGO 2024 recommendations tailored to each patient's specific situation
 - **Automatic Retry Logic**: Handles API overload gracefully with exponential backoff (2s, 4s, 8s delays)
-- **Multi-Modal Analysis**: Can discuss population-level statistics, individual patient trends, or general CKD management principles
+- **Plain-Text Optimized Responses**: Formats responses for optimal readability without markdown syntax
+
+**Response Formatting:**
+The AI uses a clean, readable format optimized for the chat interface:
+- SECTION TITLES IN UPPERCASE
+- Numbered lists (1. 2. 3.) for recommendations
+- Arrow symbols (→) for sub-points and actions
+- Line breaks for visual separation
 
 **Sample Interactions:**
 ```
 Doctor: "Should I start treating this patient?"
 
-AI: Based on Roger Campbell's current status:
-    - CKD Stage: 3a (Moderate)
-    - eGFR: 52.3 ml/min/1.73m2
-    - uACR: 45 mg/g (A2 - Moderately increased albuminuria)
-    - Treatment Status: NOT ON TREATMENT
-    - Comorbidities: Hypertension, Type 2 Diabetes
+AI: PATIENT SUMMARY:
+    Roger Campbell - 68-year-old with Type 2 diabetes and hypertension.
 
-    KDIGO 2024 Recommendations:
+    CURRENT STATUS:
+    1. CKD Stage: 3a (Moderate)
+    2. eGFR: 52.3 ml/min/1.73m²
+    3. uACR: 45 mg/g (A2 - Moderately increased albuminuria)
+    4. Treatment Status: NOT ON TREATMENT
 
+    RECOMMENDATIONS:
     1. INITIATE RAS Inhibitor (ACE-I or ARB)
-       Rationale: uACR >30 mg/g + diabetes/hypertension
+       → Rationale: uACR >30 mg/g + diabetes/hypertension
 
     2. CONSIDER SGLT2 Inhibitor
-       Rationale: eGFR >20, proven cardio-renal protection
+       → Rationale: eGFR >20, proven cardio-renal protection
 
     3. INITIATE Home Monitoring
-       Recommend: Minuteful Kidney (eGFR + uACR every 3 months)
+       → Recommend: Minuteful Kidney every 3 months
 
-    4. Blood Pressure Target: <130/80 mmHg
-
-    5. Follow-up: 3 months (monitor for acute eGFR decline)
+    FOLLOW-UP:
+    Schedule review in 3 months to monitor for acute eGFR decline.
 ```
 
 ### Advanced Patient Management System
@@ -472,8 +534,9 @@ AI: Based on Roger Campbell's current status:
 - Demographics and medical history
 - Latest lab results with trend visualization
 - KDIGO risk classification breakdown
+- GCUA phenotype and cardiorenal risk assessment (for 60+ patients)
 - Current medications and treatment status
-- Home monitoring device status
+- Home monitoring device status and recommendations
 - AI-generated health state evolution timeline
 - Embedded Doctor Assistant chat
 - Recommended actions and clinical summaries
@@ -502,6 +565,75 @@ AI: Based on Roger Campbell's current status:
 - Prevents alert fatigue
 - Uses evidence-based clinical thresholds
 
+### Doctor Management & Assignment
+
+**7-Category Patient Segmentation:**
+| Category | Description |
+|----------|-------------|
+| Non-CKD Low Risk | GCUA Low phenotype, minimal intervention needed |
+| Non-CKD Moderate Risk | GCUA Moderate phenotype, preventive strategies |
+| Non-CKD High Risk | GCUA Phenotype I/II/III, active intervention required |
+| CKD Mild | Stage 1-2, early CKD management |
+| CKD Moderate | Stage 3a-3b, active nephroprotection |
+| CKD Severe | Stage 4, pre-dialysis care |
+| Kidney Failure | Stage 5, dialysis/transplant planning |
+
+**Doctor Assignment Features:**
+- Bulk assignment of doctors to patient categories
+- Primary and secondary doctor relationships
+- External notification email lists for care coordination
+- Per-doctor SMTP configuration for notifications
+- Quiet hours enforcement for non-urgent alerts
+
+### Analytics & Performance Tracking
+
+**Doctor Performance Metrics:**
+- Alert acknowledgment rate and response times
+- Resolution rate and escalation tracking
+- Percentile-based response time distribution (P50, P75, P95)
+
+**Population Analytics:**
+- Alert trends over configurable time periods (1-365 days)
+- Most common alert types and frequencies
+- Risk distribution across patient population
+- Treatment pattern analysis
+
+**Alert Lifecycle Tracking:**
+- Creation → Viewed → Acknowledged → Resolved
+- Time-to-acknowledge and time-to-resolve metrics
+- Escalation rate monitoring for SLA compliance
+
+### Email & Notification System
+
+**Configurable Email Templates:**
+- Per-doctor customizable notification templates
+- Variable substitution: `{patient_name}`, `{mrn}`, `{value}`, `{unit}`, `{time_period}`
+- HTML and plain-text formats
+- Test email functionality with preview URLs
+
+**Notification Types:**
+- CKD transition alerts (non-CKD → CKD)
+- Significant lab value changes
+- Treatment adherence concerns
+- Clinical alerts requiring action
+
+**SMTP Configuration:**
+- Per-doctor SMTP settings (host, port, credentials)
+- Fallback to system default for unconfigured doctors
+- Ethereal test accounts for development
+
+### Silent Hunter Feature
+
+**Identifying Data Gaps:**
+- Detects patients eligible for GCUA but missing uACR data
+- uACR is critical for accurate renal risk calculation
+- Prompts for uACR testing to unlock full risk profile
+
+**Clinical Value:**
+- Many patients have eGFR but no albuminuria testing
+- uACR can reveal "silent" kidney damage before eGFR decline
+- Completing GCUA enables phenotype classification and treatment recommendations
+
 ---
 
 ## Technical Architecture
@@ -523,13 +655,43 @@ AI: Based on Roger Campbell's current status:
 - **Model Context Protocol (MCP)** - Standardized clinical decision support tool integration
 - **KDIGO 2024 Guidelines** - Latest evidence-based CKD management protocols
 
-### Database Schema
-- **Patients Table**: Demographics, medical history, comorbidities, medications
-- **Observations Table**: Lab results with timestamps and trend analysis
-- **CKD Patient Data**: KDIGO classification, stage, severity, treatment status
-- **Non-CKD Patient Data**: SCORED risk, Framingham risk, monitoring status
-- **Health State Comments**: AI-generated analysis timeline
-- **Jardiance Prescriptions**: SGLT2 inhibitor treatment tracking
+### Database Schema (31 Migrations)
+
+**Core Patient Data:**
+- **patients**: Demographics, insurance, contact info, vitals
+- **patient_risk_factors**: Clinical risk metrics, GCUA phenotype cache
+- **observations**: Lab values with temporal tracking and triggers
+- **conditions**: Active conditions with clinical status
+
+**CKD Classification:**
+- **ckd_patient_data**: KDIGO stage, severity, health state, treatment flags
+- **non_ckd_patient_data**: Pre-CKD risk stratification, monitoring status
+- **patient_gcua_assessments**: 3-module scores, phenotype, treatment recommendations
+
+**Medication Tracking:**
+- **jardiance_prescriptions**: Dosage (10mg/25mg), prescriber, start/end dates
+- **jardiance_refills**: Refill history with gap analysis (expected vs actual)
+- **jardiance_adherence**: MPR/PDC metrics by period
+- **adherence_barriers**: Identified barriers with severity and resolution
+
+**Doctor Management:**
+- **doctors**: Profiles with specialty, contact, SMTP settings
+- **doctor_patient_assignments**: Primary/secondary relationships
+- **doctor_notifications**: Notification queue with priority levels
+
+**Analytics & Communication:**
+- **alert_analytics**: Alert lifecycle (create/view/acknowledge/resolve)
+- **patient_health_state_comments**: Clinical notes with visibility control
+- **email_templates**: Customizable per-doctor notification templates
+
+**Database Views:**
+- `gcua_population_statistics`: Phenotype distribution analytics
+- `gcua_high_risk_patients`: Phenotype I and II patients
+- `gcua_missing_uacr_patients`: Silent Hunter candidates
+
+**Database Functions:**
+- `get_latest_gcua_assessment()`: Retrieves most recent assessment
+- Auto-update triggers for cascading risk factor updates
 
 ---
 
@@ -537,39 +699,79 @@ AI: Based on Roger Campbell's current status:
 
 ```
 /home/user/hack_BI/
-├── backend/                      # Express + TypeScript API
+├── backend/                           # Express + TypeScript API
 │   ├── src/
 │   │   ├── api/routes/
-│   │   │   ├── patients.ts       # Patient management API
-│   │   │   ├── agent.ts          # Doctor Assistant API
-│   │   │   ├── jardiance.ts      # Medication tracking
-│   │   │   ├── risk.ts           # Risk assessment
-│   │   │   └── analytics.ts      # Alert analytics
+│   │   │   ├── patients.ts            # Patient management & filtering
+│   │   │   ├── agent.ts               # AI Doctor Assistant chat
+│   │   │   ├── gcua.ts                # GCUA risk assessment
+│   │   │   ├── jardiance.ts           # Prescription, refill, adherence
+│   │   │   ├── risk.ts                # Risk calculation & statistics
+│   │   │   ├── doctors.ts             # Doctor profiles & assignments
+│   │   │   ├── notifications.ts       # Alert notifications
+│   │   │   ├── analytics.ts           # Performance metrics
+│   │   │   ├── settings.ts            # Email & system configuration
+│   │   │   └── init.ts                # Data seeding
 │   │   ├── services/
+│   │   │   ├── doctorAgent.ts         # Claude AI integration
 │   │   │   ├── aiUpdateAnalysisService.ts  # AI lab analysis
-│   │   │   ├── doctorAgent.ts    # AI chat service
 │   │   │   ├── clinicalAlertsService.ts    # Alert generation
-│   │   │   └── patientMonitor.ts # Real-time monitoring
+│   │   │   ├── patientMonitor.ts      # Real-time monitoring
+│   │   │   ├── emailService.ts        # SMTP & notifications
+│   │   │   ├── analyticsService.ts    # Alert lifecycle tracking
+│   │   │   ├── healthStateCommentService.ts # Clinical notes
+│   │   │   └── mcpClient.ts           # MCP tool integration
 │   │   └── utils/
-│   │       └── kdigo.ts          # KDIGO, SCORED, Framingham
+│   │       ├── kdigo.ts               # KDIGO 2024 classification
+│   │       └── gcua.ts                # Nelson, AHA PREVENT, Bansal
 │
-├── frontend/                     # React + Vite + Tailwind
+├── frontend/                          # React + Vite + Tailwind
 │   ├── src/
+│   │   ├── App.tsx                    # Main application
 │   │   ├── components/
 │   │   │   ├── DoctorChatBar.tsx      # AI chat interface
-│   │   │   ├── PatientFilters.tsx     # Advanced filtering
-│   │   │   ├── AdherenceCard.tsx      # Medication tracking
-│   │   │   └── PatientTrendGraphs.tsx # Visualization
+│   │   │   ├── GCUARiskCard.tsx       # GCUA phenotype display
+│   │   │   ├── GCUADashboard.tsx      # Population GCUA analytics
+│   │   │   ├── PatientFilters.tsx     # Advanced filtering UI
+│   │   │   ├── PatientTrendGraphs.tsx # eGFR/uACR visualization
+│   │   │   ├── AdherenceCard.tsx      # MPR/PDC metrics display
+│   │   │   ├── DoctorAssignmentInterface.tsx  # Bulk assignment UI
+│   │   │   ├── Settings.tsx           # Email configuration
+│   │   │   ├── EmailTemplateEditor.tsx # Template management
+│   │   │   └── LandingPage.tsx        # System overview
 │
-├── mcp-server/                   # Clinical Decision Support Server
+├── mcp-server/                        # Clinical Decision Support
 │   └── src/tools/
-│       ├── comprehensiveCKDAnalysis.ts
-│       ├── phase3TreatmentDecision.ts
-│       ├── phase4AdherenceMonitoring.ts
-│       └── compositeAdherenceMonitoring.ts
+│       ├── comprehensiveCKDAnalysis.ts    # Master orchestrator
+│       ├── phase1PreDiagnosisRisk.ts      # Pre-CKD screening
+│       ├── phase2KDIGOClassification.ts   # KDIGO staging
+│       ├── phase3TreatmentDecision.ts     # Treatment eligibility
+│       ├── phase4AdherenceMonitoring.ts   # Adherence tracking
+│       ├── gcuaAssessment.ts              # GCUA 3-module assessment
+│       ├── predictKidneyFailureRisk.ts    # KFRE prediction
+│       ├── assessMedicationSafety.ts      # Drug safety checking
+│       ├── calculateEGFR.ts               # eGFR calculation
+│       ├── compositeAdherenceMonitoring.ts # Multi-drug adherence
+│       ├── checkScreeningProtocol.ts      # Protocol compliance
+│       ├── labResults.ts                  # Lab data queries
+│       ├── patientData.ts                 # Patient data aggregation
+│       ├── populationStats.ts             # Cohort analytics
+│       └── guidelines.ts                  # Clinical guidelines
 │
-└── infrastructure/
-    └── postgres/init.sql         # Database schema
+├── infrastructure/
+│   └── postgres/
+│       ├── migrations/                # 31 ordered migrations
+│       │   ├── 001-009                # Core patient data
+│       │   ├── 014-020                # Communication & tracking
+│       │   ├── 021-029                # Doctor management
+│       │   └── 030-031                # GCUA assessment
+│       └── RENDER_DATABASE_INIT.sql   # Full schema initialization
+│
+├── data/                              # Mock data & seed files
+├── docs/                              # 40+ documentation files
+├── docker-compose.yml                 # Production deployment
+├── docker-compose.dev.yml             # Development setup
+└── Dockerfile                         # Multi-stage container build
 ```
 
 ---
@@ -629,10 +831,13 @@ curl -X POST http://localhost:3000/api/init/populate
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/patients` | GET | List all patients with KDIGO classification |
-| `/api/patients/filter` | GET | Filter by CKD status, severity, treatment |
-| `/api/patients/:id` | GET | Full patient detail |
+| `/api/patients/filter` | GET | Filter by CKD status, severity, treatment, monitoring |
+| `/api/patients/:id` | GET | Full patient detail with risk assessment |
 | `/api/patients/:id/update-records` | POST | Simulate new lab results |
 | `/api/patients/:id/comments` | GET | Health state evolution timeline |
+| `/api/patients/:id/assign-doctor` | POST | Assign doctor (primary/secondary) |
+| `/api/patients/:id/doctors` | GET | Get assigned doctors |
+| `/api/patients/:id/primary-doctor` | GET | Get primary doctor |
 
 ### Risk Assessment Endpoints
 
@@ -640,16 +845,88 @@ curl -X POST http://localhost:3000/api/init/populate
 |----------|--------|-------------|
 | `/api/risk/assessment/:patientId` | GET | Get risk evaluation |
 | `/api/risk/calculate/:patientId` | POST | Recalculate risk |
+| `/api/risk/bulk-calculate` | POST | Bulk risk calculation |
 | `/api/risk/patients/high-risk` | GET | High-risk population |
 | `/api/risk/statistics` | GET | Population statistics |
 
-### Treatment Tracking Endpoints
+### GCUA Assessment Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/gcua/assessment/:patientId` | GET | Get latest GCUA assessment |
+| `/api/gcua/calculate/:patientId` | POST | Calculate new GCUA assessment |
+| `/api/gcua/bulk-calculate` | POST | Recalculate all eligible patients |
+| `/api/gcua/eligible-patients` | GET | List patients eligible for GCUA (60+, eGFR >60) |
+| `/api/gcua/high-risk` | GET | Get Phenotype I and II patients |
+| `/api/gcua/missing-uacr` | GET | Silent Hunter - patients needing uACR |
+| `/api/gcua/statistics` | GET | Population statistics by phenotype |
+| `/api/gcua/history/:patientId` | GET | Assessment history for patient |
+
+### Jardiance & Adherence Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/jardiance/prescriptions/:patientId` | GET | Get prescriptions |
-| `/api/jardiance/prescriptions` | POST | Create prescription |
+| `/api/jardiance/prescriptions` | POST | Create prescription (10mg/25mg) |
 | `/api/jardiance/prescriptions/:id/discontinue` | PUT | Stop treatment |
+| `/api/jardiance/refills/:prescriptionId` | GET | Get refill history |
+| `/api/jardiance/refills` | POST | Record refill with gap analysis |
+| `/api/jardiance/adherence/:prescriptionId` | GET | Get adherence history |
+| `/api/jardiance/adherence/calculate` | POST | Calculate MPR/PDC |
+| `/api/jardiance/barriers/:prescriptionId` | GET | Get adherence barriers |
+| `/api/jardiance/barriers` | POST | Record new barrier |
+| `/api/jardiance/barriers/:id/resolve` | PUT | Resolve barrier |
+| `/api/jardiance/summary/:patientId` | GET | Complete prescription summary |
+
+### Doctor Management Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/doctors` | GET | List all doctors |
+| `/api/doctors` | POST | Create doctor profile |
+| `/api/doctors/:email` | GET | Get doctor details |
+| `/api/doctors/:email` | PUT | Update doctor profile |
+| `/api/doctors/:email` | DELETE | Delete doctor |
+| `/api/doctors/assign-by-category` | POST | Bulk assign by category |
+| `/api/doctors/category-assignments` | GET | Get category assignments |
+| `/api/doctors/category-stats` | GET | Patient counts by category |
+| `/api/doctors/external-notifications` | GET/POST | External email management |
+
+### Notification Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/notifications` | GET | Get notifications (paginated) |
+| `/api/notifications/unread` | GET | Get unread notifications |
+| `/api/notifications/:id/read` | POST | Mark as read |
+| `/api/notifications/:id/acknowledge` | POST | Acknowledge notification |
+| `/api/notifications/stats` | GET | Notification statistics |
+| `/api/notifications/monitor/status` | GET | Monitoring service status |
+
+### Analytics Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/summary` | GET | System-wide summary |
+| `/api/analytics/doctor/:email` | GET | Doctor performance metrics |
+| `/api/analytics/doctors/all` | GET | All doctors performance |
+| `/api/analytics/trends` | GET | Alert trends over time |
+| `/api/analytics/common-alerts` | GET | Most common alert types |
+| `/api/analytics/patient/:id` | GET | Patient alert history |
+| `/api/analytics/response-times` | GET | Response time distribution |
+| `/api/analytics/track/viewed/:id` | POST | Track alert view |
+| `/api/analytics/track/acknowledged/:id` | POST | Track acknowledgment |
+| `/api/analytics/track/resolved/:id` | POST | Track resolution |
+
+### Settings & Email Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/settings/email` | GET | Get email configuration |
+| `/api/settings/email` | POST | Update email settings |
+| `/api/settings/email/test` | POST | Send test email |
+| `/api/settings/email/messages` | GET | Email message history |
+| `/api/email-templates` | CRUD | Template management |
 
 ### AI Assistant Endpoints
 
@@ -659,6 +936,14 @@ curl -X POST http://localhost:3000/api/init/populate
 | `/api/agent/analyze-patient/:id` | POST | Patient analysis |
 | `/api/agent/quick-question` | POST | General questions |
 | `/api/agent/health` | GET | Service health |
+
+### System Initialization
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/init/seed-data` | POST | Generate test patients |
+| `/api/init/load-mock-patients` | POST | Load from seed files |
+| `/api/init/clear-all` | POST | Clear all data (dev only) |
 
 ---
 
@@ -730,4 +1015,18 @@ RENALGUARD AI aims to **democratize access to nephrology expertise** by bringing
 
 Built with Claude AI, React, TypeScript, and PostgreSQL
 
-*Version 1.1.0 | Last Updated: November 2025*
+*Version 2.0.0 | Last Updated: November 2025*
+
+---
+
+## Changelog
+
+### Version 2.0.0 (November 2025)
+- **GCUA Integration**: Replaced SCORED/Framingham with GCUA (Geriatric Cardiorenal Unified Assessment) for patients 60+
+  - Nelson/CKD-PC (5-year renal risk)
+  - AHA PREVENT 2024 (10-year CVD risk)
+  - Bansal Geriatric Mortality (5-year competing risk)
+- **Phenotype Classification**: Six actionable phenotypes (I-IV, Moderate, Low) with treatment recommendations
+- **Risk-Based Home Monitoring**: Monitoring recommendations now based on actual risk levels, not just phenotype
+- **AI Doctor Assistant**: Enhanced with GCUA phenotype awareness and plain-text optimized responses
+- **Improved Filtering**: Non-CKD patient filter now correctly excludes patients who developed CKD
