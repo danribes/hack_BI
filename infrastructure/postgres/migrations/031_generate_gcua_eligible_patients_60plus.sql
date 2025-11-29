@@ -264,16 +264,19 @@ BEGIN
     END;
     v_last_name := last_names[1 + floor(random() * array_length(last_names, 1))::INTEGER];
 
-    -- Ethnicity (realistic US 60+ distribution)
-    v_ethnicity := CASE floor(random() * 100)::INTEGER
-      WHEN 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 THEN 'African American'      -- 12%
-      WHEN 12, 13, 14, 15, 16, 17, 18, 19 THEN 'Hispanic'                     -- 8%
-      WHEN 20, 21, 22, 23, 24 THEN 'Asian'                                    -- 5%
-      WHEN 25 THEN 'Native American'                                          -- 1%
-      WHEN 26 THEN 'Pacific Islander'                                         -- 1%
-      WHEN 27, 28 THEN 'Mixed'                                                -- 2%
-      ELSE 'Caucasian'                                                        -- 71%
-    END;
+    -- Ethnicity (realistic US 60+ distribution using ranges)
+    v_ethnicity := (
+      SELECT CASE
+        WHEN r < 12 THEN 'African American'      -- 12%
+        WHEN r < 20 THEN 'Hispanic'               -- 8%
+        WHEN r < 25 THEN 'Asian'                  -- 5%
+        WHEN r = 25 THEN 'Native American'        -- 1%
+        WHEN r = 26 THEN 'Pacific Islander'       -- 1%
+        WHEN r < 29 THEN 'Mixed'                  -- 2%
+        ELSE 'Caucasian'                          -- 71%
+      END
+      FROM (SELECT floor(random() * 100)::INTEGER AS r) AS rand_val
+    );
     v_race := CASE v_ethnicity
       WHEN 'African American' THEN 'Black'
       WHEN 'Hispanic' THEN 'Hispanic/Latino'
