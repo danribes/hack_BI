@@ -760,7 +760,13 @@ function assignPhenotype(
   const mortalityRisk = module3.fiveYearMortalityRisk;
 
   // Phenotype IV: The Senescent (takes precedence)
+  // Note: Even for senescent patients, home monitoring may be recommended if renal/CVD risk is high
+  // Home monitoring is low-burden and helps track trends for clinical decision-making
   if (mortalityRisk >= 50) {
+    // Recommend home monitoring if renal risk is high (≥15%) or CVD risk is high (≥20%)
+    // This aligns with AI recommendations which consider actual risk levels, not just phenotype
+    const shouldRecommendMonitoring = renalRisk >= 15 || cvdRisk >= 20;
+
     return {
       type: 'IV',
       name: 'The Senescent',
@@ -780,7 +786,7 @@ function assignPhenotype(
         statin: false,
         bpTarget: '<150/90 mmHg (lenient)',
         monitoringFrequency: 'As clinically indicated',
-        homeMonitoringRecommended: false  // Focus on quality of life, not aggressive monitoring
+        homeMonitoringRecommended: shouldRecommendMonitoring  // Low-burden monitoring still valuable if high renal/CVD risk
       }
     };
   }
@@ -873,6 +879,9 @@ function assignPhenotype(
 
   // Cardiorenal Moderate - Moderate renal (5-14.9%) AND Intermediate/High CVD (≥7.5%)
   if (renalRisk >= 5 && renalRisk < 15 && cvdRisk >= 7.5) {
+    // Recommend home monitoring if CVD risk is high (≥20%) - indicates cardiorenal syndrome risk
+    const shouldRecommendMonitoring = cvdRisk >= 20;
+
     return {
       type: 'Moderate',
       name: 'Cardiorenal Moderate',
@@ -893,7 +902,7 @@ function assignPhenotype(
         statin: true,
         bpTarget: '<130/80 mmHg',
         monitoringFrequency: 'Every 6 months',
-        homeMonitoringRecommended: false  // CV priority, moderate renal risk
+        homeMonitoringRecommended: shouldRecommendMonitoring  // Recommend if high CVD risk
       }
     };
   }
