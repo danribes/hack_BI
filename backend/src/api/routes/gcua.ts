@@ -37,6 +37,16 @@ function transformDatabaseAssessment(dbRow: any): any {
 
   const phenotypeType = dbRow.phenotype_type || 'IV';
 
+  // Parse treatment recommendations from DB (stored as JSON)
+  let treatmentRecs = dbRow.treatment_recommendations;
+  if (typeof treatmentRecs === 'string') {
+    try {
+      treatmentRecs = JSON.parse(treatmentRecs);
+    } catch {
+      treatmentRecs = {};
+    }
+  }
+
   return {
     isEligible: dbRow.is_eligible,
     phenotype: {
@@ -45,7 +55,8 @@ function transformDatabaseAssessment(dbRow: any): any {
       tag: dbRow.phenotype_tag || 'Assessment Complete',
       color: dbRow.phenotype_color || 'gray',
       description: phenotypeDescriptions[phenotypeType] || 'Risk assessment completed.',
-      clinicalStrategy: phenotypeStrategies[phenotypeType] || ['Continue current management']
+      clinicalStrategy: phenotypeStrategies[phenotypeType] || ['Continue current management'],
+      treatmentRecommendations: treatmentRecs || {}  // Include treatment recommendations in phenotype
     },
     module1: {
       name: 'Nelson/CKD-PC',
@@ -78,7 +89,7 @@ function transformDatabaseAssessment(dbRow: any): any {
       ? 'Treatment benefits likely outweigh risks'
       : 'Careful consideration of treatment risks vs benefits needed',
     confidenceLevel: dbRow.confidence_level || 'moderate',
-    treatmentRecommendations: dbRow.treatment_recommendations || {},
+    treatmentRecommendations: treatmentRecs || {},  // Also keep at top level for backwards compatibility
     dataCompleteness: 75,
     missingData: [],
     kdigoScreeningRecommendation: 'Annual screening recommended',
