@@ -1337,14 +1337,14 @@ function App() {
 
               {/* Health State & Risk Classification */}
               <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                <div className={`px-8 py-4 ${selectedPatient.kdigo_classification.has_ckd
+                <div className={`px-8 py-4 ${selectedPatient.kdigo_classification?.has_ckd
                   ? 'bg-gradient-to-r from-red-600 to-orange-600'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}>
                   <h2 className="text-2xl font-bold text-white flex items-center">
                     <svg className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {selectedPatient.kdigo_classification.has_ckd ? 'CKD Patient' : 'Non-CKD Patient'} - Health Classification
+                    {selectedPatient.kdigo_classification?.has_ckd ? 'CKD Patient' : 'Non-CKD Patient'} - Health Classification
                   </h2>
                 </div>
 
@@ -1352,23 +1352,23 @@ function App() {
                   {/* Primary Classification Badge - Larger and More Prominent */}
                   <div className="flex flex-col items-center mb-8 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200">
                     <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                      {selectedPatient.kdigo_classification.has_ckd ? 'CKD Severity Classification' : 'Kidney Health Risk Level'}
+                      {selectedPatient.kdigo_classification?.has_ckd ? 'CKD Severity Classification' : 'Kidney Health Risk Level'}
                     </span>
                     <span className={`px-8 py-4 rounded-2xl text-3xl font-bold shadow-lg ${getRiskCategoryBadgeColor(selectedPatient.risk_category)}`}>
-                      {selectedPatient.risk_category}
+                      {selectedPatient.risk_category || 'Unknown'}
                     </span>
-                    {selectedPatient.kdigo_classification.has_ckd && (
+                    {selectedPatient.kdigo_classification?.has_ckd && (
                       <div className="mt-4">
                         <span className="text-sm text-gray-600">Stage: </span>
                         <span className="text-lg font-bold text-gray-900">
-                          {selectedPatient.kdigo_classification.ckd_stage_name}
+                          {selectedPatient.kdigo_classification?.ckd_stage_name || 'N/A'}
                         </span>
                       </div>
                     )}
                   </div>
 
                   {/* For CKD Patients: KDIGO Technical Details */}
-                  {selectedPatient.kdigo_classification.has_ckd && (
+                  {selectedPatient.kdigo_classification?.has_ckd && (
                     <>
                       <div className="mb-6">
                         <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
@@ -1380,14 +1380,14 @@ function App() {
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex items-center">
                             <span className="text-xs font-medium text-gray-500 mr-2">Health State:</span>
-                            <span className={`px-4 py-2 rounded-lg text-sm font-bold border-2 ${getKDIGORiskColorClass(selectedPatient.kdigo_classification.risk_color)}`}>
-                              {selectedPatient.kdigo_classification.health_state}
+                            <span className={`px-4 py-2 rounded-lg text-sm font-bold border-2 ${getKDIGORiskColorClass(selectedPatient.kdigo_classification?.risk_color)}`}>
+                              {selectedPatient.kdigo_classification?.health_state}
                             </span>
                           </div>
                           <div className="flex items-center">
                             <span className="text-xs font-medium text-gray-500 mr-2">Risk Level:</span>
-                            <span className={`px-4 py-2 rounded-lg text-sm font-bold capitalize ${getKDIGORiskColorClass(selectedPatient.kdigo_classification.risk_color)}`}>
-                              {selectedPatient.kdigo_classification.risk_level}
+                            <span className={`px-4 py-2 rounded-lg text-sm font-bold capitalize ${getKDIGORiskColorClass(selectedPatient.kdigo_classification?.risk_color)}`}>
+                              {selectedPatient.kdigo_classification?.risk_level}
                             </span>
                           </div>
                         </div>
@@ -1397,21 +1397,21 @@ function App() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div className="border border-gray-200 rounded-lg p-4">
                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">GFR Category</div>
-                          <div className="text-lg font-bold text-gray-900">{selectedPatient.kdigo_classification.gfr_category}</div>
-                          <div className="text-sm text-gray-600 mt-1">{selectedPatient.kdigo_classification.gfr_description}</div>
+                          <div className="text-lg font-bold text-gray-900">{selectedPatient.kdigo_classification?.gfr_category}</div>
+                          <div className="text-sm text-gray-600 mt-1">{selectedPatient.kdigo_classification?.gfr_description}</div>
                         </div>
 
                         <div className="border border-gray-200 rounded-lg p-4">
                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Albuminuria Category</div>
-                          <div className="text-lg font-bold text-gray-900">{selectedPatient.kdigo_classification.albuminuria_category}</div>
-                          <div className="text-sm text-gray-600 mt-1">{selectedPatient.kdigo_classification.albuminuria_description}</div>
+                          <div className="text-lg font-bold text-gray-900">{selectedPatient.kdigo_classification?.albuminuria_category}</div>
+                          <div className="text-sm text-gray-600 mt-1">{selectedPatient.kdigo_classification?.albuminuria_description}</div>
                         </div>
                       </div>
                     </>
                   )}
 
                   {/* For Non-CKD Patients: GCUA Assessment with AI Commentary */}
-                  {!selectedPatient.kdigo_classification.has_ckd && (
+                  {!selectedPatient.kdigo_classification?.has_ckd && (
                     <div className="mb-6">
                       {/* GCUA Risk Assessment Card - for non-CKD patients 60+ */}
                       {(() => {
@@ -1579,9 +1579,9 @@ function App() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Device:</span>
                           <span className="text-sm font-semibold text-gray-900">
-                            {selectedPatient.kdigo_classification.has_ckd && selectedPatient.home_monitoring_device
+                            {selectedPatient.kdigo_classification?.has_ckd && selectedPatient.home_monitoring_device
                               ? selectedPatient.home_monitoring_device
-                              : selectedPatient.kdigo_classification.has_ckd
+                              : selectedPatient.kdigo_classification?.has_ckd
                                 ? 'Minuteful Kidney Kit (Recommended)'
                                 : 'Not Required'}
                           </span>
@@ -1592,7 +1592,7 @@ function App() {
                             {selectedPatient.home_monitoring_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        {selectedPatient.kdigo_classification.has_ckd && !selectedPatient.home_monitoring_active && (
+                        {selectedPatient.kdigo_classification?.has_ckd && !selectedPatient.home_monitoring_active && (
                           <div className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
                             ⚠️ Home uACR monitoring recommended for CKD patients
                           </div>
@@ -1612,7 +1612,7 @@ function App() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">Treatment Status:</span>
                           <span className={`text-sm font-semibold ${selectedPatient.ckd_treatment_active ? 'text-green-600' : 'text-gray-600'}`}>
-                            {selectedPatient.kdigo_classification.has_ckd
+                            {selectedPatient.kdigo_classification?.has_ckd
                               ? (selectedPatient.ckd_treatment_active ? 'Active' : 'Not Started')
                               : 'N/A - No CKD'}
                           </span>
@@ -1623,7 +1623,7 @@ function App() {
                             <span className="text-sm font-semibold text-gray-900">{selectedPatient.ckd_treatment_type}</span>
                           </div>
                         )}
-                        {selectedPatient.kdigo_classification.has_ckd && !selectedPatient.ckd_treatment_active && (
+                        {selectedPatient.kdigo_classification?.has_ckd && !selectedPatient.ckd_treatment_active && (
                           <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
                             ⚠️ CKD treatment protocol recommended
                           </div>
@@ -1633,13 +1633,13 @@ function App() {
                   </div>
 
                   {/* Clinical Recommendations */}
-                  {(selectedPatient.kdigo_classification.recommend_ras_inhibitor ||
-                    selectedPatient.kdigo_classification.recommend_sglt2i ||
-                    selectedPatient.kdigo_classification.requires_nephrology_referral) && (
+                  {(selectedPatient.kdigo_classification?.recommend_ras_inhibitor ||
+                    selectedPatient.kdigo_classification?.recommend_sglt2i ||
+                    selectedPatient.kdigo_classification?.requires_nephrology_referral) && (
                     <div className="mt-6 border-t border-gray-200 pt-6">
                       <h3 className="text-sm font-bold text-gray-900 mb-3">Clinical Recommendations</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {selectedPatient.kdigo_classification.recommend_ras_inhibitor && (
+                        {selectedPatient.kdigo_classification?.recommend_ras_inhibitor && (
                           <div className="flex items-start space-x-2 text-sm">
                             <svg className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1647,7 +1647,7 @@ function App() {
                             <span className="text-gray-700">RAS Inhibitor (ACE-I/ARB)</span>
                           </div>
                         )}
-                        {selectedPatient.kdigo_classification.recommend_sglt2i && (
+                        {selectedPatient.kdigo_classification?.recommend_sglt2i && (
                           <div className="flex items-start space-x-2 text-sm">
                             <svg className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1655,7 +1655,7 @@ function App() {
                             <span className="text-gray-700">SGLT2 Inhibitor</span>
                           </div>
                         )}
-                        {selectedPatient.kdigo_classification.requires_nephrology_referral && (
+                        {selectedPatient.kdigo_classification?.requires_nephrology_referral && (
                           <div className="flex items-start space-x-2 text-sm">
                             <svg className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1667,11 +1667,11 @@ function App() {
                       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-600">Target BP:</span>
-                          <span className="font-semibold text-gray-900">{selectedPatient.kdigo_classification.target_bp}</span>
+                          <span className="font-semibold text-gray-900">{selectedPatient.kdigo_classification?.target_bp}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-600">Monitoring Frequency:</span>
-                          <span className="font-semibold text-gray-900">{selectedPatient.kdigo_classification.monitoring_frequency}</span>
+                          <span className="font-semibold text-gray-900">{selectedPatient.kdigo_classification?.monitoring_frequency}</span>
                         </div>
                       </div>
                     </div>
@@ -2777,22 +2777,22 @@ function App() {
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <div className="text-sm text-gray-600">Risk Level</div>
-                      <span className={`inline-block px-4 py-2 rounded-full text-lg font-bold mt-1 border ${getRiskColor(selectedPatient.risk_assessment.risk_level)}`}>
-                        {selectedPatient.risk_assessment.risk_level.toUpperCase()}
+                      <span className={`inline-block px-4 py-2 rounded-full text-lg font-bold mt-1 border ${getRiskColor(selectedPatient.risk_assessment?.risk_level)}`}>
+                        {selectedPatient.risk_assessment?.risk_level?.toUpperCase() || 'N/A'}
                       </span>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <div className="text-sm text-gray-600">Assessed</div>
-                      <div className="text-lg font-semibold text-gray-900 mt-1">{formatDate(selectedPatient.risk_assessment.assessed_at)}</div>
+                      <div className="text-lg font-semibold text-gray-900 mt-1">{formatDate(selectedPatient.risk_assessment?.assessed_at)}</div>
                     </div>
                   </div>
-                  {selectedPatient.risk_assessment.reasoning && (
+                  {selectedPatient.risk_assessment?.reasoning && (
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="text-sm font-semibold text-gray-700 mb-2">Reasoning</div>
                       <div className="text-sm text-gray-700">{selectedPatient.risk_assessment.reasoning}</div>
                     </div>
                   )}
-                  {selectedPatient.risk_assessment.recommendations && selectedPatient.risk_assessment.recommendations.length > 0 && (
+                  {selectedPatient.risk_assessment?.recommendations && selectedPatient.risk_assessment.recommendations.length > 0 && (
                     <div className="mt-4 p-4 border border-gray-200 rounded-lg">
                       <div className="text-sm font-semibold text-gray-700 mb-2">Recommendations</div>
                       <ul className="list-disc list-inside space-y-1">
@@ -3026,11 +3026,11 @@ function App() {
                           </h3>
                           {patient.kdigo_classification && (
                             <span className={`px-2 py-1 rounded text-xs font-bold ${
-                              patient.kdigo_classification.has_ckd
+                              patient.kdigo_classification?.has_ckd
                                 ? 'bg-red-100 text-red-800 border border-red-300'
                                 : 'bg-blue-100 text-blue-800 border border-blue-300'
                             }`}>
-                              {patient.kdigo_classification.has_ckd ? 'CKD' : 'No CKD'}
+                              {patient.kdigo_classification?.has_ckd ? 'CKD' : 'No CKD'}
                             </span>
                           )}
                           {patient.risk_category && (
@@ -3039,7 +3039,7 @@ function App() {
                             </span>
                           )}
                           {/* Monitoring/Treatment Status Badge */}
-                          {patient.kdigo_classification && !patient.kdigo_classification.has_ckd && (
+                          {patient.kdigo_classification && !patient.kdigo_classification?.has_ckd && (
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               (patient.is_monitored !== undefined ? patient.is_monitored : patient.home_monitoring_active)
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -3048,7 +3048,7 @@ function App() {
                               {(patient.is_monitored !== undefined ? patient.is_monitored : patient.home_monitoring_active) ? '✓ Monitored' : 'Not Monitored'}
                             </span>
                           )}
-                          {patient.kdigo_classification && patient.kdigo_classification.has_ckd && (
+                          {patient.kdigo_classification && patient.kdigo_classification?.has_ckd && (
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               (patient.is_treated !== undefined ? patient.is_treated : patient.ckd_treatment_active)
                                 ? 'bg-teal-100 text-teal-800 border border-teal-300'
