@@ -424,15 +424,14 @@ WHERE jp.id IS NOT NULL OR p.on_sglt2i = true;
 COMMENT ON VIEW patient_jardiance_summary IS 'Complete summary of patient Jardiance prescriptions and adherence metrics';
 
 -- ============================================
--- 9. Grant Permissions
+-- 9. Grant Permissions (commented out for Render compatibility)
 -- ============================================
-
--- Grant permissions on new tables (adjust user as needed)
-GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_prescriptions TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_refills TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_adherence TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON adherence_barriers TO healthcare_user;
-GRANT SELECT ON patient_jardiance_summary TO healthcare_user;
+-- Note: On Render, the connection user has full access to tables it creates.
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_prescriptions TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_refills TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON jardiance_adherence TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON adherence_barriers TO healthcare_user;
+-- GRANT SELECT ON patient_jardiance_summary TO healthcare_user;
 
 -- ============================================
 -- 10. Initialize Comorbidity Flags for Existing Patients

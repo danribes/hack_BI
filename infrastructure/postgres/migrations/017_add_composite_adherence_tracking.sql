@@ -401,6 +401,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to get latest composite adherence for a patient
+-- Drop first to allow changing return type
+DROP FUNCTION IF EXISTS get_latest_adherence(UUID);
 CREATE OR REPLACE FUNCTION get_latest_adherence(p_patient_id UUID)
 RETURNS TABLE (
     composite_score DECIMAL,

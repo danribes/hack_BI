@@ -553,12 +553,12 @@ COMMENT ON FUNCTION create_ckd_diagnosis_action IS 'Creates doctor action for di
 COMMENT ON FUNCTION generate_early_treatment_protocol IS 'Generates evidence-based early treatment protocol';
 
 -- ============================================
--- 9. Grant permissions
+-- 9. Grant permissions (commented out for Render compatibility)
 -- ============================================
-
-GRANT SELECT, INSERT, UPDATE ON ckd_diagnosis_events TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE ON ckd_treatment_protocols TO healthcare_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON doctor_action_queue TO healthcare_user;
+-- Note: On Render, the connection user has full access to tables it creates.
+-- GRANT SELECT, INSERT, UPDATE ON ckd_diagnosis_events TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE ON ckd_treatment_protocols TO healthcare_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON doctor_action_queue TO healthcare_user;
 
 -- ============================================
 -- End of Migration
