@@ -164,11 +164,11 @@ CREATE OR REPLACE VIEW v_medication_inferred_diagnoses AS
 SELECT
     patient_id,
 
-    -- Diabetes inference
-    MAX(CASE WHEN is_diabetes_medication = true THEN true ELSE false END) as medication_suggests_diabetes,
+    -- Diabetes inference (use BOOL_OR for boolean aggregation)
+    BOOL_OR(is_diabetes_medication) as medication_suggests_diabetes,
 
     -- Hypertension inference
-    MAX(CASE WHEN is_hypertension_medication = true THEN true ELSE false END) as medication_suggests_hypertension,
+    BOOL_OR(is_hypertension_medication) as medication_suggests_hypertension,
 
     -- List of active medications
     array_agg(
