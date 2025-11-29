@@ -57,10 +57,10 @@ export interface GCUATreatmentRecommendations {
 }
 
 export interface GCUAPhenotype {
-  type: 'I' | 'II' | 'III' | 'IV';
+  type: 'I' | 'II' | 'III' | 'IV' | 'Moderate' | 'Low';
   name: string;
   tag: string;
-  color: 'red' | 'orange' | 'yellow' | 'gray';
+  color: 'red' | 'orange' | 'yellow' | 'gray' | 'green';
   description: string;
   clinicalStrategy: string[];
   treatmentRecommendations: GCUATreatmentRecommendations;
@@ -129,6 +129,14 @@ function getPhenotypeColors(color: string) {
         text: 'text-gray-600',
         badge: 'bg-gray-200 text-gray-700',
         icon: 'text-gray-500'
+      };
+    case 'green':
+      return {
+        bg: 'bg-green-50',
+        border: 'border-green-300',
+        text: 'text-green-700',
+        badge: 'bg-green-100 text-green-800',
+        icon: 'text-green-600'
       };
     default:
       return {
@@ -323,6 +331,8 @@ export const GCUARiskCard: React.FC<GCUARiskCardProps> = ({
               {phenotype?.type === 'II' && <Activity className="h-6 w-6" />}
               {phenotype?.type === 'III' && <Heart className="h-6 w-6" />}
               {phenotype?.type === 'IV' && <Brain className="h-6 w-6" />}
+              {phenotype?.type === 'Moderate' && <Activity className="h-6 w-6" />}
+              {phenotype?.type === 'Low' && <CheckCircle className="h-6 w-6" />}
             </div>
             <div>
               <h3 className={`text-lg font-bold ${colors.text}`}>
