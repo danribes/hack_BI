@@ -54,6 +54,7 @@ export interface GCUATreatmentRecommendations {
   statin: boolean;
   bpTarget: string;
   monitoringFrequency: string;
+  homeMonitoringRecommended?: boolean;  // Minuteful Kidney home uACR monitoring
 }
 
 export interface GCUAPhenotype {
