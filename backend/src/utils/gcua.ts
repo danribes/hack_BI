@@ -727,13 +727,27 @@ export function calculateBansalMortalityScore(input: GCUAPatientInput): GCUAModu
 /**
  * Assign GCUA Phenotype based on Module 1-3 results
  *
- * Phenotypes:
- * I. Accelerated Ager: High renal (>=15%) AND High CVD (>=10%), Low/Mod mortality
- * II. Silent Renal: High renal (>=15%) AND Low CVD (<10%), Low mortality
- * III. Vascular Dominant: Low renal (<15%) AND High CVD (>=10%), Low mortality
- * IV. The Senescent: High mortality (>=50%) regardless of other factors
+ * OFFICIAL CLINICAL THRESHOLDS (per guidelines):
  *
- * NEW: Proper handling of moderate risk ranges
+ * Module 1 - Nelson/CKD-PC (5-year renal risk):
+ *   Low: <5%, Moderate: 5-14.9%, High: ≥15%
+ *
+ * Module 2 - AHA PREVENT (10-year CVD risk):
+ *   Low: <5%, Borderline: 5-7.4%, Intermediate: 7.5-19.9%, High: ≥20%
+ *
+ * Module 3 - Bansal Mortality (5-year):
+ *   Low: <15%, Moderate: 15-29.9%, High: 30-49.9%, Very High: ≥50%
+ *
+ * Phenotype Assignment:
+ * IV. The Senescent: Mortality ≥50% (takes precedence)
+ * I. Accelerated Ager: Renal ≥15% AND CVD ≥20% (both HIGH)
+ * I. Cardiorenal High: Renal ≥15% AND CVD 7.5-19.9% (high renal + intermediate CVD)
+ * II. Silent Renal: Renal ≥15% AND CVD <7.5% (high renal + low/borderline CVD)
+ * III. Vascular Dominant: Renal <5% AND CVD ≥20% (low renal + high CVD)
+ * III. CV Intermediate: Renal <5% AND CVD 7.5-19.9% (low renal + intermediate CVD)
+ * Moderate. Cardiorenal Moderate: Renal 5-14.9% AND CVD ≥7.5% (moderate renal + intermediate/high CVD)
+ * Moderate. Renal Watch: Renal 5-14.9% AND CVD <7.5% (moderate renal + low/borderline CVD)
+ * Low. Low Risk: Renal <5% AND CVD <7.5% (both low/borderline)
  */
 function assignPhenotype(
   module1: GCUAModule1Result,
@@ -769,8 +783,12 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype I: Accelerated Ager - High renal AND High CVD
-  if (renalRisk >= 15 && cvdRisk >= 10) {
+  // ========================================
+  // HIGH RISK PHENOTYPES (Renal ≥15%)
+  // ========================================
+
+  // Phenotype I: Accelerated Ager - High renal (≥15%) AND High CVD (≥20%)
+  if (renalRisk >= 15 && cvdRisk >= 20) {
     return {
       type: 'I',
       name: 'Accelerated Ager',
@@ -794,8 +812,33 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype II: Silent Renal - High renal AND Low CVD
-  if (renalRisk >= 15 && cvdRisk < 10) {
+  // Phenotype I variant: Cardiorenal High - High renal (≥15%) AND Intermediate CVD (7.5-19.9%)
+  if (renalRisk >= 15 && cvdRisk >= 7.5 && cvdRisk < 20) {
+    return {
+      type: 'I',
+      name: 'Cardiorenal High',
+      tag: 'High Priority',
+      color: 'red',
+      description: 'High renal risk with intermediate cardiovascular risk. Aggressive cardiorenal protection indicated. The combination warrants close monitoring and dual-organ protection strategy.',
+      clinicalStrategy: [
+        'Initiate SGLT2 inhibitor (primary renal indication + CV benefit)',
+        'Start or optimize RAS inhibitor',
+        'Moderate-to-high intensity statin therapy',
+        'BP control (target <130/80)',
+        'Quarterly cardiorenal monitoring'
+      ],
+      treatmentRecommendations: {
+        sglt2i: true,
+        rasInhibitor: true,
+        statin: true,
+        bpTarget: '<130/80 mmHg',
+        monitoringFrequency: 'Every 3 months'
+      }
+    };
+  }
+
+  // Phenotype II: Silent Renal - High renal (≥15%) AND Low/Borderline CVD (<7.5%)
+  if (renalRisk >= 15 && cvdRisk < 7.5) {
     return {
       type: 'II',
       name: 'Silent Renal',
@@ -804,40 +847,43 @@ function assignPhenotype(
       description: 'High renal risk with low cardiovascular risk. These patients are often MISSED by traditional Framingham-based screening. Their kidneys are failing silently while their vascular markers appear normal.',
       clinicalStrategy: [
         'Initiate SGLT2 inhibitor (primary renal indication)',
+        'Start or optimize RAS inhibitor',
         'Monitor uACR every 6 months',
         'Consider nephrology referral',
-        'BP target for renal protection',
-        'Annual cardiovascular reassessment'
+        'BP target for renal protection'
       ],
       treatmentRecommendations: {
         sglt2i: true,
         rasInhibitor: true,
         statin: false,
         bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Every 6 months (uACR biannually)'
+        monitoringFrequency: 'Every 6 months'
       }
     };
   }
 
-  // NEW: Phenotype III variant - Moderate renal AND High CVD (Cardiorenal Moderate)
-  // This catches patients like Ralph Gomez (11.2% renal, 16.5% CVD)
-  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk >= 10) {
+  // ========================================
+  // MODERATE RISK PHENOTYPES (Renal 5-14.9%)
+  // ========================================
+
+  // Cardiorenal Moderate - Moderate renal (5-14.9%) AND Intermediate/High CVD (≥7.5%)
+  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk >= 7.5) {
     return {
-      type: 'III',
+      type: 'Moderate',
       name: 'Cardiorenal Moderate',
       tag: 'CV Priority',
       color: 'yellow',
-      description: 'Elevated cardiovascular risk with moderate renal risk. Prioritize cardiovascular protection while monitoring kidney function. The moderate renal risk warrants attention but CV risk is the primary driver.',
+      description: 'Moderate renal risk with elevated cardiovascular risk (intermediate or high per AHA PREVENT). Prioritize cardiovascular protection while monitoring kidney function closely.',
       clinicalStrategy: [
         'Cardiovascular risk reduction priority',
-        'Statin therapy optimization',
-        'Blood pressure targets (<130/80)',
+        'Statin therapy (moderate-high intensity)',
+        'Blood pressure control (<130/80)',
         'Consider SGLT2 inhibitor for CV protection',
-        'Monitor eGFR and uACR every 6-12 months',
+        'Monitor eGFR and uACR every 6 months',
         'Lifestyle modifications emphasized'
       ],
       treatmentRecommendations: {
-        sglt2i: true, // Consider for CV benefit
+        sglt2i: true,
         rasInhibitor: false,
         statin: true,
         bpTarget: '<130/80 mmHg',
@@ -846,39 +892,14 @@ function assignPhenotype(
     };
   }
 
-  // Phenotype III: Vascular Dominant - Low renal AND High CVD
-  if (renalRisk < 5 && cvdRisk >= 10) {
+  // Renal Watch - Moderate renal (5-14.9%) AND Low/Borderline CVD (<7.5%)
+  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk < 7.5) {
     return {
-      type: 'III',
-      name: 'Vascular Dominant',
-      tag: 'Heart Specific',
-      color: 'yellow',
-      description: 'High cardiovascular risk but low renal risk. Standard CVD prevention protocols apply. SGLT2 inhibitors optional but may be considered for HF prevention.',
-      clinicalStrategy: [
-        'Standard CVD prevention protocols',
-        'Statin therapy (moderate-high intensity)',
-        'Optimize BP control',
-        'SGLT2 inhibitor optional (for HF prevention)',
-        'Annual renal screening'
-      ],
-      treatmentRecommendations: {
-        sglt2i: false, // Optional
-        rasInhibitor: false,
-        statin: true,
-        bpTarget: '<130/80 mmHg',
-        monitoringFrequency: 'Annually'
-      }
-    };
-  }
-
-  // NEW: Moderate renal with low CVD - Renal Watch
-  if (renalRisk >= 5 && renalRisk < 15 && cvdRisk < 10) {
-    return {
-      type: 'II',
+      type: 'Moderate',
       name: 'Renal Watch',
       tag: 'Monitor Kidneys',
       color: 'orange',
-      description: 'Moderate renal risk requires proactive monitoring. While not yet high risk, these patients may progress. Early intervention can prevent CKD development.',
+      description: 'Moderate renal risk with low cardiovascular risk. While not yet high risk, proactive kidney monitoring is essential. Early intervention can prevent CKD progression.',
       clinicalStrategy: [
         'Monitor eGFR and uACR every 6-12 months',
         'Address modifiable risk factors (BP, glucose)',
@@ -887,7 +908,7 @@ function assignPhenotype(
         'Lifestyle modifications'
       ],
       treatmentRecommendations: {
-        sglt2i: false, // Consider if diabetic
+        sglt2i: false,
         rasInhibitor: false,
         statin: false,
         bpTarget: '<130/80 mmHg',
@@ -896,17 +917,71 @@ function assignPhenotype(
     };
   }
 
-  // Default: Low risk for all (truly low risk)
+  // ========================================
+  // LOW RENAL RISK PHENOTYPES (Renal <5%)
+  // ========================================
+
+  // Phenotype III: Vascular Dominant - Low renal (<5%) AND High CVD (≥20%)
+  if (renalRisk < 5 && cvdRisk >= 20) {
+    return {
+      type: 'III',
+      name: 'Vascular Dominant',
+      tag: 'Heart Specific',
+      color: 'yellow',
+      description: 'High cardiovascular risk but low renal risk. Standard aggressive CVD prevention protocols apply. Consider SGLT2 inhibitors for heart failure prevention.',
+      clinicalStrategy: [
+        'Aggressive CVD prevention protocols',
+        'High-intensity statin therapy',
+        'Optimize BP control (<130/80)',
+        'Consider SGLT2 inhibitor for HF prevention',
+        'Annual renal screening'
+      ],
+      treatmentRecommendations: {
+        sglt2i: true,
+        rasInhibitor: false,
+        statin: true,
+        bpTarget: '<130/80 mmHg',
+        monitoringFrequency: 'Every 6 months'
+      }
+    };
+  }
+
+  // CV Intermediate - Low renal (<5%) AND Intermediate CVD (7.5-19.9%)
+  if (renalRisk < 5 && cvdRisk >= 7.5 && cvdRisk < 20) {
+    return {
+      type: 'Low',
+      name: 'CV Intermediate',
+      tag: 'CV Monitoring',
+      color: 'yellow',
+      description: 'Low renal risk with intermediate cardiovascular risk. Focus on cardiovascular risk factor modification while maintaining routine kidney screening.',
+      clinicalStrategy: [
+        'Moderate-intensity statin therapy',
+        'BP control (<130/80)',
+        'Lifestyle modifications (diet, exercise)',
+        'Annual cardiovascular reassessment',
+        'Routine renal screening every 2-3 years'
+      ],
+      treatmentRecommendations: {
+        sglt2i: false,
+        rasInhibitor: false,
+        statin: true,
+        bpTarget: '<130/80 mmHg',
+        monitoringFrequency: 'Annually'
+      }
+    };
+  }
+
+  // Default: Low Risk - Low renal (<5%) AND Low/Borderline CVD (<7.5%)
   return {
-    type: 'III',
+    type: 'Low',
     name: 'Low Risk',
     tag: 'Routine Care',
-    color: 'gray',
-    description: 'Low risk across all domains. Continue routine preventive care and periodic reassessment.',
+    color: 'green',
+    description: 'Low risk across renal and cardiovascular domains. Continue routine preventive care and periodic reassessment.',
     clinicalStrategy: [
       'Maintain healthy lifestyle',
       'Periodic screening (every 2-3 years)',
-      'Address modifiable risk factors',
+      'Address modifiable risk factors as needed',
       'Routine primary care follow-up'
     ],
     treatmentRecommendations: {

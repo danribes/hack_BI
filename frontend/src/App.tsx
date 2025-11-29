@@ -1564,23 +1564,45 @@ function App() {
                                       const phenotypeName = gcuaAssessment.phenotype?.name?.toLowerCase() || '';
                                       const phenotypeType = gcuaAssessment.phenotype?.type;
 
-                                      if (phenotypeType === 'I' || phenotypeName.includes('accelerated')) {
-                                        return 'This patient requires comprehensive cardiorenal protection. The high-risk profile across both organ systems suggests maximum benefit from SGLT2 inhibitors, which provide simultaneous cardiac and renal protection. Close multidisciplinary follow-up recommended.';
-                                      } else if (phenotypeName.includes('cardiorenal moderate')) {
-                                        return 'Elevated cardiovascular risk with moderate renal risk requires balanced intervention. Prioritize CV risk reduction with statin therapy and BP control while monitoring kidney function closely. Consider SGLT2 inhibitor for dual cardio-renal benefit.';
-                                      } else if (phenotypeName.includes('renal watch')) {
-                                        return 'Moderate renal risk warrants proactive kidney monitoring. Focus on preserving kidney function through lifestyle modifications and addressing modifiable risk factors. Consider nephrology referral if decline is observed.';
-                                      } else if (phenotypeType === 'II' || phenotypeName.includes('silent renal')) {
-                                        return 'Renal-dominant risk profile. Prioritize nephroprotection with ACE/ARB therapy and consider SGLT2 inhibitors. Monitor cardiovascular markers while focusing on slowing kidney function decline.';
-                                      } else if (phenotypeType === 'III' && phenotypeName.includes('vascular')) {
-                                        return 'Cardiovascular-dominant risk profile. Optimize lipid-lowering therapy and blood pressure control. The preserved kidney function allows for aggressive CV prevention strategies.';
-                                      } else if (phenotypeType === 'IV' || phenotypeName.includes('senescent')) {
-                                        return 'High competing mortality risk. Focus on quality of life, symptom management, and shared decision-making about treatment intensity. Aggressive interventions may not provide meaningful benefit.';
-                                      } else if (phenotypeName.includes('low risk')) {
-                                        return 'Lower overall risk allows for preventive-focused care. Maintain current therapies, emphasize lifestyle optimization, and schedule regular comprehensive assessments to detect any risk progression early.';
-                                      } else {
-                                        return 'Continue current management with regular monitoring. Reassess risk factors periodically and adjust treatment as indicated by clinical status.';
+                                      // Type IV: The Senescent (mortality ≥50%)
+                                      if (phenotypeType === 'IV' || phenotypeName.includes('senescent')) {
+                                        return 'High competing mortality risk (≥50% 5-year). Focus on quality of life, symptom management, and shared decision-making about treatment intensity. Aggressive interventions may not provide meaningful benefit.';
                                       }
+                                      // Type I: High renal risk (≥15%)
+                                      if (phenotypeType === 'I') {
+                                        if (phenotypeName.includes('accelerated')) {
+                                          return 'HIGH RISK: Both renal (≥15%) and cardiovascular (≥20%) risk are elevated. This patient requires comprehensive cardiorenal protection with SGLT2 inhibitor, RAS inhibitor, and high-intensity statin. Quarterly monitoring recommended.';
+                                        } else if (phenotypeName.includes('cardiorenal high')) {
+                                          return 'HIGH RISK: High renal risk (≥15%) with intermediate CVD risk (7.5-19.9%). Aggressive cardiorenal protection indicated. SGLT2 inhibitor and RAS inhibitor recommended. Quarterly monitoring required.';
+                                        }
+                                        return 'High-risk cardiorenal profile requiring aggressive intervention with SGLT2 inhibitors and RAS inhibitors. Close multidisciplinary follow-up recommended.';
+                                      }
+                                      // Type II: Silent Renal (high renal, low CVD)
+                                      if (phenotypeType === 'II' || phenotypeName.includes('silent renal')) {
+                                        return 'HIGH RENAL RISK: Renal risk ≥15% with low CVD risk (<7.5%). These patients are often missed by traditional screening. Prioritize nephroprotection with SGLT2 inhibitor and RAS inhibitor. Monitor uACR every 6 months.';
+                                      }
+                                      // Type III: Vascular Dominant (low renal, high CVD)
+                                      if (phenotypeType === 'III' || phenotypeName.includes('vascular dominant')) {
+                                        return 'HIGH CVD RISK: Cardiovascular risk ≥20% with low renal risk (<5%). Aggressive CVD prevention with high-intensity statin and BP control. Consider SGLT2 inhibitor for heart failure prevention.';
+                                      }
+                                      // Moderate phenotypes
+                                      if (phenotypeType === 'Moderate') {
+                                        if (phenotypeName.includes('cardiorenal moderate')) {
+                                          return 'MODERATE RISK: Renal risk 5-14.9% with elevated CVD risk (≥7.5%). Prioritize CV risk reduction with statin therapy and BP control (<130/80). Consider SGLT2 inhibitor. Monitor eGFR/uACR every 6 months.';
+                                        } else if (phenotypeName.includes('renal watch')) {
+                                          return 'MODERATE RENAL RISK: Renal risk 5-14.9% with low CVD risk (<7.5%). Proactive kidney monitoring essential. Address modifiable risk factors. Consider nephrology referral if worsening trend observed.';
+                                        }
+                                      }
+                                      // Low phenotypes
+                                      if (phenotypeType === 'Low') {
+                                        if (phenotypeName.includes('cv intermediate')) {
+                                          return 'LOW RENAL RISK with intermediate CVD (7.5-19.9%). Focus on cardiovascular risk factor modification with moderate-intensity statin. Routine kidney screening every 2-3 years.';
+                                        } else if (phenotypeName.includes('low risk')) {
+                                          return 'LOW RISK: Both renal (<5%) and CVD (<7.5%) risks are low. Continue routine preventive care, lifestyle optimization, and periodic screening every 2-3 years.';
+                                        }
+                                      }
+                                      // Fallback
+                                      return 'Continue current management with regular monitoring. Reassess risk factors periodically and adjust treatment as indicated by clinical status.';
                                     })()}
                                   </p>
                                 </div>
