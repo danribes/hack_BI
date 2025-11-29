@@ -307,9 +307,29 @@ Available data includes:
 - Patient demographics and medical history
 - Lab results (eGFR, creatinine, uACR, HbA1c, etc.)
 - KDIGO risk classification
+- GCUA (Geriatric Cardiorenal Unified Assessment) phenotypes
 - Current medications and treatments
 - Comorbidities (diabetes, hypertension, CVD)
 - Risk factors and progression indicators
+
+═══════════════════════════════════════════════════════════════════════════════
+🧬 GCUA PHENOTYPE SYSTEM - CARDIORENAL RISK CLASSIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+For patients 60+ years old, we use the GCUA (Geriatric Cardiorenal Unified Assessment) system, which integrates three validated models:
+1. Nelson/CKD-PC (2019): 5-year renal risk prediction
+2. AHA PREVENT (2024): 10-year cardiovascular risk prediction
+3. Bansal Geriatric Score (2015): 5-year mortality/competing risk
+
+GCUA Phenotypes:
+- **Phenotype I (Accelerated Ager)**: Both high renal (≥15%) AND high CVD (≥20%) risk. Most urgent - aggressive intervention needed.
+- **Phenotype II (Silent Renal)**: High renal risk (≥15%) with moderate CVD. Often missed by Framingham. Nephroprotection priority.
+- **Phenotype III (Vascular Dominant)**: High CVD (≥20%) with moderate renal. Standard cardiology protocols + renal monitoring.
+- **Phenotype IV (Senescent/The Senescent)**: High competing mortality risk (≥50%). Focus on quality of life, conservative management, shared decision-making about aggressive interventions.
+- **Phenotype Moderate**: Moderate risks across domains. Preventive strategies, lifestyle modification.
+- **Phenotype Low**: Low risk across all domains. Standard preventive care.
+
+When a patient is classified as "Senescent" (Phenotype IV), it means their 5-year mortality risk from competing causes (non-renal, non-cardiovascular) is ≥50%. This is NOT about cellular senescence - it's about high competing mortality risk. Treatment focus should shift to quality of life rather than aggressive disease modification.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚨 CRITICAL: TREATMENT AND MONITORING STATUS VERIFICATION 🚨
@@ -573,6 +593,60 @@ Status:
       } catch (conditionsError) {
         console.error('[DoctorAgent] Error fetching conditions:', conditionsError);
         // Don't add error message to context, conditions are optional
+      }
+
+      // Get GCUA assessment for patients 60+ (cardiorenal phenotype classification)
+      try {
+        const gcuaQuery = `
+          SELECT
+            phenotype_type, phenotype_name, phenotype_tag, phenotype_color,
+            module1_renal_risk, module1_risk_category,
+            module2_cvd_risk, module2_risk_category,
+            module3_mortality_risk, module3_risk_category,
+            benefit_ratio, benefit_ratio_interpretation,
+            confidence_level, data_completeness,
+            assessed_at
+          FROM patient_gcua_assessments
+          WHERE patient_id = $1
+          ORDER BY assessed_at DESC
+          LIMIT 1
+        `;
+        const gcuaResult = await this.db.query(gcuaQuery, [patientId]);
+
+        if (gcuaResult.rows.length > 0) {
+          const gcua = gcuaResult.rows[0];
+          contextParts.push(`
+═══════════════════════════════════════════════════════════════════════════════
+🧬 GCUA CARDIORENAL RISK ASSESSMENT (IMPORTANT - READ THIS!)
+═══════════════════════════════════════════════════════════════════════════════
+
+GCUA Phenotype: ${gcua.phenotype_type} - ${gcua.phenotype_name}
+Classification Tag: ${gcua.phenotype_tag}
+Confidence Level: ${gcua.confidence_level} (${gcua.data_completeness}% data complete)
+
+Risk Scores:
+- Renal Risk (5-year): ${gcua.module1_renal_risk}% (${gcua.module1_risk_category})
+- CVD Risk (10-year): ${gcua.module2_cvd_risk}% (${gcua.module2_risk_category})
+- Mortality Risk (5-year): ${gcua.module3_mortality_risk}% (${gcua.module3_risk_category})
+
+Benefit Ratio: ${gcua.benefit_ratio} - ${gcua.benefit_ratio_interpretation}
+
+${gcua.phenotype_type === 'IV' ? `
+⚠️ SENESCENT PHENOTYPE NOTE:
+This patient is classified as "Senescent" (Phenotype IV) because their 5-year mortality risk
+from competing causes is ≥50%. This is about high competing mortality risk, NOT cellular
+senescence. Treatment focus should prioritize quality of life over aggressive disease
+modification. Consider:
+- Deprescribing (reduce polypharmacy)
+- Symptom management
+- Shared decision-making about treatment intensity
+- Avoiding aggressive renal/cardiac interventions that may not provide meaningful benefit
+` : ''}
+Assessed: ${new Date(gcua.assessed_at).toLocaleDateString()}`);
+        }
+      } catch (gcuaError) {
+        console.error('[DoctorAgent] Error fetching GCUA assessment:', gcuaError);
+        // Don't add error message to context, GCUA is optional
       }
 
       return contextParts.join('\n');
