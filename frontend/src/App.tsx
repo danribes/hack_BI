@@ -1354,9 +1354,43 @@ function App() {
                     <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
                       {selectedPatient.kdigo_classification?.has_ckd ? 'CKD Severity Classification' : 'Kidney Health Risk Level'}
                     </span>
-                    <span className={`px-8 py-4 rounded-2xl text-3xl font-bold shadow-lg ${getRiskCategoryBadgeColor(selectedPatient.risk_category)}`}>
-                      {selectedPatient.risk_category || 'Unknown'}
-                    </span>
+                    {/* For non-CKD patients, use GCUA phenotype type if available */}
+                    {!selectedPatient.kdigo_classification?.has_ckd && gcuaAssessment?.isEligible && gcuaAssessment?.phenotype?.type ? (
+                      <span className={`px-8 py-4 rounded-2xl text-3xl font-bold shadow-lg ${
+                        gcuaAssessment.phenotype.type === 'I' || gcuaAssessment.phenotype.type === 'II' ? 'bg-red-100 text-red-800 border-2 border-red-300' :
+                        gcuaAssessment.phenotype.type === 'III' ? 'bg-orange-100 text-orange-800 border-2 border-orange-300' :
+                        gcuaAssessment.phenotype.type === 'Moderate' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' :
+                        gcuaAssessment.phenotype.type === 'IV' ? 'bg-gray-200 text-gray-700 border-2 border-gray-400' :
+                        'bg-green-100 text-green-800 border-2 border-green-300'
+                      }`}>
+                        {gcuaAssessment.phenotype.type === 'I' || gcuaAssessment.phenotype.type === 'II' ? 'High Risk' :
+                         gcuaAssessment.phenotype.type === 'III' ? 'High Risk' :
+                         gcuaAssessment.phenotype.type === 'Moderate' ? 'Moderate Risk' :
+                         gcuaAssessment.phenotype.type === 'IV' ? 'Senescent' :
+                         'Low Risk'}
+                      </span>
+                    ) : (
+                      <span className={`px-8 py-4 rounded-2xl text-3xl font-bold shadow-lg ${getRiskCategoryBadgeColor(selectedPatient.risk_category)}`}>
+                        {selectedPatient.risk_category || 'Unknown'}
+                      </span>
+                    )}
+                    {/* Show phenotype name for non-CKD patients */}
+                    {!selectedPatient.kdigo_classification?.has_ckd && gcuaAssessment?.isEligible && gcuaAssessment?.phenotype?.name && (
+                      <div className="mt-3">
+                        <span className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${
+                          gcuaAssessment.phenotype.color === 'red' ? 'bg-red-50 text-red-700 border border-red-200' :
+                          gcuaAssessment.phenotype.color === 'orange' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                          gcuaAssessment.phenotype.color === 'yellow' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
+                          gcuaAssessment.phenotype.color === 'green' ? 'bg-green-50 text-green-700 border border-green-200' :
+                          'bg-gray-100 text-gray-600 border border-gray-200'
+                        }`}>
+                          {gcuaAssessment.phenotype.name}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-500">
+                          {gcuaAssessment.dataCompleteness}% confidence
+                        </span>
+                      </div>
+                    )}
                     {selectedPatient.kdigo_classification?.has_ckd && (
                       <div className="mt-4">
                         <span className="text-sm text-gray-600">Stage: </span>
