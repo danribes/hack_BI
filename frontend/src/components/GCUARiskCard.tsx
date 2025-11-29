@@ -286,6 +286,29 @@ export const GCUARiskCard: React.FC<GCUARiskCardProps> = ({
     );
   }
 
+  // Check if assessment has required data
+  if (!assessment.phenotype || !assessment.module1 || !assessment.module2 || !assessment.module3) {
+    return (
+      <div className="bg-yellow-50 rounded-lg shadow p-6 mb-6 border border-yellow-200">
+        <div className="flex items-center gap-3 mb-3">
+          <AlertTriangle className="h-6 w-6 text-yellow-500" />
+          <h3 className="text-lg font-semibold text-yellow-700">GCUA Risk Assessment</h3>
+        </div>
+        <p className="text-sm text-yellow-700">
+          Assessment data is incomplete. Please recalculate the GCUA assessment.
+        </p>
+        {onCalculate && (
+          <button
+            onClick={onCalculate}
+            className="mt-3 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium"
+          >
+            Recalculate GCUA Risk
+          </button>
+        )}
+      </div>
+    );
+  }
+
   const { phenotype, module1, module2, module3 } = assessment;
   const colors = getPhenotypeColors(phenotype.color);
 

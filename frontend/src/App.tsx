@@ -1450,7 +1450,7 @@ function App() {
                       })()}
 
                       {/* AI-Generated Personalized Cardiorenal Commentary based on GCUA */}
-                      {gcuaAssessment && gcuaAssessment.isEligible && (
+                      {gcuaAssessment && gcuaAssessment.isEligible && gcuaAssessment.phenotype && gcuaAssessment.module1 && gcuaAssessment.module2 && gcuaAssessment.module3 && (
                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5 mb-4">
                           <div className="flex items-start space-x-3">
                             <div className="flex-shrink-0">
@@ -1472,7 +1472,7 @@ function App() {
                                 <p>
                                   <span className="font-semibold text-gray-900">
                                     {selectedPatient.first_name} {selectedPatient.last_name}
-                                  </span> presents with a <span className="font-semibold text-blue-700">Phenotype {gcuaAssessment.phenotype.type}</span> ({gcuaAssessment.phenotype.name}) cardiorenal profile based on integrated risk assessment:
+                                  </span> presents with a <span className="font-semibold text-blue-700">Phenotype {gcuaAssessment.phenotype?.type || 'Unknown'}</span> ({gcuaAssessment.phenotype?.name || 'Unknown'}) cardiorenal profile based on integrated risk assessment:
                                 </p>
 
                                 {/* Nelson/CKD-PC Analysis */}
@@ -1480,19 +1480,19 @@ function App() {
                                   <div className="flex items-center mb-1">
                                     <span className="font-semibold text-purple-700">Renal Risk (Nelson/CKD-PC):</span>
                                     <span className={`ml-2 text-sm font-bold ${
-                                      gcuaAssessment.module1.riskCategory === 'very_high' || gcuaAssessment.module1.riskCategory === 'high'
+                                      gcuaAssessment.module1?.riskCategory === 'very_high' || gcuaAssessment.module1?.riskCategory === 'high'
                                         ? 'text-red-600'
-                                        : gcuaAssessment.module1.riskCategory === 'moderate'
+                                        : gcuaAssessment.module1?.riskCategory === 'moderate'
                                           ? 'text-yellow-600'
                                           : 'text-green-600'
                                     }`}>
-                                      {gcuaAssessment.module1.fiveYearRisk}% 5-year risk
+                                      {gcuaAssessment.module1?.fiveYearRisk ?? 0}% 5-year risk
                                     </span>
                                   </div>
                                   <p className="text-xs text-gray-600">
-                                    {gcuaAssessment.module1.riskCategory === 'very_high' || gcuaAssessment.module1.riskCategory === 'high'
+                                    {gcuaAssessment.module1?.riskCategory === 'very_high' || gcuaAssessment.module1?.riskCategory === 'high'
                                       ? 'Significant risk of kidney function decline. Nephroprotective strategies are essential - consider SGLT2 inhibitors and ACE/ARB optimization.'
-                                      : gcuaAssessment.module1.riskCategory === 'moderate'
+                                      : gcuaAssessment.module1?.riskCategory === 'moderate'
                                         ? 'Moderate renal risk warrants proactive monitoring. Regular eGFR and uACR tracking recommended with lifestyle modifications.'
                                         : 'Current kidney function is stable. Continue preventive measures and annual screening to maintain renal health.'}
                                   </p>
@@ -1503,19 +1503,19 @@ function App() {
                                   <div className="flex items-center mb-1">
                                     <span className="font-semibold text-red-700">Cardiovascular Risk (AHA PREVENT):</span>
                                     <span className={`ml-2 text-sm font-bold ${
-                                      gcuaAssessment.module2.riskCategory === 'high'
+                                      gcuaAssessment.module2?.riskCategory === 'high'
                                         ? 'text-red-600'
-                                        : gcuaAssessment.module2.riskCategory === 'intermediate'
+                                        : gcuaAssessment.module2?.riskCategory === 'intermediate'
                                           ? 'text-yellow-600'
                                           : 'text-green-600'
                                     }`}>
-                                      {gcuaAssessment.module2.tenYearRisk}% 10-year risk
+                                      {gcuaAssessment.module2?.tenYearRisk ?? 0}% 10-year risk
                                     </span>
                                   </div>
                                   <p className="text-xs text-gray-600">
-                                    {gcuaAssessment.module2.riskCategory === 'high'
+                                    {gcuaAssessment.module2?.riskCategory === 'high'
                                       ? 'Elevated cardiovascular event risk. Aggressive lipid management, strict BP control (<130/80), and consideration of antiplatelet therapy recommended.'
-                                      : gcuaAssessment.module2.riskCategory === 'intermediate'
+                                      : gcuaAssessment.module2?.riskCategory === 'intermediate'
                                         ? 'Intermediate CV risk requires attention to modifiable factors. Optimize lipid profile, manage hypertension, and encourage lifestyle changes.'
                                         : 'Favorable cardiovascular profile. Maintain heart-healthy habits and continue periodic risk reassessment.'}
                                   </p>
@@ -1526,19 +1526,19 @@ function App() {
                                   <div className="flex items-center mb-1">
                                     <span className="font-semibold text-gray-700">Competing Mortality Risk (Bansal):</span>
                                     <span className={`ml-2 text-sm font-bold ${
-                                      gcuaAssessment.module3.riskCategory === 'very_high' || gcuaAssessment.module3.riskCategory === 'high'
+                                      gcuaAssessment.module3?.riskCategory === 'very_high' || gcuaAssessment.module3?.riskCategory === 'high'
                                         ? 'text-red-600'
-                                        : gcuaAssessment.module3.riskCategory === 'moderate'
+                                        : gcuaAssessment.module3?.riskCategory === 'moderate'
                                           ? 'text-yellow-600'
                                           : 'text-green-600'
                                     }`}>
-                                      {gcuaAssessment.module3.fiveYearMortalityRisk}% 5-year mortality
+                                      {gcuaAssessment.module3?.fiveYearMortalityRisk ?? 0}% 5-year mortality
                                     </span>
                                   </div>
                                   <p className="text-xs text-gray-600">
-                                    {gcuaAssessment.module3.riskCategory === 'very_high' || gcuaAssessment.module3.riskCategory === 'high'
+                                    {gcuaAssessment.module3?.riskCategory === 'very_high' || gcuaAssessment.module3?.riskCategory === 'high'
                                       ? 'High competing mortality risk influences treatment intensity decisions. Focus on quality of life, symptom management, and shared decision-making about aggressive interventions.'
-                                      : gcuaAssessment.module3.riskCategory === 'moderate'
+                                      : gcuaAssessment.module3?.riskCategory === 'moderate'
                                         ? 'Moderate mortality considerations - balance preventive treatments with patient preferences and functional goals.'
                                         : 'Favorable longevity outlook supports investment in long-term preventive strategies and disease-modifying therapies.'}
                                   </p>
@@ -1548,11 +1548,11 @@ function App() {
                                 <div className="mt-3 pt-3 border-t border-blue-200">
                                   <p className="text-sm">
                                     <span className="font-semibold text-blue-800">Integrated Recommendation:</span>{' '}
-                                    {gcuaAssessment.phenotype.type === 'I'
+                                    {gcuaAssessment.phenotype?.type === 'I'
                                       ? 'This patient requires comprehensive cardiorenal protection. The high-risk profile across both organ systems suggests maximum benefit from SGLT2 inhibitors, which provide simultaneous cardiac and renal protection. Close multidisciplinary follow-up recommended.'
-                                      : gcuaAssessment.phenotype.type === 'II'
+                                      : gcuaAssessment.phenotype?.type === 'II'
                                         ? 'Renal-dominant risk profile. Prioritize nephroprotection with ACE/ARB therapy and consider SGLT2 inhibitors. Monitor cardiovascular markers while focusing on slowing kidney function decline.'
-                                        : gcuaAssessment.phenotype.type === 'III'
+                                        : gcuaAssessment.phenotype?.type === 'III'
                                           ? 'Cardiovascular-dominant risk profile. Optimize lipid-lowering therapy and blood pressure control. The preserved kidney function allows for aggressive CV prevention strategies.'
                                           : 'Lower overall risk allows for preventive-focused care. Maintain current therapies, emphasize lifestyle optimization, and schedule regular comprehensive assessments to detect any risk progression early.'}
                                   </p>
