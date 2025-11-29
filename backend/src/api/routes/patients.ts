@@ -165,7 +165,9 @@ router.get('/filter', async (req: Request, res: Response): Promise<any> => {
       }
 
     } else if (has_ckd === 'false') {
+      // Non-CKD patients: must have non_ckd_patient_data AND must NOT have ckd_patient_data
       whereConditions.push('npd.patient_id IS NOT NULL');
+      whereConditions.push('cpd.patient_id IS NULL');  // Exclude patients who have developed CKD
 
       // Non-CKD specific filters
       if (risk_level) {
