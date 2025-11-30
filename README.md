@@ -46,6 +46,413 @@ RENALGUARD AI acts as an **intelligent co-pilot** for primary care physicians, e
 
 ---
 
+## System Integration: How RENALGUARD AI Works in Primary Care
+
+### Data Acquisition from EHR Systems
+
+When deployed in a primary care setting, RENALGUARD AI integrates with existing Electronic Health Record (EHR) systems to automatically acquire patient data:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PRIMARY CARE IT INFRASTRUCTURE                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────┐         ┌─────────────────┐         ┌─────────────┐  │
+│   │   EHR SYSTEM    │         │  LABORATORY     │         │   PHARMACY  │  │
+│   │   (Epic, Cerner │         │  INFORMATION    │         │   SYSTEM    │  │
+│   │    Meditech)    │         │  SYSTEM (LIS)   │         │   (PBM)     │  │
+│   └────────┬────────┘         └────────┬────────┘         └──────┬──────┘  │
+│            │                           │                         │         │
+│            │  HL7 FHIR API             │  HL7v2/FHIR             │ NCPDP   │
+│            │  (Patient Data)           │  (Lab Results)          │ (Rx)    │
+│            │                           │                         │         │
+│            └───────────────────────────┼─────────────────────────┘         │
+│                                        │                                    │
+│                                        ▼                                    │
+│                    ┌───────────────────────────────────────┐               │
+│                    │       RENALGUARD AI PLATFORM          │               │
+│                    │                                       │               │
+│                    │  ┌─────────────────────────────────┐  │               │
+│                    │  │     INTEGRATION LAYER           │  │               │
+│                    │  │  • FHIR R4 Client               │  │               │
+│                    │  │  • HL7v2 Message Parser         │  │               │
+│                    │  │  • ADT Feed Processor           │  │               │
+│                    │  │  • Batch Import Engine          │  │               │
+│                    │  └─────────────────────────────────┘  │               │
+│                    │                  │                    │               │
+│                    │                  ▼                    │               │
+│                    │  ┌─────────────────────────────────┐  │               │
+│                    │  │     POSTGRESQL DATABASE         │  │               │
+│                    │  │  Patients, Observations,        │  │               │
+│                    │  │  Conditions, Medications        │  │               │
+│                    │  └─────────────────────────────────┘  │               │
+│                    └───────────────────────────────────────┘               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Supported Integration Methods:**
+
+| Method | Use Case | Data Types | Frequency |
+|--------|----------|------------|-----------|
+| **HL7 FHIR R4 API** | Real-time patient data | Patient demographics, conditions, medications | Real-time |
+| **HL7v2 Messages** | Lab result feeds | ORU (lab results), ADT (admissions) | Real-time/Batch |
+| **ADT Feeds** | Patient registration | New patients, updates, transfers | Real-time |
+| **Batch File Import** | Historical data migration | All patient data types | Overnight |
+| **Direct Database Link** | High-volume clinics | All data | Configurable |
+
+---
+
+### Overnight Batch Processing Workflow
+
+RENALGUARD AI performs comprehensive batch processing during off-peak hours (typically 2:00 AM - 5:00 AM) to ensure all patient risk assessments are current without impacting daytime system performance:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     OVERNIGHT BATCH PROCESSING TIMELINE                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  2:00 AM ─────────────────────────────────────────────────────────► 5:00 AM │
+│                                                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+│  │  PHASE 1 │  │  PHASE 2 │  │  PHASE 3 │  │  PHASE 4 │  │  PHASE 5 │      │
+│  │  DATA    │  │  RISK    │  │  CHANGE  │  │  ALERT   │  │  REPORT  │      │
+│  │  SYNC    │  │  CALC    │  │  DETECT  │  │  GENERATE│  │  PREPARE │      │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘      │
+│                                                                             │
+│  2:00-2:30     2:30-3:30     3:30-4:00     4:00-4:30     4:30-5:00         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Phase 1: Data Synchronization (2:00 AM - 2:30 AM)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ BATCH JOB: sync_ehr_data                                    │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Pull new patients registered in last 24 hours            │
+│ 2. Import lab results from Laboratory Information System    │
+│ 3. Update medication lists from pharmacy feeds              │
+│ 4. Sync condition/diagnosis codes from EHR                  │
+│ 5. Validate data integrity and flag discrepancies           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Phase 2: Risk Calculation (2:30 AM - 3:30 AM)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ BATCH JOB: calculate_all_risks                              │
+├─────────────────────────────────────────────────────────────┤
+│ FOR EACH patient in database:                               │
+│                                                             │
+│   IF patient.age >= 60 AND patient.eGFR >= 60:             │
+│      → Run GCUA Assessment (algorithmic)                    │
+│        • Nelson/CKD-PC renal risk calculation               │
+│        • AHA PREVENT CVD risk calculation                   │
+│        • Bansal mortality risk calculation                  │
+│        • Assign phenotype (I, II, III, IV, Moderate, Low)   │
+│                                                             │
+│   IF patient has CKD diagnosis OR eGFR < 60:               │
+│      → Run KDIGO Classification (algorithmic)               │
+│        • Calculate GFR category (G1-G5)                     │
+│        • Calculate albuminuria category (A1-A3)             │
+│        • Assign combined risk level                         │
+│        • Determine monitoring frequency                     │
+│                                                             │
+│   → Store results in risk_assessments table                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Phase 3: Change Detection (3:30 AM - 4:00 AM)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ BATCH JOB: detect_significant_changes                       │
+├─────────────────────────────────────────────────────────────┤
+│ Compare current vs previous values:                         │
+│                                                             │
+│ • eGFR change > 5 ml/min in 3 months         → FLAG        │
+│ • uACR increase > 30%                         → FLAG        │
+│ • New CKD diagnosis (transition from non-CKD) → FLAG        │
+│ • GCUA phenotype change                       → FLAG        │
+│ • KDIGO stage progression                     → FLAG        │
+│ • Treatment gap detected                      → FLAG        │
+│                                                             │
+│ Flagged patients → clinical_alerts queue                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Phase 4: Alert Generation (4:00 AM - 4:30 AM)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ BATCH JOB: generate_clinical_alerts                         │
+├─────────────────────────────────────────────────────────────┤
+│ FOR EACH flagged patient:                                   │
+│                                                             │
+│   1. Determine alert priority (CRITICAL/HIGH/MODERATE)      │
+│   2. Assign to appropriate doctor                           │
+│   3. Generate alert notification                            │
+│   4. Queue email if configured                              │
+│                                                             │
+│ Alert prioritization rules:                                 │
+│ • CRITICAL: eGFR < 15, rapid decline >10 ml/min/year       │
+│ • HIGH: New CKD diagnosis, phenotype I/II                   │
+│ • MODERATE: Stage progression, treatment gaps               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Phase 5: Report Preparation (4:30 AM - 5:00 AM)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ BATCH JOB: prepare_daily_reports                            │
+├─────────────────────────────────────────────────────────────┤
+│ Generate for each doctor:                                   │
+│                                                             │
+│ • Daily patient alert summary                               │
+│ • High-risk patient list requiring attention                │
+│ • Treatment gap report                                      │
+│ • Screening compliance report                               │
+│ • Population risk distribution update                       │
+│                                                             │
+│ All reports ready when clinic opens at 8:00 AM              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Patient Classification: Algorithm vs AI
+
+**IMPORTANT DISTINCTION**: Patient risk classification in RENALGUARD AI uses **validated clinical algorithms**, NOT artificial intelligence. AI is used only for interpretation and communication.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    CLASSIFICATION: ALGORITHM VS AI                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    ALGORITHMIC (Deterministic)                       │   │
+│  │                    ✓ Reproducible, Auditable, Evidence-Based         │   │
+│  ├─────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                      │   │
+│  │  GCUA RISK CALCULATION                                               │   │
+│  │  ├── Nelson/CKD-PC Equation (validated on 5M+ patients)             │   │
+│  │  │   Formula: logit = β₀ + β₁(age) + β₂(eGFR) + β₃(uACR) + ...     │   │
+│  │  │   Output: 5-year renal risk percentage                           │   │
+│  │  │                                                                   │   │
+│  │  ├── AHA PREVENT Equation (2024 guidelines)                         │   │
+│  │  │   Formula: PCE with eGFR/uACR integration                        │   │
+│  │  │   Output: 10-year CVD risk percentage                            │   │
+│  │  │                                                                   │   │
+│  │  └── Bansal Mortality Score                                         │   │
+│  │      Formula: Points-based geriatric assessment                     │   │
+│  │      Output: 5-year mortality risk percentage                       │   │
+│  │                                                                      │   │
+│  │  KDIGO CLASSIFICATION                                                │   │
+│  │  ├── GFR Category: Direct threshold lookup                          │   │
+│  │  │   G1: ≥90, G2: 60-89, G3a: 45-59, G3b: 30-44, G4: 15-29, G5: <15│   │
+│  │  │                                                                   │   │
+│  │  └── Albuminuria Category: Direct threshold lookup                  │   │
+│  │      A1: <30, A2: 30-300, A3: >300 mg/g                             │   │
+│  │                                                                      │   │
+│  │  PHENOTYPE ASSIGNMENT                                                │   │
+│  │  └── Rule-based decision tree (if renal≥15% AND cvd≥20% → Type I)  │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    AI-POWERED (Claude Sonnet 4.5)                    │   │
+│  │                    Used for Interpretation & Communication Only      │   │
+│  ├─────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                      │   │
+│  │  WHAT AI DOES:                                                       │   │
+│  │  ├── Explains classification results in natural language            │   │
+│  │  │   "This patient is Phenotype I because both renal and CVD        │   │
+│  │  │    risks exceed thresholds, indicating accelerated aging..."     │   │
+│  │  │                                                                   │   │
+│  │  ├── Answers doctor questions about patient care                    │   │
+│  │  │   "Should I start this patient on an SGLT2 inhibitor?"          │   │
+│  │  │                                                                   │   │
+│  │  ├── Generates clinical narratives for significant changes          │   │
+│  │  │   "eGFR declined from 58 to 52 over 3 months, suggesting..."    │   │
+│  │  │                                                                   │   │
+│  │  └── Provides treatment recommendations in conversational format    │   │
+│  │      "Based on KDIGO 2024 guidelines, I recommend..."               │   │
+│  │                                                                      │   │
+│  │  WHAT AI DOES NOT DO:                                                │   │
+│  │  ✗ Calculate risk scores (uses algorithms)                          │   │
+│  │  ✗ Assign KDIGO stages (uses thresholds)                            │   │
+│  │  ✗ Determine phenotypes (uses decision rules)                       │   │
+│  │  ✗ Make final treatment decisions (doctor decides)                  │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### New Patient Workflow: From Registration to Classification
+
+When a new patient enters the system, here's the complete workflow:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    NEW PATIENT CLASSIFICATION WORKFLOW                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  STEP 1: PATIENT REGISTRATION                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ Source: ADT feed from EHR or manual entry                           │   │
+│  │ Data captured: Name, DOB, Sex, MRN, Insurance, Contact              │   │
+│  │ Trigger: ADT^A04 (Register) or ADT^A01 (Admit) message              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 2: INITIAL DATA COLLECTION                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ System queries EHR for:                                              │   │
+│  │ • Latest lab results (eGFR, uACR, creatinine, HbA1c)                │   │
+│  │ • Active conditions (diabetes, hypertension, CVD, heart failure)    │   │
+│  │ • Current medications (SGLT2i, RASi, statins)                       │   │
+│  │ • Vital signs (blood pressure, weight, height)                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 3: ELIGIBILITY CHECK (Algorithmic)                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                                                                      │   │
+│  │   Patient Age ≥ 60?  ───YES───►  Has eGFR data?  ───YES───►         │   │
+│  │        │                              │                              │   │
+│  │        NO                             NO                             │   │
+│  │        │                              │                              │   │
+│  │        ▼                              ▼                              │   │
+│  │   Standard risk              Flag for lab order                      │   │
+│  │   screening only             (eGFR + uACR needed)                    │   │
+│  │                                                                      │   │
+│  │   IF eGFR ≥ 60: Eligible for GCUA assessment                        │   │
+│  │   IF eGFR < 60: Direct to KDIGO classification (has CKD)            │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 4: RISK CLASSIFICATION (Algorithmic - No AI)                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                                                                      │   │
+│  │   PATH A: Non-CKD Patient (eGFR ≥ 60, Age 60+)                      │   │
+│  │   ┌─────────────────────────────────────────────────────────────┐   │   │
+│  │   │ GCUA ASSESSMENT (Pure Algorithm)                            │   │   │
+│  │   │                                                             │   │   │
+│  │   │ Input variables:                                            │   │   │
+│  │   │ • Age, Sex, Race                                            │   │   │
+│  │   │ • eGFR, uACR (if available)                                 │   │   │
+│  │   │ • Diabetes (yes/no), Hypertension (yes/no)                  │   │   │
+│  │   │ • CVD history, Heart failure                                │   │   │
+│  │   │ • Current medications (SGLT2i, RASi)                        │   │   │
+│  │   │                                                             │   │   │
+│  │   │ Calculations performed:                                     │   │   │
+│  │   │ 1. Nelson renal_risk = sigmoid(Σ βᵢxᵢ) × 100%              │   │   │
+│  │   │ 2. PREVENT cvd_risk = PCE_formula(inputs) × 100%           │   │   │
+│  │   │ 3. Bansal mortality = points_lookup(inputs) × 100%         │   │   │
+│  │   │                                                             │   │   │
+│  │   │ Phenotype assignment (rule-based):                          │   │   │
+│  │   │ IF mortality ≥ 50%           → Phenotype IV (Senescent)    │   │   │
+│  │   │ ELSE IF renal ≥15% AND cvd ≥20% → Phenotype I (Accelerated)│   │   │
+│  │   │ ELSE IF renal ≥15% AND cvd <7.5% → Phenotype II (Silent)   │   │   │
+│  │   │ ELSE IF renal <5% AND cvd ≥20%  → Phenotype III (Vascular) │   │   │
+│  │   │ ELSE IF renal 5-14.9%           → Moderate Risk            │   │   │
+│  │   │ ELSE                            → Low Risk                  │   │   │
+│  │   └─────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                      │   │
+│  │   PATH B: CKD Patient (eGFR < 60 OR uACR ≥ 30 persistent)           │   │
+│  │   ┌─────────────────────────────────────────────────────────────┐   │   │
+│  │   │ KDIGO CLASSIFICATION (Pure Algorithm)                       │   │   │
+│  │   │                                                             │   │   │
+│  │   │ GFR Category (direct threshold):                            │   │   │
+│  │   │ • G1: eGFR ≥ 90    → Normal or high                        │   │   │
+│  │   │ • G2: eGFR 60-89   → Mildly decreased                      │   │   │
+│  │   │ • G3a: eGFR 45-59  → Mild-moderate decrease                │   │   │
+│  │   │ • G3b: eGFR 30-44  → Moderate-severe decrease              │   │   │
+│  │   │ • G4: eGFR 15-29   → Severely decreased                    │   │   │
+│  │   │ • G5: eGFR < 15    → Kidney failure                        │   │   │
+│  │   │                                                             │   │   │
+│  │   │ Albuminuria Category (direct threshold):                    │   │   │
+│  │   │ • A1: uACR < 30     → Normal                               │   │   │
+│  │   │ • A2: uACR 30-300   → Moderately increased                 │   │   │
+│  │   │ • A3: uACR > 300    → Severely increased                   │   │   │
+│  │   │                                                             │   │   │
+│  │   │ Combined Risk (lookup table):                               │   │   │
+│  │   │ • Green: Low risk                                          │   │   │
+│  │   │ • Yellow: Moderate risk                                    │   │   │
+│  │   │ • Orange: High risk                                        │   │   │
+│  │   │ • Red: Very high risk                                      │   │   │
+│  │   └─────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 5: STORE RESULTS                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ Database tables updated:                                             │   │
+│  │ • patient_risk_factors: Risk scores, phenotype                      │   │
+│  │ • patient_gcua_assessments: Full GCUA results (non-CKD)             │   │
+│  │ • ckd_patient_data: KDIGO stage, severity (CKD patients)            │   │
+│  │ • non_ckd_patient_data: Screening status (non-CKD patients)         │   │
+│  │                                                                      │   │
+│  │ Classification timestamp recorded for audit trail                    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 6: ALERT IF HIGH RISK                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ IF Phenotype I or II → Generate HIGH priority alert                 │   │
+│  │ IF KDIGO Very High   → Generate HIGH priority alert                 │   │
+│  │ IF eGFR < 30         → Generate CRITICAL alert + nephrology flag    │   │
+│  │                                                                      │   │
+│  │ Alert sent to assigned doctor for review                            │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│  STEP 7: AI INTERPRETATION (Optional, On-Demand)                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ When doctor opens patient record or asks a question:                │   │
+│  │                                                                      │   │
+│  │ AI (Claude) generates natural language summary:                     │   │
+│  │                                                                      │   │
+│  │ "Mrs. Johnson is a 72-year-old female classified as GCUA            │   │
+│  │  Phenotype I (Accelerated Ager) based on:                           │   │
+│  │  • 5-year renal risk: 18.3% (High)                                  │   │
+│  │  • 10-year CVD risk: 24.7% (High)                                   │   │
+│  │  • 5-year mortality: 12.4% (Low)                                    │   │
+│  │                                                                      │   │
+│  │  Recommendation: Consider initiating SGLT2 inhibitor and RAS        │   │
+│  │  inhibitor therapy. Home monitoring with Minuteful Kidney           │   │
+│  │  recommended for early CKD detection."                              │   │
+│  │                                                                      │   │
+│  │ ⚠️ AI explanation uses pre-calculated algorithmic results           │   │
+│  │    AI does NOT recalculate or modify the classification             │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+
+| Aspect | Approach | Why |
+|--------|----------|-----|
+| **Risk Calculation** | Pure algorithm | Reproducible, auditable, based on validated clinical studies |
+| **Classification** | Rule-based thresholds | Consistent with KDIGO 2024 guidelines, no ambiguity |
+| **Phenotype Assignment** | Decision tree | Deterministic, same inputs always produce same output |
+| **Interpretation** | AI (Claude) | Natural language explanations help doctors understand results |
+| **Recommendations** | AI with MCP tools | AI consults real data before making suggestions |
+| **Final Decisions** | Doctor | AI assists, doctor decides |
+
+**Audit Trail:**
+- Every classification includes timestamp and algorithm version
+- Risk score inputs are stored for reproducibility
+- Any manual overrides are logged with reason
+- AI interactions are recorded for compliance
+
+---
+
 ## Where AI Is Used in RENALGUARD
 
 RENALGUARD AI leverages artificial intelligence at multiple levels to provide comprehensive clinical decision support:
