@@ -128,6 +128,97 @@ A comprehensive suite of 16+ specialized clinical decision support tools:
 - `population_stats`: Cohort analytics and outcome tracking
 - `guidelines`: KDIGO guideline lookup and best practice protocols
 
+### 4. How MCP Architecture Prevents AI Hallucination
+
+**The Problem with General AI in Healthcare:**
+Large Language Models (LLMs) can "hallucinate" - generating plausible-sounding but factually incorrect information. In healthcare, this could mean:
+- Recommending medications the patient is already taking
+- Missing critical lab abnormalities
+- Suggesting treatments contraindicated by patient conditions
+- Inventing patient history that doesn't exist
+
+**Our Solution: Grounding AI in Real Patient Data**
+
+RENALGUARD AI uses the **Model Context Protocol (MCP)** to eliminate hallucination by ensuring every AI response is grounded in actual patient data from the PostgreSQL database:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      DOCTOR'S QUESTION                          │
+│        "Should I start this patient on an SGLT2 inhibitor?"     │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     CLAUDE AI (Anthropic)                        │
+│   Receives question + system prompt with clinical guidelines     │
+│   DOES NOT GUESS - calls MCP tools to get real data             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│  MCP TOOL:    │   │  MCP TOOL:    │   │  MCP TOOL:    │
+│ patient_data  │   │ lab_results   │   │ assess_       │
+│               │   │               │   │ treatment_    │
+│ Gets: age,    │   │ Gets: eGFR,   │   │ options       │
+│ conditions,   │   │ uACR, trends, │   │               │
+│ medications   │   │ recent labs   │   │ Checks:       │
+│ from database │   │ from database │   │ eligibility,  │
+│               │   │               │   │ contraindica- │
+│               │   │               │   │ tions         │
+└───────────────┘   └───────────────┘   └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    POSTGRESQL DATABASE                           │
+│   Real patient data: observations, conditions, medications       │
+│   Verified lab values with timestamps and units                  │
+│   Treatment history and adherence records                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    AI RESPONSE (GROUNDED)                        │
+│   "Based on the patient's eGFR of 45 (from lab on Nov 15),      │
+│    I recommend starting empagliflozin. Patient is NOT currently  │
+│    on SGLT2i and eGFR > 20 meets eligibility criteria."         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why This Architecture Eliminates Hallucination:**
+
+| Without MCP | With MCP (RENALGUARD) |
+|-------------|----------------------|
+| AI might guess "patient probably has diabetes" | MCP tool queries database: patient HAS diabetes (ICD-10: E11.9) |
+| AI might say "consider checking eGFR" | MCP returns actual eGFR: 45 ml/min from 2025-11-15 lab |
+| AI might miss that patient is already on medication | MCP checks active medications: already on lisinopril 10mg |
+| AI might recommend wrong dosage | MCP returns renal dose adjustment based on actual eGFR |
+| AI might miss contraindications | MCP checks conditions table for allergies, interactions |
+
+**Technical Implementation:**
+
+1. **Structured Tool Calls**: Every MCP tool has a defined JSON schema for inputs and outputs, ensuring data consistency
+2. **Database-First**: All patient information comes directly from PostgreSQL queries, not AI memory or training data
+3. **Audit Trail**: Every tool call is logged, providing traceability for clinical decisions
+4. **Fail-Safe Design**: If database is unavailable, AI explicitly states "unable to retrieve patient data" rather than guessing
+
+**Example: How a Treatment Decision Works**
+
+When a doctor asks "Should I start treatment?", the AI:
+
+1. **Calls `patient_data`** → Gets patient ID, age, current medications, conditions
+2. **Calls `lab_results`** → Gets latest eGFR, uACR, creatinine, potassium with dates
+3. **Calls `phase3_treatment_decision`** → Evaluates eligibility against KDIGO criteria
+4. **Calls `assess_medication_safety`** → Checks for drug interactions, contraindications
+5. **Synthesizes response** → All recommendations cite actual values from database
+
+**Clinical Safety Guarantee:**
+- Every lab value in the AI response exists in the database
+- Every medication mentioned is in the patient's record
+- Every recommendation is validated against real clinical data
+- No invented patient history or fabricated test results
+
 ---
 
 ## Early Diagnosis of CKD: The Screening Workflow
