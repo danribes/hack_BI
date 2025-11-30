@@ -485,6 +485,7 @@ router.post('/calculate/:patientId', async (req: Request, res: Response): Promis
     // Sync risk_level in non_ckd_patient_data to match calculated phenotype
     // This ensures patient list displays the same risk as the detail card
     if (assessment.isEligible) {
+      const pool = getPool();
       const phenotypeType = assessment.phenotype.type;
       // Phenotype I, II, III, IV are high risk; Moderate is moderate; Low is low
       const riskLevel = ['I', 'II', 'III', 'IV'].includes(phenotypeType) ? 'high' :
