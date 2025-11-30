@@ -473,14 +473,14 @@ The system automatically evaluates treatment options:
 | Service | Status | URL |
 |---------|--------|-----|
 | **Database** | ✅ Live | PostgreSQL (32 migrations applied) |
-| **Backend** | ✅ Live | https://renalguard-backend.onrender.com |
-| **Frontend** | ✅ Live | https://renalguard-frontend.onrender.com |
+| **Backend** | ✅ Live | https://ckd-analyzer-backend.onrender.com |
+| **Frontend** | ✅ Live | https://ckd-analyzer-frontend.onrender.com |
 
 Your application is now fully deployed on Render! You can access it at:
 
-- **Frontend Application**: https://renalguard-frontend.onrender.com
-- **Backend API**: https://renalguard-backend.onrender.com
-- **Health Check**: https://renalguard-backend.onrender.com/health
+- **Frontend Application**: https://ckd-analyzer-frontend.onrender.com
+- **Backend API**: https://ckd-analyzer-backend.onrender.com
+- **Health Check**: https://ckd-analyzer-backend.onrender.com/health
 
 ---
 
