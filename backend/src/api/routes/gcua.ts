@@ -482,6 +482,23 @@ router.post('/calculate/:patientId', async (req: Request, res: Response): Promis
     // Save to database
     await saveGCUAAssessment(patientId, patientInput, assessment, assessedBy);
 
+    // Sync risk_level in non_ckd_patient_data to match calculated phenotype
+    // This ensures patient list displays the same risk as the detail card
+    if (assessment.isEligible) {
+      const phenotypeType = assessment.phenotype.type;
+      // Phenotype I, II, III, IV are high risk; Moderate is moderate; Low is low
+      const riskLevel = ['I', 'II', 'III', 'IV'].includes(phenotypeType) ? 'high' :
+                        phenotypeType === 'Moderate' ? 'moderate' : 'low';
+
+      await pool.query(`
+        UPDATE non_ckd_patient_data
+        SET risk_level = $1
+        WHERE patient_id = $2
+      `, [riskLevel, patientId]);
+
+      console.log(`[GCUA] Synced risk_level to '${riskLevel}' for patient ${patientId}`);
+    }
+
     console.log(`[GCUA] Assessment complete for patient ${patientId}:`, {
       isEligible: assessment.isEligible,
       phenotype: assessment.isEligible ? assessment.phenotype.name : 'N/A',
@@ -699,6 +716,17 @@ router.post('/bulk-calculate', async (_req: Request, res: Response): Promise<any
 
         if (assessment.isEligible) {
           await saveGCUAAssessment(row.id, patientInput, assessment, 'bulk-calculate');
+
+          // Sync risk_level in non_ckd_patient_data to match calculated phenotype
+          const phenotypeType = assessment.phenotype.type;
+          const riskLevel = ['I', 'II', 'III', 'IV'].includes(phenotypeType) ? 'high' :
+                            phenotypeType === 'Moderate' ? 'moderate' : 'low';
+          await pool.query(`
+            UPDATE non_ckd_patient_data
+            SET risk_level = $1
+            WHERE patient_id = $2
+          `, [riskLevel, row.id]);
+
           calculated++;
           eligible++;
         } else {
