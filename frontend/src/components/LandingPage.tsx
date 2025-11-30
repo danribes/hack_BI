@@ -468,57 +468,57 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <div className="grid md:grid-cols-4 gap-8">
               {/* Step 1: Patient Intake */}
               <div className="relative">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-emerald-500/50 dark:border-emerald-500/30 relative z-10 shadow-lg dark:shadow-none">
+                <div className="bg-slate-800 rounded-xl p-6 border border-emerald-500/30 relative z-10">
                   <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">1</span>
                   </div>
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Patient Intake</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Age-based routing: 60+ triggers GCUA, others use SCORED screening</p>
+                  <h3 className="text-lg font-bold text-white text-center mb-2">Patient Intake</h3>
+                  <p className="text-slate-400 text-center text-sm">Age-based routing: 60+ triggers GCUA, others use SCORED screening</p>
                 </div>
               </div>
 
               {/* Step 2: Risk Assessment */}
               <div className="relative">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-purple-500/50 dark:border-purple-500/30 relative z-10 shadow-lg dark:shadow-none">
+                <div className="bg-slate-800 rounded-xl p-6 border border-purple-500/30 relative z-10">
                   <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">2</span>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-6 h-6 text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">GCUA Assessment</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Triple-risk calculation: Renal, CVD, and Mortality scores</p>
+                  <h3 className="text-lg font-bold text-white text-center mb-2">GCUA Assessment</h3>
+                  <p className="text-slate-400 text-center text-sm">Triple-risk calculation: Renal, CVD, and Mortality scores</p>
                 </div>
               </div>
 
               {/* Step 3: Phenotype Assignment */}
               <div className="relative">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-cyan-500/50 dark:border-cyan-500/30 relative z-10 shadow-lg dark:shadow-none">
+                <div className="bg-slate-800 rounded-xl p-6 border border-cyan-500/30 relative z-10">
                   <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">3</span>
                   </div>
-                  <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                  <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-6 h-6 text-cyan-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Phenotype Classification</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Assign clinical phenotype (I-IV, Moderate, Low) based on risk profile</p>
+                  <h3 className="text-lg font-bold text-white text-center mb-2">Phenotype Classification</h3>
+                  <p className="text-slate-400 text-center text-sm">Assign clinical phenotype (I-IV, Moderate, Low) based on risk profile</p>
                 </div>
               </div>
 
               {/* Step 4: Treatment Plan */}
               <div className="relative">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-blue-500/50 dark:border-blue-500/30 relative z-10 shadow-lg dark:shadow-none">
+                <div className="bg-slate-800 rounded-xl p-6 border border-blue-500/30 relative z-10">
                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-md">
                     <span className="text-xl font-bold text-white">4</span>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Pill className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Pill className="w-6 h-6 text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Personalized Plan</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-center text-sm">Phenotype-specific treatment, monitoring, and home testing recommendations</p>
+                  <h3 className="text-lg font-bold text-white text-center mb-2">Personalized Plan</h3>
+                  <p className="text-slate-400 text-center text-sm">Phenotype-specific treatment, monitoring, and home testing recommendations</p>
                 </div>
               </div>
             </div>
