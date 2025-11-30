@@ -168,11 +168,11 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                   type="linear"
                   dataKey="eGFR"
                   stroke={isTreated ? "#10b981" : "#ef4444"}
-                  strokeWidth={hasMultipleTimepoints('eGFR') ? 3 : 0}
+                  strokeWidth={3}
                   dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 8 }}
                   name="eGFR"
                   unit="mL/min/1.73m²"
-                  connectNulls={false}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -215,11 +215,11 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                   type="linear"
                   dataKey="uACR"
                   stroke={isTreated ? "#10b981" : "#ef4444"}
-                  strokeWidth={hasMultipleTimepoints('uACR') ? 3 : 0}
+                  strokeWidth={3}
                   dot={{ fill: isTreated ? "#10b981" : "#ef4444", r: 8 }}
                   name="uACR"
                   unit="mg/g"
-                  connectNulls={false}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -262,22 +262,22 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                   type="linear"
                   dataKey="blood_pressure_systolic"
                   stroke="#ef4444"
-                  strokeWidth={hasMultipleTimepoints('blood_pressure_systolic') ? 3 : 0}
+                  strokeWidth={3}
                   dot={{ fill: "#ef4444", r: 8 }}
                   name="Systolic"
                   unit="mmHg"
-                  connectNulls={false}
+                  connectNulls={true}
                 />
                 <Line
                   type="linear"
                   dataKey="blood_pressure_diastolic"
                   stroke="#3b82f6"
-                  strokeWidth={hasMultipleTimepoints('blood_pressure_diastolic') ? 3 : 0}
-                  strokeDasharray={hasMultipleTimepoints('blood_pressure_diastolic') ? "5 5" : "0"}
+                  strokeWidth={3}
+                  strokeDasharray="5 5"
                   dot={{ fill: "#3b82f6", r: 8 }}
                   name="Diastolic"
                   unit="mmHg"
-                  connectNulls={false}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -319,11 +319,11 @@ export const PatientTrendGraphs: React.FC<PatientTrendGraphsProps> = ({ observat
                   type="linear"
                   dataKey="HbA1c"
                   stroke={isTreated ? "#8b5cf6" : "#f97316"}
-                  strokeWidth={hasMultipleTimepoints('HbA1c') ? 3 : 0}
+                  strokeWidth={3}
                   dot={{ fill: isTreated ? "#8b5cf6" : "#f97316", r: 8 }}
                   name="HbA1c"
                   unit="%"
-                  connectNulls={false}
+                  connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
