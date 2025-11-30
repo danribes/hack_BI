@@ -97,6 +97,164 @@ GCUA is a comprehensive risk stratification system integrating three validated p
 - Heat map visualization: Green (low risk) to Red (very high risk)
 - Determines monitoring frequency and treatment urgency
 
+---
+
+## Risk Stratification Maps
+
+### Non-CKD Patients: GCUA Phenotype Risk Map (Patients 60+)
+
+For patients **without diagnosed CKD** (eGFR ≥ 60), the GCUA system classifies risk across three dimensions:
+
+```
+                           RENAL RISK (Nelson/CKD-PC 5-Year)
+                    Low (<5%)      Moderate (5-14.9%)    High (≥15%)
+                 ┌──────────────┬──────────────────────┬──────────────────┐
+    High (≥20%)  │ PHENOTYPE III│    MODERATE RISK     │   PHENOTYPE I    │
+   C             │   Vascular   │                      │  Accelerated     │
+   V             │   Dominant   │  ● Elevated CVD      │     Ager         │
+   D             │              │  ● Moderate renal    │                  │
+                 │ ● Low renal  │  ● Preventive care   │ ● Highest risk   │
+   R             │ ● High CVD   │                      │ ● Dual therapy   │
+   I             │ ● Statin +   │                      │ ● SGLT2i + RASi  │
+   S             │   BP control │                      │ ● Home monitor   │
+   K             ├──────────────┼──────────────────────┼──────────────────┤
+                 │              │                      │   PHENOTYPE II   │
+   (AHA          │   LOW RISK   │    MODERATE RISK     │  Silent Renal    │
+   PREVENT       │              │                      │                  │
+   10-Year)      │ ● Routine    │  ● Moderate renal    │ ● High renal     │
+                 │   care       │  ● Borderline CVD    │ ● Low CVD        │
+    Low (<7.5%)  │ ● Annual     │  ● Lifestyle mods    │ ● Nephroprotect  │
+                 │   checkup    │                      │ ● Home monitor   │
+                 └──────────────┴──────────────────────┴──────────────────┘
+
+    ⚠️ PHENOTYPE IV (The Senescent): Overrides above if Bansal mortality ≥50%
+       → Quality of life focus, deprescribing consideration, palliative approach
+```
+
+**Non-CKD Risk Actions by Phenotype:**
+
+| Phenotype | Risk Level | Renal Risk | CVD Risk | Mortality | Recommended Actions |
+|-----------|------------|------------|----------|-----------|---------------------|
+| **I - Accelerated Ager** | 🔴 CRITICAL | ≥15% | ≥20% | Any | SGLT2i + RASi + Statin, Home monitoring, Nephrology consult |
+| **II - Silent Renal** | 🟠 HIGH | ≥15% | <7.5% | Any | SGLT2i + RASi, Home monitoring, Quarterly labs |
+| **III - Vascular Dominant** | 🟠 HIGH | <5% | ≥20% | Any | Statin + BP control, Cardiology focus, Biannual labs |
+| **IV - The Senescent** | ⚫ SPECIAL | Any | Any | ≥50% | Quality of life, Deprescribing, Avoid aggressive Tx |
+| **Moderate** | 🟡 MODERATE | 5-14.9% | 7.5-19.9% | <50% | Preventive strategies, Lifestyle mods, Biannual labs |
+| **Low** | 🟢 LOW | <5% | <7.5% | <15% | Routine care, Annual checkup, Standard screening |
+
+---
+
+### CKD Patients: KDIGO Heat Map Risk Matrix
+
+For patients **with diagnosed CKD**, the KDIGO 2024 guidelines classify risk using eGFR and albuminuria:
+
+```
+                              ALBUMINURIA CATEGORIES (uACR mg/g)
+                     A1                    A2                    A3
+                  Normal           Moderately Increased    Severely Increased
+                   <30                  30-300                  >300
+              ┌─────────────────┬─────────────────────┬─────────────────────┐
+    G1        │                 │                     │                     │
+    ≥90       │  🟢 LOW RISK    │   🟡 MODERATE       │   🟠 HIGH           │
+    Normal    │                 │                     │                     │
+              │  Monitor: 1/yr  │  Monitor: 1/yr      │  Monitor: 2/yr      │
+              ├─────────────────┼─────────────────────┼─────────────────────┤
+    G2        │                 │                     │                     │
+    60-89     │  🟢 LOW RISK    │   🟡 MODERATE       │   🟠 HIGH           │
+    Mild ↓    │                 │                     │                     │
+              │  Monitor: 1/yr  │  Monitor: 1/yr      │  Monitor: 2/yr      │
+  e ├─────────────────┼─────────────────────┼─────────────────────┤
+  G G3a       │                 │                     │                     │
+  F 45-59     │  🟡 MODERATE    │   🟠 HIGH           │   🔴 VERY HIGH      │
+  R Mild-Mod  │                 │                     │                     │
+              │  Monitor: 1/yr  │  Monitor: 2/yr      │  Monitor: 3/yr      │
+              ├─────────────────┼─────────────────────┼─────────────────────┤
+    G3b       │                 │                     │                     │
+    30-44     │  🟠 HIGH        │   🔴 VERY HIGH      │   🔴 VERY HIGH      │
+    Mod-Sev   │                 │                     │                     │
+              │  Monitor: 2/yr  │  Monitor: 3/yr      │  Monitor: 4/yr      │
+              ├─────────────────┼─────────────────────┼─────────────────────┤
+    G4        │                 │                     │                     │
+    15-29     │  🔴 VERY HIGH   │   🔴 VERY HIGH      │   🔴 VERY HIGH      │
+    Severe    │                 │   Nephrology        │   Nephrology        │
+              │  Monitor: 3/yr  │  Monitor: 4/yr      │  Monitor: 4+/yr     │
+              ├─────────────────┼─────────────────────┼─────────────────────┤
+    G5        │                 │                     │                     │
+    <15       │  🔴 VERY HIGH   │   🔴 VERY HIGH      │   🔴 VERY HIGH      │
+    Failure   │   Nephrology    │   Nephrology        │   Nephrology        │
+              │  RRT Planning   │  RRT Planning       │  RRT Planning       │
+              └─────────────────┴─────────────────────┴─────────────────────┘
+
+    Legend: Monitor = recommended lab frequency per year
+            RRT = Renal Replacement Therapy (dialysis/transplant)
+```
+
+**CKD Stage Risk Actions:**
+
+| Stage | eGFR Range | Risk Level | Treatment Priority | Key Actions |
+|-------|------------|------------|-------------------|-------------|
+| **G1** | ≥90 | 🟢-🟠 Varies by uACR | Address cause | Treat underlying condition, BP control, Annual monitoring |
+| **G2** | 60-89 | 🟢-🟠 Varies by uACR | Early intervention | Lifestyle mods, RASi if proteinuria, Annual monitoring |
+| **G3a** | 45-59 | 🟡-🔴 Moderate-Very High | Active nephroprotection | RASi + SGLT2i, Avoid nephrotoxins, 1-3x/year monitoring |
+| **G3b** | 30-44 | 🟠-🔴 High-Very High | Aggressive treatment | RASi + SGLT2i, Dose adjust meds, Consider MRA, 2-4x/year |
+| **G4** | 15-29 | 🔴 Very High | Pre-dialysis care | Nephrology co-management, RRT education, 3-4x/year |
+| **G5** | <15 | 🔴 Critical | RRT planning | Dialysis/transplant planning, Vascular access, Monthly |
+
+**Albuminuria Impact on Treatment:**
+
+| Category | uACR (mg/g) | Risk Modifier | Treatment Implications |
+|----------|-------------|---------------|----------------------|
+| **A1** | <30 | Baseline | Standard care, focus on eGFR trends |
+| **A2** | 30-300 | +1 Risk Level | RASi strongly indicated, Target BP <130/80 |
+| **A3** | >300 | +2 Risk Levels | Aggressive RASi + SGLT2i, Consider MRA, Monthly uACR |
+
+---
+
+### Combined Risk: Transition from Non-CKD to CKD
+
+When a non-CKD patient develops CKD, their risk classification transitions:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PATIENT JOURNEY: RISK EVOLUTION                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   NON-CKD PHASE                         CKD PHASE                           │
+│   (GCUA Classification)                 (KDIGO Classification)              │
+│                                                                             │
+│   ┌───────────────┐                     ┌───────────────┐                   │
+│   │ PHENOTYPE I   │ ──── Develops ────► │ Stage 3a+     │                   │
+│   │ Accelerated   │      CKD            │ High/Very High│                   │
+│   │ Ager          │                     │ Risk          │                   │
+│   └───────────────┘                     └───────────────┘                   │
+│   Action: Prevented                     Action: Nephrology                  │
+│   with early Tx                         co-management                       │
+│                                                                             │
+│   ┌───────────────┐                     ┌───────────────┐                   │
+│   │ PHENOTYPE II  │ ──── Develops ────► │ Stage 2-3a    │                   │
+│   │ Silent Renal  │      CKD            │ Moderate/High │                   │
+│   │               │                     │ Risk          │                   │
+│   └───────────────┘                     └───────────────┘                   │
+│   Action: Early                         Action: Continue                    │
+│   nephroprotection                      nephroprotection                    │
+│                                                                             │
+│   ┌───────────────┐                     ┌───────────────┐                   │
+│   │ MODERATE      │ ──── Develops ────► │ Stage 1-2     │                   │
+│   │ RISK          │      CKD            │ Low/Moderate  │                   │
+│   │               │                     │ Risk          │                   │
+│   └───────────────┘                     └───────────────┘                   │
+│   Action: Preventive                    Action: Initiate                    │
+│   strategies                            treatment                           │
+│                                                                             │
+│   ┌───────────────┐                                                         │
+│   │ LOW RISK      │ ──── Rarely develops CKD with proper monitoring ────►   │
+│   └───────────────┘                                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Insight**: RENALGUARD AI preserves the patient's GCUA phenotype history even after CKD diagnosis, allowing clinicians to understand the patient's complete cardiorenal risk trajectory.
+
 ### 3. Model Context Protocol (MCP) Clinical Tools
 
 A comprehensive suite of 16+ specialized clinical decision support tools:
