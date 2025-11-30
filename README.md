@@ -26,6 +26,18 @@ RENALGUARD AI acts as an **intelligent co-pilot** for primary care physicians, e
 
 ---
 
+## Live Demo
+
+| Service | Status | URL |
+|---------|--------|-----|
+| **Database** | ✅ Live | PostgreSQL (32 migrations applied) |
+| **Backend** | ✅ Live | https://renalguard-backend.onrender.com |
+| **Frontend** | ✅ Live | https://renalguard-frontend.onrender.com |
+
+**Try it now:** https://renalguard-frontend.onrender.com
+
+---
+
 ## Clinical Value: Why Early CKD Detection Matters
 
 ### The Cost of Late Detection
@@ -1119,24 +1131,6 @@ The system automatically evaluates treatment options:
 - **Better cardiovascular health**: RAS and SGLT2 inhibitors protect heart
 - **Delayed dialysis**: Patients avoid life-altering treatment for years
 - **Empowered patients**: Home monitoring engages patients in their care
-
----
-
-## Live Demo
-
-### Deployment Summary
-
-| Service | Status | URL |
-|---------|--------|-----|
-| **Database** | ✅ Live | PostgreSQL (32 migrations applied) |
-| **Backend** | ✅ Live | https://ckd-analyzer-backend.onrender.com |
-| **Frontend** | ✅ Live | https://ckd-analyzer-frontend.onrender.com |
-
-Your application is now fully deployed on Render! You can access it at:
-
-- **Frontend Application**: https://ckd-analyzer-frontend.onrender.com
-- **Backend API**: https://ckd-analyzer-backend.onrender.com
-- **Health Check**: https://ckd-analyzer-backend.onrender.com/health
 
 ---
 
