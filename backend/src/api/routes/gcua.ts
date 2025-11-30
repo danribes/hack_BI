@@ -457,7 +457,7 @@ router.get('/assessment/:patientId', async (req: Request, res: Response): Promis
 router.post('/calculate/:patientId', async (req: Request, res: Response): Promise<any> => {
   try {
     const { patientId } = req.params;
-    const assessedBy = req.body.assessedBy || 'system';
+    const assessedBy = req.body?.assessedBy || 'system';
 
     // Gather patient input
     const patientInput = await getPatientGCUAInput(patientId);
