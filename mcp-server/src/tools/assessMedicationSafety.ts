@@ -47,11 +47,11 @@ export async function assessMedicationSafety(
 
   // Get latest eGFR
   const egfrQuery = `
-    SELECT value
+    SELECT value_numeric as value
     FROM observations
     WHERE patient_id = $1
       AND observation_type = 'eGFR'
-    ORDER BY observed_date DESC
+    ORDER BY observation_date DESC
     LIMIT 1
   `;
 
@@ -73,18 +73,18 @@ export async function assessMedicationSafety(
       has_hypertension,
       has_heart_failure,
       ckd_treatment_active,
-      COALESCE((SELECT value::boolean
-                FROM patient_conditions
-                WHERE patient_id = $1 AND condition_name = 'Type 1 Diabetes'
-                LIMIT 1), false) as has_type1_diabetes,
-      COALESCE((SELECT value::boolean
-                FROM patient_conditions
-                WHERE patient_id = $1 AND condition_name = 'Polycystic Kidney Disease'
-                LIMIT 1), false) as has_pkd,
-      COALESCE((SELECT value::boolean
-                FROM patient_conditions
-                WHERE patient_id = $1 AND condition_name = 'On Dialysis'
-                LIMIT 1), false) as is_on_dialysis
+      EXISTS(SELECT 1 FROM conditions
+             WHERE patient_id = $1
+             AND condition_name ILIKE '%Type 1 Diabetes%'
+             AND clinical_status = 'active') as has_type1_diabetes,
+      EXISTS(SELECT 1 FROM conditions
+             WHERE patient_id = $1
+             AND condition_name ILIKE '%Polycystic Kidney%'
+             AND clinical_status = 'active') as has_pkd,
+      EXISTS(SELECT 1 FROM conditions
+             WHERE patient_id = $1
+             AND condition_name ILIKE '%Dialysis%'
+             AND clinical_status = 'active') as is_on_dialysis
     FROM patients
     WHERE id = $1
   `;
@@ -98,11 +98,11 @@ export async function assessMedicationSafety(
 
   // Get uACR for comprehensive assessment
   const uacrQuery = `
-    SELECT value
+    SELECT value_numeric as value
     FROM observations
     WHERE patient_id = $1
       AND observation_type = 'uACR'
-    ORDER BY observed_date DESC
+    ORDER BY observation_date DESC
     LIMIT 1
   `;
   const uacrResult = await pool.query(uacrQuery, [patient_id]);
