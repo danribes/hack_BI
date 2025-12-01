@@ -656,9 +656,9 @@ Status:
         const gcuaQuery = `
           SELECT
             phenotype_type, phenotype_name, phenotype_tag, phenotype_color,
-            module1_renal_risk, module1_risk_category,
-            module2_cvd_risk, module2_risk_category,
-            module3_mortality_risk, module3_risk_category,
+            module1_five_year_risk, module1_risk_category,
+            module2_ten_year_risk, module2_risk_category,
+            module3_five_year_mortality, module3_risk_category,
             benefit_ratio, benefit_ratio_interpretation,
             confidence_level, data_completeness,
             assessed_at
@@ -681,9 +681,9 @@ Classification Tag: ${gcua.phenotype_tag}
 Confidence Level: ${gcua.confidence_level} (${gcua.data_completeness}% data complete)
 
 Risk Scores:
-- Renal Risk (5-year): ${gcua.module1_renal_risk}% (${gcua.module1_risk_category})
-- CVD Risk (10-year): ${gcua.module2_cvd_risk}% (${gcua.module2_risk_category})
-- Mortality Risk (5-year): ${gcua.module3_mortality_risk}% (${gcua.module3_risk_category})
+- Renal Risk (5-year): ${gcua.module1_five_year_risk}% (${gcua.module1_risk_category})
+- CVD Risk (10-year): ${gcua.module2_ten_year_risk}% (${gcua.module2_risk_category})
+- Mortality Risk (5-year): ${gcua.module3_five_year_mortality}% (${gcua.module3_risk_category})
 
 Benefit Ratio: ${gcua.benefit_ratio} - ${gcua.benefit_ratio_interpretation}
 

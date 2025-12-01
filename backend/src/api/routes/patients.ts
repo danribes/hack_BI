@@ -1883,9 +1883,9 @@ Provide ONLY the JSON object, nothing else.`;
           const gcuaResult = await pool.query(`
             SELECT
               phenotype_type, phenotype_name, phenotype_tag, phenotype_color,
-              module1_renal_risk, module1_risk_category,
-              module2_cvd_risk, module2_risk_category,
-              module3_mortality_risk, module3_risk_category,
+              module1_five_year_risk, module1_risk_category,
+              module2_ten_year_risk, module2_risk_category,
+              module3_five_year_mortality, module3_risk_category,
               benefit_ratio, benefit_ratio_interpretation,
               confidence_level, data_completeness,
               home_monitoring_recommended
@@ -1932,11 +1932,11 @@ Provide ONLY the JSON object, nothing else.`;
         // Include GCUA assessment data for patients 60+ (REPLACES SCORED/Framingham)
         gcua_phenotype_type: gcuaData?.phenotype_type || undefined,
         gcua_phenotype_name: gcuaData?.phenotype_name || undefined,
-        gcua_renal_risk: gcuaData?.module1_renal_risk || undefined,
+        gcua_renal_risk: gcuaData?.module1_five_year_risk || undefined,
         gcua_renal_risk_category: gcuaData?.module1_risk_category || undefined,
-        gcua_cvd_risk: gcuaData?.module2_cvd_risk || undefined,
+        gcua_cvd_risk: gcuaData?.module2_ten_year_risk || undefined,
         gcua_cvd_risk_category: gcuaData?.module2_risk_category || undefined,
-        gcua_mortality_risk: gcuaData?.module3_mortality_risk || undefined,
+        gcua_mortality_risk: gcuaData?.module3_five_year_mortality || undefined,
         gcua_mortality_risk_category: gcuaData?.module3_risk_category || undefined,
         gcua_benefit_ratio: gcuaData?.benefit_ratio || undefined,
         gcua_benefit_ratio_interpretation: gcuaData?.benefit_ratio_interpretation || undefined,
