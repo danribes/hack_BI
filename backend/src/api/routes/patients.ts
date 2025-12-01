@@ -1477,6 +1477,38 @@ Provide ONLY the JSON object, nothing else.`;
       throw new Error('AI generated invalid response format');
     }
 
+    // Validate and coerce AI-generated values to ensure they are proper numbers
+    // This prevents "toFixed is not a function" errors when values are strings/null/undefined
+    const validateAndCoerceNumber = (value: any, fallback: number): number => {
+      if (value === null || value === undefined) return fallback;
+      const num = Number(value);
+      return isNaN(num) ? fallback : num;
+    };
+
+    // Coerce all generated values to numbers with sensible fallbacks based on current values
+    generatedValues = {
+      eGFR: validateAndCoerceNumber(generatedValues.eGFR, egfr),
+      serum_creatinine: validateAndCoerceNumber(generatedValues.serum_creatinine, 1.0),
+      BUN: validateAndCoerceNumber(generatedValues.BUN, 15),
+      uACR: validateAndCoerceNumber(generatedValues.uACR, uacr),
+      blood_pressure_systolic: validateAndCoerceNumber(generatedValues.blood_pressure_systolic, 130),
+      blood_pressure_diastolic: validateAndCoerceNumber(generatedValues.blood_pressure_diastolic, 80),
+      HbA1c: validateAndCoerceNumber(generatedValues.HbA1c, 6.0),
+      glucose: validateAndCoerceNumber(generatedValues.glucose, 100),
+      potassium: validateAndCoerceNumber(generatedValues.potassium, 4.5),
+      sodium: validateAndCoerceNumber(generatedValues.sodium, 140),
+      hemoglobin: validateAndCoerceNumber(generatedValues.hemoglobin, 14),
+      heart_rate: validateAndCoerceNumber(generatedValues.heart_rate, 72),
+      oxygen_saturation: validateAndCoerceNumber(generatedValues.oxygen_saturation, 98),
+      reasoning: generatedValues.reasoning || 'Values generated based on patient trajectory'
+    };
+
+    console.log('[Patient Update] Validated generated values:', {
+      eGFR: generatedValues.eGFR,
+      uACR: generatedValues.uACR,
+      serum_creatinine: generatedValues.serum_creatinine
+    });
+
     // Calculate new observation date (1 month from latest)
     const latestDate = new Date(egfrObs?.observation_date || new Date());
     const newDate = new Date(latestDate);
