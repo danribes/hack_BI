@@ -238,25 +238,25 @@ export async function comprehensiveCKDAnalysis(
         value_numeric as value,
         observation_date,
         EXTRACT(DAY FROM NOW() - observation_date) as days_ago
-      FROM patient_observations
+      FROM observations
       WHERE patient_id = $1
-        AND observation_type IN ('eGFR', 'uACR', 'Creatinine', 'HbA1c', 'blood_pressure_systolic')
+        AND observation_type IN ('eGFR', 'uACR', 'serum_creatinine', 'HbA1c', 'blood_pressure_systolic')
       ORDER BY observation_type, observation_date DESC
     ),
     patient_info AS (
       SELECT
-        name,
+        CONCAT(first_name, ' ', last_name) as name,
         date_of_birth,
         EXTRACT(YEAR FROM AGE(date_of_birth)) as age,
-        sex,
+        gender as sex,
         COALESCE(
           (SELECT array_agg(condition_name)
-           FROM patient_conditions
-           WHERE patient_id = $1 AND is_active = true),
+           FROM conditions
+           WHERE patient_id = $1 AND clinical_status = 'active'),
           ARRAY[]::text[]
         ) as conditions
       FROM patients
-      WHERE patient_id = $1
+      WHERE id = $1
     ),
     jardiance_med AS (
       SELECT
@@ -273,9 +273,8 @@ export async function comprehensiveCKDAnalysis(
       SELECT
         refill_date,
         EXTRACT(DAY FROM NOW() - refill_date) as days_since_refill
-      FROM medication_refills
+      FROM jardiance_refills
       WHERE patient_id = $1
-        AND medication_name ILIKE '%jardiance%'
       ORDER BY refill_date DESC
       LIMIT 1
     ),
@@ -293,22 +292,15 @@ export async function comprehensiveCKDAnalysis(
     ),
     ras_refill AS (
       SELECT
-        refill_date,
-        EXTRACT(DAY FROM NOW() - refill_date) as days_since_refill
-      FROM medication_refills
-      WHERE patient_id = $1
-        AND (medication_name ILIKE '%lisinopril%'
-             OR medication_name ILIKE '%losartan%'
-             OR medication_name ILIKE '%enalapril%')
-      ORDER BY refill_date DESC
-      LIMIT 1
+        NULL::timestamp as refill_date,
+        NULL::numeric as days_since_refill
     )
     SELECT
       p.name,
       p.age,
       p.sex,
       p.conditions,
-      (SELECT value FROM latest_labs WHERE observation_type = 'Creatinine') as creatinine,
+      (SELECT value FROM latest_labs WHERE observation_type = 'serum_creatinine') as creatinine,
       (SELECT value FROM latest_labs WHERE observation_type = 'uACR') as uacr,
       (SELECT value FROM latest_labs WHERE observation_type = 'eGFR') as egfr_db,
       (SELECT value FROM latest_labs WHERE observation_type = 'HbA1c') as hba1c,
