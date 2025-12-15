@@ -30,9 +30,9 @@ RENALGUARD AI acts as an **intelligent co-pilot** for primary care physicians, e
 
 | Service | Status | URL |
 |---------|--------|-----|
-| **Database** | ✅ Live | PostgreSQL (32 migrations applied) |
-| **Backend** | ✅ Live | https://renalguard-backend.onrender.com |
-| **Frontend** | ✅ Live | https://renalguard-frontend.onrender.com |
+| **Database** | ✅ Live |
+| **Backend** | ✅ Live | 
+| **Frontend** | ✅ Live | https://ckd-analyzer-frontend.onrender.com|
 
 **Try it now:** https://renalguard-frontend.onrender.com
 
